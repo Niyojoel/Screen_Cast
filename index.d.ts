@@ -8,8 +8,8 @@ declare interface User {
   id: string;
 }
 
-declare interface BtnImgProps {
-    image: string;
+declare interface ImgProps {
+    src: string;
     alt: string;
     size?: number;
     className?: string;
@@ -17,12 +17,12 @@ declare interface BtnImgProps {
 }
 
 declare interface ActionButtonProps {
-  image?: string;
-  icon?: React.ReactNode;
+  src: string;
   alt: string;
   children?: React.ReactNode;
   size?: number;
   action?: () => void;
+  disable?: boolean;
   href?: string,
   className?: string;
   imgClassName?: string;
@@ -114,6 +114,7 @@ declare interface CopyBtnProps {
 }
 
 declare interface VideoPlayerProps {
+  id: string;
   videoId: string;
   className?: string;
 }

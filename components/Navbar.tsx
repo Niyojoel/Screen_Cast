@@ -1,45 +1,51 @@
 "use client"
 
-import Image from 'next/image'
-import Link from 'next/link'
-import { ActionButton } from '.'
+import { ActionButton, Img } from '.'
 import { authClient } from '@/lib/authClient'
-import { useRouter } from 'next/navigation'
+import { useRouter} from 'next/navigation'
+import handleLogOut from '@/lib/helper/auth/auth'
+import { dummySession } from '@/constants'
+import Link from 'next/link'
 
 const Navbar = () => {
   const router = useRouter();
-  const {data: session} = authClient.useSession();
-  
-  const user = session?.user!;
-  const {id, image} = user;
 
-  const redirectToProfile = () => router.push(`/profile/${id}`)
+//   const {data: session} = authClient.useSession()
 
-  const handleLogOut = () => authClient.signOut()
+//   const user = session?.user;
+//   const {id, image} = user;
+
+const session = dummySession;
+
+const {user} = session;
+const {id, image} = user;
+
+  const goToProfile = () => router.push(`/profile/${id}`)
+
   return (
     <header className='navbar'>
         <nav>
-            <ActionButton
-                image={image || "/assets/icons/logo.svg"}
-                alt="logo"
-                size={32} 
-                href="/"
-                noImgClass
-            >
+            <Link href="/">
+                <Img
+                    src="/assets/icons/logo.svg"
+                    alt="logo"
+                    size={32}
+                    noClass
+                />
                 <h1> ScreenCast </h1>
-            </ActionButton>
-            {user && (
+            </Link>
+            {user ? (
                 <figure>
                     <ActionButton
-                        image={image || "/assets/images/dummy.jpg"}
+                        src={image || "/assets/images/dummy.jpg"}
                         size={36} 
                         alt="user"
                         imgClassName="aspect-square"
-                        action={redirectToProfile}
+                        action={goToProfile}
                     >
                     </ActionButton>
                     <ActionButton
-                        image="/assets/icons/logout.svg"
+                        src="/assets/icons/logout.svg"
                         size={24} 
                         alt="logout"
                         imgClassName="rotate-180"
@@ -47,6 +53,10 @@ const Navbar = () => {
                     >
                     </ActionButton>
                 </figure>
+            ) : (
+                <button onClick={()=> router.push('/sign-in')}>
+                    <span>Sign In</span>
+                </button>
             )}
         </nav>
     </header>

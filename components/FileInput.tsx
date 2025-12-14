@@ -1,7 +1,12 @@
 'use client'
 
 import Image from 'next/image'
-import { ChangeEvent } from 'react'
+import {DragEvent, useState } from 'react'
+
+//for thumbnail suggestion cards component
+import { useFileInput } from '@/lib/hooks/useFileInput';
+import { MAX_THUMBNAIL_SIZE} from '@/constants';
+import { cn } from '@/lib/utils';
 
 const FileInput = ({
   id,
@@ -12,19 +17,30 @@ const FileInput = ({
   previewUrl,
   inputRef,
   onChange,
+  onFileDrop,
   onReset,
-  handleError
-}: FileInputProps & {handleError: (message:string)=> void}) => { 
+  handleError,
+}: FileInputProps & {handleError: (message:string)=> void, onFileDrop: (e: DragEvent<HTMLElement>)=> void}) => { 
+   const {handleUsePreviousThumbnail,previousThumbnails} = useFileInput(MAX_THUMBNAIL_SIZE);
 
-  const handleFileChange =(e: ChangeEvent<HTMLInputElement>)=> {
+  const [isDraggedOver, setIsDraggedOver] = useState(false);
+
+  const handleFileChange =(fn: void)=> {
     try {
-      onChange(e);
+      fn;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : error;
       handleError(errorMessage as string)
       console.log(error);
     }
   }
+
+  const UploadTrigger = ({text}: {text: string})=> (
+    <figure onClick={()=> inputRef.current?.click()} onDragOver={() => setIsDraggedOver(true)} onDrop={(e) => handleFileChange(onFileDrop(e))}>
+      <Image src="/assets/icons/upload.svg" alt="upload" width={24} height={24} hidden={isDraggedOver}/>
+      <p className={cn({'bg-gray-300': isDraggedOver})}>{}{isDraggedOver ? "Release file..." : text}</p>
+    </figure>
+  )
 
   return (
     <section className='file-input'>
@@ -34,18 +50,26 @@ const FileInput = ({
         type='file'
         ref={inputRef}
         accept={accept}
-        onChange={handleFileChange}
+        onChange={(e) => handleFileChange(onChange(e))}
         onReset={onReset}
         hidden
       />
 
-      {!previewUrl ? (
-        <figure onClick={()=> inputRef.current?.click()}>
-          <Image src="/assets/icons/upload.svg" alt="upload" width={24} height={24}/>
-          <p>Click to upload your {label}</p>
-        </figure>
+      {!previewUrl ? type === "video" ? (
+        <UploadTrigger text={`Upload or Drop a ${label} file`}/>
       ):(
-        <div className="">
+        <section className="thumbnail-examples">
+          <ul>
+            <UploadTrigger text={"Upload or Drop"}/>
+            {previousThumbnails.length > 0 && previousThumbnails?.map(tnUrl => (
+              <div key= {tnUrl} onClick={()=> handleUsePreviousThumbnail(tnUrl)}>
+                <Image src={tnUrl}alt="thumbnail" fill/>
+              </div>
+            ))}
+          </ul>
+        </section>
+      ):(
+        <div>
           {type === "video" ? <video src={previewUrl} controls/> : <Image src={previewUrl} alt={type} fill/>}
           <button type='button' onClick={onReset}>
             <Image src="/assets/icons/close.svg" alt="close" width={16} height={16}/>
@@ -53,6 +77,29 @@ const FileInput = ({
           <p>{file?.name}</p>
         </div>
       )}
+    </section>
+  )
+}
+
+
+const ThumbnailsSuggestionCards = ({
+  onClick
+}: {onClick: () => void}) => {
+  const {handleUsePreviousThumbnail,previousThumbnails} = useFileInput(MAX_THUMBNAIL_SIZE);
+
+  return (
+    <section className="thumbnail-examples">
+      <ul>
+        <figure onClick={onClick}>
+          <Image src="/assets/icons/upload.svg" alt="upload" width={24} height={24}/>
+          <p>Upload/Drop</p>
+        </figure>
+        {previousThumbnails.length > 0 && previousThumbnails?.map(tnUrl => (
+          <div key= {tnUrl} onClick={()=> handleUsePreviousThumbnail(tnUrl)}>
+            <Image src={tnUrl}alt="thumbnail" fill/>
+          </div>
+        ))}
+      </ul>
     </section>
   )
 }

@@ -4,6 +4,7 @@ import {FileInput, FormField} from "@/components"
 import { 
   MAX_THUMBNAIL_SIZE, 
   MAX_VIDEO_SIZE, 
+  dummyVideoCardProps,
   visibilities 
 } from "@/constants";
 import { useFileInput } from "@/lib/hooks/useFileInput";
@@ -20,7 +21,7 @@ import {
   getVideoUploadUrl, 
   saveVideoDetails 
 } from "@/lib/actions/video";
-import { uploadFileToBunny } from "@/lib/helper/uploadToBunny";
+import { uploadFileToBunny } from "@/lib/helper/upload/uploadToBunny";
 import { useRouter } from "next/navigation";
 
 const page = () => {
@@ -80,6 +81,18 @@ const page = () => {
     checkForRecordedVideo()
   }, [video])
 
+  // useEffect(()=> {
+  //   (async function () {
+  //     const uploadedThumbnails = await getUploadedThumbnails();
+  //     if(uploadedThumbnails) {
+  //       setThumbnailExamples(uploadedThumbnails);
+  //     }else {
+  //       const exampleThumbnails = dummyVideoCardProps.map(cardProp => ({thumbnailUrl: cardProp.thumbnailUrl}));
+  //       setThumbnailExamples(exampleThumbnails);
+  //     }
+  //   })();
+  // },[])
+
   const handleInputChange = (e: ChangeEvent<HTMLFormElement>) => {
     const {name, value} = e.target; 
     setFormData(prev=> ({...prev, [name]: value}))
@@ -94,9 +107,9 @@ const page = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      if(!video.file || !thumbnail.file) setError('Please upload a video and thumbnail');
+      if(!video.file || (!thumbnail.file || !thumbnail.previewUrl)) setError('Please upload a video and thumbnail');
       if(!formData.title || !formData.description) setError("Please fill in all the details");
-      
+              
       //Getting video upload url
       const {
         videoId,
@@ -109,8 +122,9 @@ const page = () => {
       //Upload video to bunny
       await uploadFileToBunny(video.file!, videoUploadUrl, videoAccessKey);
 
+      let thumbnailCdnURL: string ="";
 
-      
+      if(thumbnail.file) {
       //Getting thumbnail upload url
       const {
         uploadUrl: thumbnailUploadUrl, 
@@ -120,17 +134,22 @@ const page = () => {
       
       if(!thumbnailUploadUrl || !thumbnailAccessKey || !thumbnailCdnUrl) throw new Error("Failed to get thumbnail upload credentials");
 
+      thumbnailCdnURL = thumbnailCdnUrl;
+
       console.log("got thumbnail upload url")
 
       //Upload thumbnail to bunny
       await uploadFileToBunny(thumbnail.file!, thumbnailUploadUrl, thumbnailAccessKey);
 
       console.log("up to bunny")
-
+      }else {
+        thumbnailCdnURL = thumbnail.previewUrl!;
+      }
+      
       //Save video details to to bunny and then db
       const {userId, videoId: id} = await saveVideoDetails({
         videoId,
-        thumbnailUrl: thumbnailCdnUrl,
+        thumbnailUrl: thumbnailCdnURL,
         ...formData,
         duration: videoDuration
       });
@@ -180,7 +199,7 @@ const page = () => {
         />
         <FileInput
           id="video"
-          label="video"
+          label="Video"
           type="video"
           accept="video/*"
           file={video.file}
@@ -189,10 +208,11 @@ const page = () => {
           onChange={video.handleFileChange}
           onReset={video.resetFile}
           handleError={handleFileChangeError}
+          onFileDrop = {video.handleFileDrop}
         /> 
         <FileInput
           id="thumbnail"
-          label="thumbnail"
+          label="Thumbnail"
           type="image"
           accept="image/*"
           file={thumbnail.file}
@@ -201,6 +221,7 @@ const page = () => {
           onChange={thumbnail.handleFileChange}
           onReset={thumbnail.resetFile}
           handleError={handleFileChangeError}
+          onFileDrop = {thumbnail.handleFileDrop}
         />
         <FormField
           id="visibility"

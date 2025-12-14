@@ -4,15 +4,15 @@ import { auth } from "@/lib/auth";
 import aj, { createMiddleware, detectBot, shield } from "./lib/arcjet";
 
 export async function middleware(request: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  // const session = await auth.api.getSession({
+  //   headers: await headers(),
+  // });
 
-  if (!session) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
+  // if (!session && request.nextUrl.pathname !== "/" && !(request.nextUrl.pathname.startsWith('/video'))) {
+  //   return NextResponse.redirect(new URL("/sign-in", request.url));
+  // }
 
-  return NextResponse.next();
+  // return NextResponse.next();
 }
 
 const validate = aj
@@ -30,8 +30,8 @@ const validate = aj
 
 export default createMiddleware(validate);
 
-export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sign-in|assets).*)"],
-};
+// export const config = {
+//   matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sign-in|video|assets$).*)"],
+// };
 
 // // ⨯ [TypeError: Body is unusable: Body has already been read]

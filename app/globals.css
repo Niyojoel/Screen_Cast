@@ -256,12 +256,42 @@
       @apply text-gray-100 text-base font-medium;
     }
 
+    input {
+      @apply w-full;
+    }
+    
     figure {
       @apply border border-gray-20 rounded-18 text-gray-100 py-1.5 px-3.5 flex justify-center items-center w-full h-40 gap-2.5 cursor-pointer;
 
       p {
         @apply text-dark-100 text-base font-medium;
       }
+    }
+
+    .thumbnail-examples {
+      @apply w-full flex gap-2.5 items-center overflow-x-auto scroll-smooth;
+
+      figure {
+        @apply w-full flex-col flex-1 h-30 gap-2.5;
+      }
+
+      ul {
+        @apply w-fit flex-3 flex items-center gap-2.5;
+
+        div {
+          @apply rounded-xl w-[160px] h-30 cursor-pointer overflow-hidden;
+
+          img {
+            @apply object-cover;
+          }
+        }
+      }
+    }
+
+    ::-webkit-scrollbar {
+      appearance: none;
+      background: transparent;
+      width: 0px;
     }
 
     div {
@@ -308,14 +338,14 @@
 
       a {
         @apply flex items-center gap-2.5;
-
+ 
         h1 {
           @apply text-xl font-black text-blue-100 font-satoshi -tracking-[0.1px];
         }
       }
 
       figure {
-        @apply flex items-center gap-2.5;
+        @apply flex items-center gap-3;
       }
     }
   }

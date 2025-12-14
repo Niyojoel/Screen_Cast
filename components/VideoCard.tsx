@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import {BtnImg, CopyBtn} from '.'
+import {Img, CopyBtn} from '.'
 
 const VideoCard = ({
   id,
@@ -20,8 +20,8 @@ const VideoCard = ({
       <article className=''>
           <div className="">
             <figure>
-              <BtnImg 
-                image={userImg}
+              <Img 
+                src={userImg}
                 alt="avatar" 
                 size={34} 
                 className='aspect-square'
@@ -32,7 +32,12 @@ const VideoCard = ({
               </figcaption>
             </figure>
             <aside>
-              <Image src="/assets/icons/eye.svg" alt="views" width={16} height={16} />
+              <Img 
+                src="/assets/icons/eye.svg"
+                alt="views" 
+                size={16} 
+                className='aspect-square'
+              />
               <span>{views}</span>
             </aside>
           </div>

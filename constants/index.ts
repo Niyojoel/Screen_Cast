@@ -3,10 +3,10 @@ export const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024;
 
 export const BUNNY = {
   STREAM_BASE_URL: "https://video.bunnycdn.com/library",
-  STORAGE_BASE_URL: "https://uk.storage.bunnycdn.com/screen-cast",
-  CDN_URL: "https://Niyo-screen-cast.b-cdn.net", //change storage bucket name and the cdn url 
+  STORAGE_BASE_URL: "https://uk.storage.bunnycdn.com/niyo-screencast",
+  CDN_URL: "https://niyo-screencast.b-cdn.net",
   EMBED_URL: "https://iframe.mediadelivery.net/embed",
-  TRANSCRIPT_URL: "https://vz-18c2de7c-cdb.b-cdn.net",
+  TRANSCRIPT_URL: "https://vz-509c363d-2c5.b-cdn.net",
 };
 
 export const emojis = ["😂", "😍", "👍"];
@@ -49,7 +49,7 @@ export const DEFAULT_RECORDING_CONFIG = {
 
 export const dummyVideoCardProps: Array<VideoCardProps> = [
   {
-    id: "1",
+    id: "1jkewgvow34574",
     title: "ScreenCast Messaging functionality",
     thumbnailUrl: "/assets/thumbnails/img2.jpg",
     createdAt: new Date('2025-05-01'),
@@ -58,5 +58,57 @@ export const dummyVideoCardProps: Array<VideoCardProps> = [
     views: 103,
     visibility: "public",
     duration: 156,
-  }
+  },
+  {
+    id: "2uoty3580yn09",
+    title: "ScreenCast API Debugging",
+    thumbnailUrl: "/assets/thumbnails/img3.jpg",
+    createdAt: new Date('2025-10-13'),
+    userImg: "/assets/images/dummy.jpg",
+    username: "Adrian",
+    views: 33,
+    visibility: "public",
+    duration: 131,
+  },
+  {
+    id: "3thek763256n6jbl",
+    title: "Addressing Geo-Spot UI functionality",
+    thumbnailUrl: "/assets/thumbnails/img5.jpg",
+    createdAt: new Date('2025-12-05'),
+    userImg: "/assets/images/dummy.jpg",
+    username: "Steve",
+    views: 11,
+    visibility: "public",
+    duration: 200,
+  },
+  {
+    id: "kk892y46kjhgfdfkj",
+    title: "Addressing Geo-Spot UI functionality",
+    thumbnailUrl: "/assets/thumbnails/img4.jpg",
+    createdAt: new Date('2025-12-05'),
+    userImg: "/assets/images/dummy.jpg",
+    username: "Steve",
+    views: 11,
+    visibility: "public",
+    duration: 200,
+  },
+  {
+    id: "t3783745bbjkf8snba",
+    title: "Addressing Geo-Spot UI functionality",
+    thumbnailUrl: "/assets/thumbnails/img6.jpg",
+    createdAt: new Date('2025-12-05'),
+    userImg: "/assets/images/dummy.jpg",
+    username: "Steve",
+    views: 11,
+    visibility: "public",
+    duration: 200,
+  },
 ]
+
+export const dummySession = {
+    user:{
+        id: "6523jilmkjy48jbsn",
+        name: "Jose Ayomide Folarin",
+        image: "/assets/images/dummy.jpg"
+    },
+}

@@ -1,3 +1,5 @@
+'use client'
+
 import { ICONS } from '@/constants'
 import { useScreenRecording } from '@/lib/hooks/useScreenRecording'
 import Image from 'next/image'
@@ -5,11 +7,15 @@ import { useRouter } from 'next/navigation'
 import React, { useRef, useState } from 'react'
 import ActionButton from './ActionButton'
 import { duration } from 'drizzle-orm/gel-core'
+import { authClient } from '@/lib/authClient'
+import toast from 'react-hot-toast'
 
 const RecordStream = () => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const videoRef= useRef<HTMLVideoElement>(null)
+
+  const {data: session} = authClient.useSession();
 
   const {
     isRecording,
@@ -59,16 +65,23 @@ const RecordStream = () => {
     setIsOpen(false);
   }
 
+  const handleGuestUser = () => {
+    router.push('/sign-in')
+    toast('You need to sign in to access recording features');
+  }
+
   return (
     <div className="record">
         <ActionButton
             className='primary-btn'
-            action={handleOpenModal}
-            image={ICONS.record}
+            action={session?.user ? handleOpenModal : handleGuestUser}
+            src={ICONS.record}
             alt="record"
             size={16}
         >
-            <span>Record a video</span>
+            <span className='truncate'>
+                Record a video
+            </span>
         </ActionButton>
         {isOpen && (
             <section className="dialog">
@@ -78,7 +91,7 @@ const RecordStream = () => {
                         <h3>Screen Recording</h3>
                         <ActionButton
                             action={handleCloseModal}
-                            image={ICONS.close}
+                            src={ICONS.close}
                             alt="close"
                             size={20}
                         />
@@ -104,7 +117,7 @@ const RecordStream = () => {
                             <ActionButton
                                 className='record-start'
                                 action={handleStartRecording}
-                                image={ICONS.record}
+                                src={ICONS.record}
                                 alt="record"
                             >
                                 Record
@@ -114,7 +127,7 @@ const RecordStream = () => {
                             <ActionButton
                                 className='record-stop'
                                 action={handleStopRecording}
-                                image={ICONS.record}
+                                src={ICONS.record}
                                 alt="record"
                             >
                                 Stop Recording
@@ -122,18 +135,17 @@ const RecordStream = () => {
                         )}
                         {recordedVideoUrl && (
                             <>
-                                <ActionButton
+                                <button
                                     className='record-again'
-                                    action={handleRecordAgain}
-                                    alt="record"
+                                    onClick={handleRecordAgain}
                                 >
                                     Record Again
-                                </ActionButton>
+                                </button>
 
                                 <ActionButton
                                     className='record-upload'
                                     action={handleGoToUpload}
-                                    image={ICONS.upload}
+                                    src={ICONS.upload}
                                     alt="upload"
                                 >
                                     Continue to Upload

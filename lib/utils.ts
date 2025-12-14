@@ -15,16 +15,14 @@ export const updateURLParams = (
 ): string => {
   const params = new URLSearchParams(currentParams.toString());
 
-  // Process each parameter update
   Object.entries(updates).forEach(([name, value]) => {
-    if (value) {
+    if(value) {
       params.set(name, value);
     } else {
       params.delete(name);
     }
-  });
-
-  return `${basePath}?${params.toString()}`;
+  })
+  return `${basePath}?${params.toString()}`
 };
 
 // Get env helper function
@@ -114,23 +112,29 @@ export const getOrderByClause = (filter?: string) => {
 };
 
 export const generatePagination = (currentPage: number, totalPages: number) => {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  //if pages is not more than 7
+  if(totalPages <= 7) {
+    return Array.from({length : totalPages}, (_, i) => i + 1)
   }
-  if (currentPage <= 3) {
+
+  //if current page is near the starting page, maybe 3
+  if(currentPage <= 3) {
     return [1, 2, 3, 4, 5, "...", totalPages];
   }
-  if (currentPage >= totalPages - 2) {
+
+  //if current page is near the last page, maybe 5
+  if(currentPage >= totalPages - 2) {
     return [
-      1,
-      "...",
-      totalPages - 4,
-      totalPages - 3,
-      totalPages - 2,
-      totalPages - 1,
-      totalPages,
-    ];
+      1, 
+      "...", 
+      totalPages - 4, 
+      totalPages - 3, 
+      totalPages - 2, 
+      totalPages - 1, 
+      totalPages
+    ]
   }
+  //if current page is somewhere in the middle of the total pages
   return [
     1,
     "...",
@@ -138,8 +142,8 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
     currentPage,
     currentPage + 1,
     "...",
-    totalPages,
-  ];
+    totalPages
+  ]
 };
 
 export const getMediaStreams = async (

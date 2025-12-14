@@ -130,12 +130,23 @@ export const getAllVideos = withErrorHandling(async (
   pageSize: number = 8,
 ) => {
   const session = await auth.api.getSession({ headers: await headers() })
-  const currentUserId = session?.user.id;
 
-  const canSeeTheVideos = or(
-      eq(videos.visibility, 'public'),
-      eq(videos.userId, currentUserId!),
+  let currentUserId;
+  let canSeeTheVideos;
+  
+  if(session?.user){ 
+    currentUserId = session?.user.id;
+
+    canSeeTheVideos = or(
+        eq(videos.visibility, 'public'),
+        eq(videos.userId, currentUserId!),
+    );
+  }
+
+  canSeeTheVideos = or(
+    eq(videos.visibility, 'public'),
   );
+
 
   const whereCondition = searchQuery.trim()
       ? and(
@@ -190,13 +201,13 @@ export const getTranscript = withErrorHandling(async (videoId: string) => {
 });
 
 export const incrementVideoViews = withErrorHandling(
-  async (videoId: string) => {
+  async (id: string) => {
     await db
       .update(videos)
       .set({ views: sql`${videos.views} + 1`, updatedAt: new Date() })
-      .where(eq(videos.videoId, videoId));
+      .where(eq(videos.id, id));
 
-    revalidatePaths([`/video/${videoId}`]);
+    revalidatePaths([`/video/${id}`]);
     return {};
   }
 );

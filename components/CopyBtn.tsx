@@ -1,12 +1,13 @@
 "use client"
 
 import Image from 'next/image'
-import React, {useState, MouseEvent } from 'react'
+import React, {useState, MouseEvent, SyntheticEvent } from 'react'
+import { Img } from './ActionButton';
 
-const CopyBtn = ({id, size=18, className}: CopyBtnProps) => {
+const CopyBtn = ({id, size = 18, className}: CopyBtnProps) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = (e: MouseEvent) => {
+  const handleCopy = (e: MouseEvent | SyntheticEvent) => {
     e.stopPropagation();
     e.preventDefault();
     if(typeof window !== undefined || null) {
@@ -25,11 +26,10 @@ const CopyBtn = ({id, size=18, className}: CopyBtnProps) => {
       disabled={copied} 
       onClick={handleCopy}
     >
-      {<Image 
+      {<Img 
         src={`/assets/icons/${!copied ? 'link.svg' : 'checkmark.svg'}`} 
         alt="copy" 
-        width={size} 
-        height={size}
+        size={size} 
       />}
     </button>
   )
