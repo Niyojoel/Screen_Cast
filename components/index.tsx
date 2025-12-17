@@ -13,3 +13,4 @@ export {default as ActionButton} from "./ActionButton";
 export {Img} from "./ActionButton";
 export {default as Pagination} from "./Pagination";
 export {default as RecordStream} from "./RecordStream";
+export {default as Modal} from "./Modal";

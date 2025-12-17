@@ -7,6 +7,8 @@ const page = async ({searchParams}: SearchParams) => {
 
   const {videos, pagination} = await getAllVideos(query, filter, Number(page) || 1)
 
+  window.addEventListener('onload', () => console.log("window loaded"))
+  
   return (
     <main className='wrapper page'>
       <SharedHeader subHeader="Public Library" title="All Videos"/>

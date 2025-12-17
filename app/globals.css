@@ -56,6 +56,10 @@
     /* font-family: var(--font-geist-karla); */
   }
 
+  p, span {
+    font-weight: 200;
+  }
+
   select {
     /* for Firefox */
     -moz-appearance: none;
@@ -248,9 +252,21 @@
     }
   }
 
+  .no-show {
+    @apply absolute z-0 invisible opacity-0 pointer-events-none select-none;
+  }
+
+  .show {
+    @apply relative visible z-10 opacity-100 pointer-events-auto; 
+  }
+
+  .dropped-image {
+    @apply absolute object-contain;
+  }
+
   /* file input  */
   .file-input {
-    @apply flex flex-col gap-2;
+    @apply relative flex flex-col gap-2;
 
     label {
       @apply text-gray-100 text-base font-medium;
@@ -268,18 +284,22 @@
       }
     }
 
-    .thumbnail-examples {
-      @apply w-full flex gap-2.5 items-center overflow-x-auto scroll-smooth;
+    .gap {
+      @apply gap-2.5;
+    }
+
+    .previous-thumbnails {
+      @apply w-full flex items-center overflow-x-auto scroll-smooth;
 
       figure {
-        @apply w-full flex-col flex-1 h-30 gap-2.5;
+        @apply relative w-full md:min-w-[250px] min-w-[200px] md:flex-row flex-col h-30 gap-2.5;
       }
 
       ul {
-        @apply w-fit flex-3 flex items-center gap-2.5;
+        @apply relative w-fit flex items-center gap-2.5;
 
         div {
-          @apply rounded-xl w-[160px] h-30 cursor-pointer overflow-hidden;
+          @apply relative rounded-xl bg-gray-50 w-[160px] h-30 hover:scale-[101%] cursor-pointer transition-all overflow-hidden;
 
           img {
             @apply object-cover;
@@ -295,7 +315,7 @@
     }
 
     div {
-      @apply relative w-full h-64 rounded-18 overflow-hidden;
+      @apply w-full h-64 rounded-18 overflow-hidden;
 
       video {
         @apply w-full h-full object-contain;
@@ -376,76 +396,83 @@
     .primary-btn {
       @apply py-2.5 px-5 flex items-center gap-2.5 text-sm font-semibold text-white bg-pink-100 rounded-4xl;
     }
+  }
 
-    .dialog {
-      @apply fixed inset-0 flex items-center justify-center z-50;
+  .recording-elements {
+    
+    figure {
+      @apply flex justify-between items-center mb-4;
 
-      .overlay-record {
-        @apply absolute inset-0 bg-gray-40 backdrop-blur-xs shadow-20;
+      h3 {
+        @apply text-xl font-bold text-dark-100;
       }
 
-      .dialog-content {
-        @apply relative bg-white rounded-20 p-6 shadow-lg w-full max-w-lg z-10;
+      button {
+        @apply p-2 rounded-full hover:bg-gray-20;
+      }
+    }
 
-        figure {
-          @apply flex justify-between items-center mb-4;
+    section {
+      @apply w-full rounded-18 flex items-center justify-center overflow-hidden;
 
-          h3 {
-            @apply text-xl font-bold text-dark-100;
-          }
+      article {
+        @apply flex flex-col items-center gap-2;
 
-          button {
-            @apply p-2 rounded-full hover:bg-gray-20;
-          }
+        div {
+          @apply w-4 h-4 bg-red-500 rounded-full animate-pulse;
         }
 
-        section {
-          @apply w-full rounded-18 flex items-center justify-center overflow-hidden;
-
-          article {
-            @apply flex flex-col items-center gap-2;
-
-            div {
-              @apply w-4 h-4 bg-red-500 rounded-full animate-pulse;
-            }
-
-            span {
-              @apply text-dark-100 text-base font-medium;
-            }
-
-            video {
-              @apply w-full h-full object-contain;
-            }
-
-            p {
-              @apply text-base font-medium text-gray-100;
-            }
-          }
+        span {
+          @apply text-dark-100 text-base font-medium;
         }
 
-        .record-box {
-          @apply flex justify-center gap-4 mt-4;
-
-          .record-start {
-            @apply py-2.5 px-6 bg-pink-100 text-white rounded-4xl font-medium flex items-center gap-2;
-          }
-
-          .record-stop {
-            @apply py-2.5 px-6 bg-red-500 text-white rounded-4xl font-medium flex items-center gap-2;
-          }
-
-          .record-again {
-            @apply py-2.5 px-6 bg-gray-100 text-white rounded-4xl font-medium;
-          }
-
-          .record-upload {
-            @apply py-2.5 px-6 bg-pink-100 text-white rounded-4xl font-medium flex items-center gap-2;
-
-            img {
-              @apply brightness-0 invert;
-            }
-          }
+        video {
+          @apply w-full h-full object-contain;
         }
+
+        p {
+          @apply text-base font-medium text-gray-100;
+        }
+      }
+    }
+
+    .record-box {
+      @apply flex justify-center gap-4 mt-4;
+
+      .record-start {
+        @apply py-2.5 px-6 bg-pink-100 text-white rounded-4xl font-medium flex items-center gap-2;
+      }
+
+      .record-stop {
+        @apply py-2.5 px-6 bg-red-500 text-white rounded-4xl font-medium flex items-center gap-2;
+      }
+
+      .record-again {
+        @apply py-2.5 px-6 bg-gray-100 text-white rounded-4xl font-medium;
+      }
+
+      .record-upload {
+        @apply py-2.5 px-6 bg-pink-100 text-white rounded-4xl font-medium flex items-center gap-2;
+
+        img {
+          @apply brightness-0 invert;
+        }
+      }
+    }
+  }
+
+  .dialog-content {
+    @apply relative bg-white rounded-20 p-6 shadow-lg w-full max-w-lg z-10;
+
+    figure {
+      @apply flex justify-between items-center mb-4;
+
+      h3 {
+        @apply text-xl font-bold text-dark-100;
+      }
+
+      button {
+        @apply p-2 rounded-full hover:bg-gray-20;
       }
     }
   }
@@ -476,7 +503,7 @@
       aside {
         @apply flex items-center gap-2 md:gap-4;
 
-        a {
+        button {
           @apply py-2.5 px-5 flex items-center gap-2.5 text-sm font-semibold text-dark-100 border border-gray-25 rounded-4xl;
 
           span {

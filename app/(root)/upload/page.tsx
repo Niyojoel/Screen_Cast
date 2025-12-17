@@ -4,7 +4,6 @@ import {FileInput, FormField} from "@/components"
 import { 
   MAX_THUMBNAIL_SIZE, 
   MAX_VIDEO_SIZE, 
-  dummyVideoCardProps,
   visibilities 
 } from "@/constants";
 import { useFileInput } from "@/lib/hooks/useFileInput";
@@ -15,14 +14,14 @@ import {
   useEffect, 
   useState
 } from "react";
+import { useRouter } from "next/navigation";
 import {LoaderPinwheel} from "lucide-react";
 import { 
   getThumbnailUploadUrl, 
   getVideoUploadUrl, 
-  saveVideoDetails 
+  saveVideoDetails,
 } from "@/lib/actions/video";
-import { uploadFileToBunny } from "@/lib/helper/upload/uploadToBunny";
-import { useRouter } from "next/navigation";
+import { formValues, uploadFileToBunny } from "@/lib/utils";
 
 const page = () => {
   const router = useRouter();
@@ -81,22 +80,27 @@ const page = () => {
     checkForRecordedVideo()
   }, [video])
 
-  // useEffect(()=> {
-  //   (async function () {
-  //     const uploadedThumbnails = await getUploadedThumbnails();
-  //     if(uploadedThumbnails) {
-  //       setThumbnailExamples(uploadedThumbnails);
-  //     }else {
-  //       const exampleThumbnails = dummyVideoCardProps.map(cardProp => ({thumbnailUrl: cardProp.thumbnailUrl}));
-  //       setThumbnailExamples(exampleThumbnails);
-  //     }
-  //   })();
-  // },[])
-
   const handleInputChange = (e: ChangeEvent<HTMLFormElement>) => {
     const {name, value} = e.target; 
-    setFormData(prev=> ({...prev, [name]: value}))
+    setFormData(prev=> ({...prev, [name]: value}));
   }
+  
+  useEffect(()=> {
+  //storing form input values to session storage on change
+    const storeFormTimer = setTimeout(()=> {
+      const addedFormValues = formValues({...formData});
+      sessionStorage.setItem('formValues', JSON.stringify(addedFormValues));
+    }, 3000)
+  
+    return ()=> clearTimeout(storeFormTimer);
+  }, [formData])
+
+  useEffect(() => {
+    const storedStrings = sessionStorage.getItem('formValues');
+    const storedFormValues: Record<PropertyKey, string> = storedStrings ? JSON.parse(sessionStorage.getItem('formValues')!) : null;
+    
+    if(storedFormValues) setFormData(prev => ({...prev, ...storedFormValues}))
+  },[])
 
   //catch and alert error in handleFileChange function
   const handleFileChangeError = (message: string)=> {
@@ -166,11 +170,11 @@ const page = () => {
   }
 
   return (
-    <main className="wrapper-md upload-page ">
+    <main className="wrapper-md upload-page">
       <h1>Upload a video</h1>
       {error && <div className="error-field">{error}</div>}
       <form 
-        className="rounded-20 shadow-10 gap-6 w-full flex flex-col px-5 py-7.5" 
+        className="rounded-20 shadow-10 gap-6 w-full flex flex-col px-5 py-7.5"
         onSubmit={handleSubmit}
       >
         <FormField
@@ -209,6 +213,9 @@ const page = () => {
           onReset={video.resetFile}
           handleError={handleFileChangeError}
           onFileDrop = {video.handleFileDrop}
+          previewBoxRef={video.previewBoxRef}
+          previousThumbnails = {[]}
+          handleUsePreviousThumbnail = {()=> null}
         /> 
         <FileInput
           id="thumbnail"
@@ -222,6 +229,9 @@ const page = () => {
           onReset={thumbnail.resetFile}
           handleError={handleFileChangeError}
           onFileDrop = {thumbnail.handleFileDrop}
+          previewBoxRef={thumbnail.previewBoxRef}
+          previousThumbnails = {thumbnail.previousThumbnails}
+          handleUsePreviousThumbnail = {thumbnail.handleUsePreviousThumbnail}
         />
         <FormField
           id="visibility"

@@ -2,8 +2,7 @@
 
 import { ActionButton, Img } from '.'
 import { authClient } from '@/lib/authClient'
-import { useRouter} from 'next/navigation'
-import handleLogOut from '@/lib/helper/auth/auth'
+import { useRouter, redirect} from 'next/navigation'
 import { dummySession } from '@/constants'
 import Link from 'next/link'
 
@@ -14,6 +13,14 @@ const Navbar = () => {
 
 //   const user = session?.user;
 //   const {id, image} = user;
+
+const handleLogOut = () => authClient.signOut({
+    fetchOptions: {
+        onSuccess: () => {
+            redirect('/')
+        }
+    }
+})
 
 const session = dummySession;
 

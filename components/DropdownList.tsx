@@ -8,7 +8,7 @@ const DropdownList = ({
     options, 
     selectedOption, 
     onOptionSelect, 
-    triggerElement
+    filterTrigger
 }: DropdownListProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -20,7 +20,7 @@ const DropdownList = ({
   return (
     <div className='relative'>
         <div className="cursor-pointer" onClick={()=> setIsOpen(!isOpen)}>
-            {triggerElement}
+            {filterTrigger}
         </div>
         {isOpen && (
             <ul className='dropdown'>

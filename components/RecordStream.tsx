@@ -9,6 +9,7 @@ import ActionButton from './ActionButton'
 import { duration } from 'drizzle-orm/gel-core'
 import { authClient } from '@/lib/authClient'
 import toast from 'react-hot-toast'
+import {Modal} from './'
 
 const RecordStream = () => {
   const router = useRouter();
@@ -30,7 +31,7 @@ const RecordStream = () => {
   const handleOpenModal = () => setIsOpen(true);
 
   const handleCloseModal = () => {
-    setIsOpen(true);
+    setIsOpen(false);
     resetRecording();
   };
 
@@ -70,6 +71,68 @@ const RecordStream = () => {
     toast('You need to sign in to access recording features');
   }
 
+  const dialogContent = () => (
+    <div className='recording-elements'>
+        <section>
+            {isRecording ? (
+                <article>
+                    <div/>
+                    <span>
+                        Recording in progress
+                    </span>
+                </article>
+            ): recordedVideoUrl ? (
+                <video src={recordedVideoUrl} ref={videoRef} controls/>
+            ) : (
+                <p>
+                    Click record to start recording your screen
+                </p>
+            )}
+        </section>
+        <div className="record-box">
+            {(!isRecording && !recordedVideoUrl) && (
+                <ActionButton
+                    className='record-start'
+                    action={handleStartRecording}
+                    src={ICONS.record}
+                    alt="record"
+                >
+                    Record
+                </ActionButton>
+            )}
+            {isRecording && (
+                <ActionButton
+                    className='record-stop'
+                    action={handleStopRecording}
+                    src={ICONS.record}
+                    alt="record"
+                >
+                    Stop Recording
+                </ActionButton>
+            )}
+            {recordedVideoUrl && (
+                <>
+                    <button
+                        className='record-again'
+                        onClick={handleRecordAgain}
+                    >
+                        Record Again
+                    </button>
+
+                    <ActionButton
+                        className='record-upload'
+                        action={handleGoToUpload}
+                        src={ICONS.upload}
+                        alt="upload"
+                    >
+                        Continue to Upload
+                    </ActionButton>
+                </>
+            )}
+        </div>
+    </div>
+  )
+
   return (
     <div className="record">
         <ActionButton
@@ -84,77 +147,11 @@ const RecordStream = () => {
             </span>
         </ActionButton>
         {isOpen && (
-            <section className="dialog">
-                <div className="overlay-record" onClick={handleCloseModal}/>
-                <div className="dialog-content">
-                    <figure>
-                        <h3>Screen Recording</h3>
-                        <ActionButton
-                            action={handleCloseModal}
-                            src={ICONS.close}
-                            alt="close"
-                            size={20}
-                        />
-                    </figure>
-                    <section>
-                        {isRecording ? (
-                            <article>
-                                <div/>
-                                <span>
-                                    Recording in progress
-                                </span>
-                            </article>
-                        ): recordedVideoUrl ? (
-                            <video src={recordedVideoUrl} ref={videoRef} controls/>
-                        ) : (
-                            <p>
-                                Click record to start recording your screen
-                            </p>
-                        )}
-                    </section>
-                    <div className="record-box">
-                        {(!isRecording && !recordedVideoUrl) && (
-                            <ActionButton
-                                className='record-start'
-                                action={handleStartRecording}
-                                src={ICONS.record}
-                                alt="record"
-                            >
-                                Record
-                            </ActionButton>
-                        )}
-                        {isRecording && (
-                            <ActionButton
-                                className='record-stop'
-                                action={handleStopRecording}
-                                src={ICONS.record}
-                                alt="record"
-                            >
-                                Stop Recording
-                            </ActionButton>
-                        )}
-                        {recordedVideoUrl && (
-                            <>
-                                <button
-                                    className='record-again'
-                                    onClick={handleRecordAgain}
-                                >
-                                    Record Again
-                                </button>
-
-                                <ActionButton
-                                    className='record-upload'
-                                    action={handleGoToUpload}
-                                    src={ICONS.upload}
-                                    alt="upload"
-                                >
-                                    Continue to Upload
-                                </ActionButton>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </section>
+            <Modal
+                closeModal={handleCloseModal}
+                dialogTitle="Screen Recording"
+                dialogContent= {dialogContent()}
+            />
         )}
     </div>
   )

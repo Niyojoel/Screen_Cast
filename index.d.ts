@@ -49,10 +49,28 @@ declare interface FileInputProps {
   file: File | null;
   previewUrl: string | null;
   inputRef: React.RefObject<HTMLInputElement | null>;
+  previewBoxRef: React.RefObject<HTMLDivElement | null>;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  handleError: (message:string)=> void;
+  onFileDrop: (e: DragEvent<HTMLElement>)=> void;
   onReset: () => void;
   type: "video" | "image";
+  handleUsePreviousThumbnail?: (filename: string) => void; 
+  previousThumbnails?: PreviousThumbnailsType[]
 }
+
+declare interface PreviousThumbnailsProps {
+  uploadTrigger: React.ReactNode;
+  previousThumbnails: PreviousThumbnailsType[];
+  uploadTriggerClass: string;
+  handleUsePreviousThumbnail: (filename: string) => void;
+}
+
+declare interface PreviousThumbnailsType {
+  base64: string | ArrayBuffer,
+  fileName: string; 
+  fileType: string;
+} 
 
 declare interface TranscriptEntry {
   time: string;
@@ -265,11 +283,17 @@ declare interface ParamsWithSearch {
   searchParams: Promise<Record<string, string | undefined>>;
 }
 
+declare interface ModalProps {
+    dialogTitle: string,
+    dialogContent: React.ReactElement,
+    closeModal: () => void,
+}
+
 declare interface DropdownListProps {
   options: string[];
   selectedOption: string;
   onOptionSelect: (option: string) => void;
-  triggerElement: ReactNode;
+  filterTrigger: ReactNode;
 }
 
 declare interface EmptyStateProps {

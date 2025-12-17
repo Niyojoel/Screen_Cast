@@ -8,6 +8,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export const uploadFileToBunny = async (file: File, uploadUrl: string, accessKey: string): Promise<void> => {
+  return await fetch(uploadUrl, {
+    method: "PUT",
+    headers: {
+      'Content-Type': file.type,
+      AccessKey: accessKey
+    },
+    body: file
+  }).then(response => {if(!response.ok) throw new Error('Upload failed')})
+}
+
 export const updateURLParams = (
   currentParams: URLSearchParams,
   updates: Record<string, string | null | undefined>,
@@ -80,7 +91,6 @@ export const apiFetch = async <T = Record<string, unknown>>(
 
   return await response.json();
 };
-
 // Higher order function to handle errors
 export const withErrorHandling = <T, A extends unknown[]>(
   fn: (...args: A) => Promise<T>
@@ -319,3 +329,32 @@ export const doesTitleOrTagMatch = (videos: any, searchQuery: string) =>
     `%${searchQuery.replace(/[-. ]/g, "").toLowerCase()}%`
   )
 );
+
+export const formValues = (formField: Record<PropertyKey, string>): Record<string, string> => {
+  let addedValue:Record<string, string>  = {};
+  Object.entries(formField).forEach(([name, value]) => {
+    if(value) {
+      addedValue[name] = value;
+    }
+  });
+  return addedValue;
+};
+
+export const base64ToFile = async ({
+  base64, 
+  fileName,
+  fileType,
+}: PreviousThumbnailsType): Promise<File> => {
+  const response = await fetch(base64 as string);
+
+  if(!response.ok) throw new Error(`Failed to fetch ${response.status} ${response.statusText}`);
+
+  const blob = await response.blob();
+
+  return new File([blob], fileName, {type: fileType})
+}
+
+export const base64ToUrl = async function (base64: string): Promise<string> { 
+  const blob = await fetch(base64).then(res => res.blob());
+  return URL.createObjectURL(blob);
+};
