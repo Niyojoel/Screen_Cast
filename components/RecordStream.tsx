@@ -10,13 +10,16 @@ import { duration } from 'drizzle-orm/gel-core'
 import { authClient } from '@/lib/authClient'
 import toast from 'react-hot-toast'
 import {Modal} from './'
+import {dummySession} from "@/constants"
 
 const RecordStream = () => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const videoRef= useRef<HTMLVideoElement>(null)
 
-  const {data: session} = authClient.useSession();
+//   const {data: session} = authClient.useSession();
+
+const session = dummySession;
 
   const {
     isRecording,
@@ -72,7 +75,7 @@ const RecordStream = () => {
   }
 
   const dialogContent = () => (
-    <div className='recording-elements'>
+    <article className='recording-elements'>
         <section>
             {isRecording ? (
                 <article>
@@ -130,7 +133,7 @@ const RecordStream = () => {
                 </>
             )}
         </div>
-    </div>
+    </article>
   )
 
   return (

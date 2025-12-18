@@ -6,8 +6,6 @@ const page = async ({searchParams}: SearchParams) => {
   const {query, filter, page} = await searchParams
 
   const {videos, pagination} = await getAllVideos(query, filter, Number(page) || 1)
-
-  window.addEventListener('onload', () => console.log("window loaded"))
   
   return (
     <main className='wrapper page'>

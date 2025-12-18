@@ -28,6 +28,9 @@ const page = () => {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [canGenerateThumbnail, setCanGenerateThumbnail] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+
   const [formData, setFormData] = useState<VideoFormValues>({
     title: "",
     tags: "",
@@ -41,6 +44,20 @@ const page = () => {
   useEffect(()=> {
     if(video.duration !== null || 0) setVideoDuration(video.duration!)
   },[video.duration])
+
+  useEffect(() => {
+    if(video.file !== null) {
+      setCanGenerateThumbnail(true)
+      setVideoFile(video.file);
+    }else {setCanGenerateThumbnail(false);}
+  }, [video.file])
+
+  useEffect(() => {
+    if(video.file !== null) {
+      setCanGenerateThumbnail(true)
+      setVideoFile(video.file);
+    }else {setCanGenerateThumbnail(false);}
+  }, [thumbnail.file])
 
   useEffect(() => {
     const checkForRecordedVideo = async()=> {
@@ -84,6 +101,8 @@ const page = () => {
     const {name, value} = e.target; 
     setFormData(prev=> ({...prev, [name]: value}));
   }
+
+  console.log(canGenerateThumbnail)
   
   useEffect(()=> {
   //storing form input values to session storage on change
@@ -101,6 +120,12 @@ const page = () => {
     
     if(storedFormValues) setFormData(prev => ({...prev, ...storedFormValues}))
   },[])
+
+  useEffect(()=> {
+    const errorTimer = setTimeout(() => error && setError(''), 3000);
+
+    return ()=> clearTimeout(errorTimer);
+  }, [error])
 
   //catch and alert error in handleFileChange function
   const handleFileChangeError = (message: string)=> {
@@ -160,6 +185,8 @@ const page = () => {
 
       console.log("saving to db")
 
+      sessionStorage.clear();
+
       router.push(`/profile/${userId}`)
 
     } catch (error) {
@@ -214,8 +241,6 @@ const page = () => {
           handleError={handleFileChangeError}
           onFileDrop = {video.handleFileDrop}
           previewBoxRef={video.previewBoxRef}
-          previousThumbnails = {[]}
-          handleUsePreviousThumbnail = {()=> null}
         /> 
         <FileInput
           id="thumbnail"
@@ -232,6 +257,9 @@ const page = () => {
           previewBoxRef={thumbnail.previewBoxRef}
           previousThumbnails = {thumbnail.previousThumbnails}
           handleUsePreviousThumbnail = {thumbnail.handleUsePreviousThumbnail}
+          handleGenerateThumbnail={thumbnail.handleGenerateThumbnail}
+          videoFile={videoFile}
+          canGenerateThumbnail={canGenerateThumbnail}
         />
         <FormField
           id="visibility"

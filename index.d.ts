@@ -56,14 +56,22 @@ declare interface FileInputProps {
   onReset: () => void;
   type: "video" | "image";
   handleUsePreviousThumbnail?: (filename: string) => void; 
-  previousThumbnails?: PreviousThumbnailsType[]
+  previousThumbnails?: PreviousThumbnailsType[],
+  handleGenerateThumbnail?: (captureTime: number, videoFile: File) => void;
 }
 
-declare interface PreviousThumbnailsProps {
+declare interface ThumbnailSuggestionsProps {
   uploadTrigger: React.ReactNode;
   previousThumbnails: PreviousThumbnailsType[];
   uploadTriggerClass: string;
   handleUsePreviousThumbnail: (filename: string) => void;
+}
+
+declare interface ThumbnailGenerateProps {
+  handleGenerateThumbnail: (captureTime: number, videoFile: File) => void;
+  videoFile: File;
+  canGenerateThumbnail: boolean;
+  uploadTriggerClass: string;
 }
 
 declare interface PreviousThumbnailsType {

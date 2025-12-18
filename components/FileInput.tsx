@@ -1,11 +1,11 @@
 'use client'
 
 import Image from 'next/image'
-import {ChangeEvent, DragEvent, useEffect, useState } from 'react'
+import {useEffect, useState } from 'react'
 
 //for thumbnail suggestion cards component
-import { base64ToUrl, cn } from '@/lib/utils';
-import { ClassValue } from 'clsx';
+import {cn } from '@/lib/utils';
+import { Img } from './ActionButton';
 
 
 const FileInput = ({
@@ -22,10 +22,14 @@ const FileInput = ({
   onReset,
   handleError,
   previousThumbnails,
-  handleUsePreviousThumbnail
-}: FileInputProps) => {
-
+  handleUsePreviousThumbnail,
+  handleGenerateThumbnail,
+  canGenerateThumbnail,
+  videoFile,
+}: FileInputProps & {canGenerateThumbnail?: boolean, videoFile?: File | null}) => {
   const [isDraggedOver, setIsDraggedOver] = useState(false);
+
+  console.log(canGenerateThumbnail);
 
   const handleFileChange =(fn: void)=> {
     try {
@@ -36,8 +40,6 @@ const FileInput = ({
       console.log(error);
     }
   }
-
-  console.log(previousThumbnails);
 
   const endDrag = () => setIsDraggedOver(false);
 
@@ -67,14 +69,15 @@ const FileInput = ({
         handleFileChange(onFileDrop(e))
       }}
     >
-      <Image src="/assets/icons/upload.svg" alt="upload" width={24} height={24} hidden={isDraggedOver}/>
+      <Image 
+        src="/assets/icons/upload.svg" 
+        alt="upload" 
+        width={24} 
+        height={24} 
+        hidden={isDraggedOver}
+      />
       <p>{isDraggedOver ? "Release file..." : text}</p>
-    </figure>
-  )
 
-  return (
-    <section className='file-input'>
-      <label htmlFor={id}>{label}</label>
       <input
         id={id}
         type='file'
@@ -83,25 +86,48 @@ const FileInput = ({
         onChange={(e) => handleFileChange(onChange(e))}
         onReset={onReset}
         hidden
+        className='absolute top-[50%] left-[50%] opacity-0'
       />
+    </figure>
+  )
 
+  return (
+    <section className='file-input'>
+      <p>{label} 
+        <span>{label === "Thumbnail" && `(You can upload, ${previousThumbnails?.length! > 0 ? "choose from previous" : ""} or generate one from video)`}
+        </span>
+      </p>
+ 
       {type === "video" 
       ? (uploadTrigger({text: `Upload or Drop a ${label} file`})
       ):(
-        <PreviousThumbnails
-          uploadTrigger={uploadTrigger({
-            text: "Upload or Drop", 
-            className: {"flex-1": previousThumbnails?.length! < 1}
-          })}
-          uploadTriggerClass={uploadTriggerClass}
-          previousThumbnails={previousThumbnails!}
-          handleUsePreviousThumbnail ={handleUsePreviousThumbnail!}
-        />
+        <article>
+          <ThumbnailSuggestions
+            uploadTrigger={uploadTrigger({
+              text: "Upload or Drop", 
+              className: {"flex-1": previousThumbnails?.length! < 1}
+            })}
+            uploadTriggerClass={uploadTriggerClass}
+            previousThumbnails={previousThumbnails!}
+            handleUsePreviousThumbnail ={handleUsePreviousThumbnail!}
+          />
+          <ThumbnailGenerate
+            handleGenerateThumbnail={handleGenerateThumbnail!}
+            uploadTriggerClass={uploadTriggerClass}
+            videoFile={videoFile!}
+            canGenerateThumbnail={canGenerateThumbnail!}
+          />
+        </article>
       )}
       <div ref={previewBoxRef} className={cn(previewUrl ? "show" : "no-show")}>
         {type === "video" ? <video src={previewUrl || undefined} controls/> : <Image src ={previewUrl || "/assets/images/dummy.jpg"} alt={type} fill/>}
         <button type='button' onClick={onReset}>
-          <Image src="/assets/icons/close.svg" alt="close" width={16} height={16}/>
+          <Img
+            src="/assets/icons/close.svg" 
+            alt="close" 
+            size={16} 
+            noClass
+          />
         </button>
         <p>{file?.name}</p>
       </div>
@@ -109,47 +135,29 @@ const FileInput = ({
   )
 };
 
-const PreviousThumbnails = ({
+const ThumbnailSuggestions = ({
   uploadTrigger, 
   previousThumbnails,
   uploadTriggerClass,
   handleUsePreviousThumbnail
-}: PreviousThumbnailsProps) => {
+}: ThumbnailSuggestionsProps) => {
 
-  const [thumbnailSuggestions, setThumbnailSuggestions] = useState<PreviousThumbnailsType[]>(previousThumbnails);
-
-  useEffect(()=> {
-    /*const getThumbnailsWithUrls = async () => {
-      const promise = previousThumbnails?.map(async(tn) => {
-        const blobUrl = await base64ToUrl(tn.base64 as string)
-        return {...tn, url: blobUrl}
-      });
-
-      const thumbnailsWithUrls = await Promise.all(promise);
-      const newThumbnail = thumbnailsWithUrls[thumbnailsWithUrls?.length - 1]
-      setThumbnailSuggestions(prev => ([...prev, newThumbnail]));
-    };
-    const timer = setTimeout (()=>getThumbnailsWithUrls(),200)
-    return () => clearTimeout(timer)} */
-    if(previousThumbnails) {
-      setThumbnailSuggestions(previousThumbnails)
-    }
-  },[previousThumbnails]);
+  let active = previousThumbnails?.length > 0
 
   return (
     <section className= {
       cn("previous-thumbnails", uploadTriggerClass, {
-      "gap": thumbnailSuggestions?.length > 0
+      "gap": active
     })
     }>
       {uploadTrigger}
     <ul className={cn({
-      'flex-1': thumbnailSuggestions.length > 0
+      'flex-1': active
       })}>
-        {thumbnailSuggestions?.length > 0 && thumbnailSuggestions?.map(({base64, fileName}) => (
+        {active && previousThumbnails?.map(({base64, fileName}) => (
             <div 
               key={fileName}
-              onClick={()=> handleUsePreviousThumbnail &&handleUsePreviousThumbnail(fileName)}
+              onClick={()=> handleUsePreviousThumbnail(fileName)}
             >
               <Image src={base64 as string} alt="thumbnail" fill/>
             </div>
@@ -157,6 +165,42 @@ const PreviousThumbnails = ({
         }
       </ul>
     </section>
+  )
+}
+
+const ThumbnailGenerate = ({
+  handleGenerateThumbnail,
+  videoFile,
+  canGenerateThumbnail,
+  uploadTriggerClass
+}: ThumbnailGenerateProps) => {
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [captureTime, setCaptureTime] = useState(1);
+
+  return (
+    <span className={uploadTriggerClass}>
+      <pre>
+        <label htmlFor="gen">Time of video capture : </label>
+        <input 
+          id="gen" 
+          type="text" 
+          hidden={false} 
+          value={captureTime} 
+          onChange={(e) => setCaptureTime(Number(e.target.value))}
+        />
+      </pre>
+      <button type="button"
+        disabled={!canGenerateThumbnail! || isGenerating} 
+        onClick={() => {
+          setIsGenerating(true);
+          handleGenerateThumbnail(captureTime, videoFile)
+          setIsGenerating(false);
+        }} 
+      >
+        {isGenerating ? "Generating..." : 'Generate thumbnail'}
+      </button>
+    </span>
   )
 }
 
