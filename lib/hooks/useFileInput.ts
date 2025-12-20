@@ -48,7 +48,7 @@ export const useFileInput = (maxSize: number) => {
         }else {
           throw new Error('Failed to create blob')
         }
-      }, 'image/jpg', 0.9);
+      }, 'image/jpg', 2);
     };
 
     video.onerror = () => {

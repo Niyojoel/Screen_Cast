@@ -1,4 +1,5 @@
 import {EmptyState, SharedHeader, Pagination, VideoCard} from '@/components';
+import { dummySession, dummyVideos } from '@/constants';
 import { getAllVideosByUser } from '@/lib/actions/video';
 import { redirect } from 'next/navigation';
 import React from 'react'
@@ -7,7 +8,14 @@ const page = async ({params, searchParams} : ParamsWithSearch) => {
   const {id} = await params;
   const {query, filter} = await searchParams;
 
-  const {user, videos} = await getAllVideosByUser(id, query, filter);
+  const {/*user ,*/ /*videos*/} = await getAllVideosByUser(id, query, filter);
+
+  const videos: VideoWithUserResult[] = dummyVideos;
+
+const session = dummySession;
+
+const {user} = session;
+const {id: _id, image} = user;
 
   if(!user) redirect('/404');
     
@@ -16,7 +24,7 @@ const page = async ({params, searchParams} : ParamsWithSearch) => {
         <SharedHeader 
           subHeader={user?.email} 
           title={user?.name} 
-          userImg={user?.image ?? ''}
+          userImg={user?.image ?? '/assets/images/dummy.jpg'}
         />
         {videos?.length > 0 ? 
         (<>

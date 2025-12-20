@@ -44,6 +44,11 @@
       #fff 42%,
       rgba(0, 0, 0, 0) 42%
     );
+  --background-image-modal-100:
+    linear-gradient(
+      rgba(108, 102, 133, 0.1),
+      rgba(0, 0, 0, 0.7) 
+    );
 }
 
 @layer base {
@@ -97,16 +102,20 @@
     @apply max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8;
   }
 
+  .overlay {
+    @apply bg-radial-100 w-full h-full relative top-0 -z-10;
+  }
+
   .page {
     @apply flex flex-col min-h-screen pt-12.5 pb-20 gap-9;
   }
 
-  .overlay {
-    @apply bg-radial-100 w-full h-full absolute top-0 -z-10;
+  .video-grid {
+    @apply grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6;
   }
 
-  .video-grid {
-    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+  .video-center {
+    @apply flex justify-center;
   }
 
   /* sign in page */
@@ -192,14 +201,22 @@
 
   /* upload page */
   .upload-page {
-    @apply flex flex-col gap-7.5 pt-12.5 pb-20;
+    @apply flex flex-col gap-7.5 pt-10 pb-20;
 
     h1 {
       @apply text-3xl font-bold text-dark-100;
     }
 
     .error-field {
-      @apply border border-red-500 bg-red-100 text-red-700 p-4 rounded-md;
+      @apply bg-red-50 text-red-500 px-4.5 py-2 rounded-full;
+    }
+
+    form {
+      @apply rounded-20 gap-6 w-full flex flex-col px-5 py-7.5;
+    }
+
+    .form {
+      box-shadow: 0px 5px 15px 0px rgba(0, 0, 0, 0.1);
     }
 
     .submit-button {
@@ -220,15 +237,19 @@
 
   /* dropdown */
   .dropdown {
-    @apply absolute bg-white shadow-lg rounded-lg flex flex-col gap-2 w-full z-10 top-12;
+    @apply absolute bg-white shadow-lg rounded-lg flex flex-col gap-1 w-full z-10 top-10 right-0 h-0 overflow-hidden;
 
     .list-item {
-      @apply px-3 py-2.5 text-sm font-medium -tracking-[0.8px] relative text-dark-100 cursor-pointer hover:bg-pink-100 hover:text-white transition-colors duration-200 ease-in-out rounded-md;
+      @apply px-8 py-2 text-sm font-medium -tracking-[0.8px] relative text-dark-100 cursor-pointer hover:bg-pink-100 hover:text-white transition-colors duration-200 ease-in-out rounded-lg;
 
       img {
         @apply absolute right-3 top-1/2 -translate-y-1/2;
       }
     }
+  }
+
+  .expand {
+    @apply h-fit
   }
 
   /* empty state */
@@ -247,7 +268,7 @@
       }
 
       p {
-        @apply text-sm font-normal text-gray-100 -tracking-[0.5px];
+        @apply text-sm font-normal text-gray-100 -tracking-[0.005rem];
       }
     }
   }
@@ -268,23 +289,23 @@
   .file-input {
     @apply relative flex flex-col gap-2;
 
-    p {
-      @apply text-gray-100 text-base font-medium;
+    label {
+      @apply text-[#777] text-base font-medium;
 
       span {
-          @apply ml-1 text-sm font-light text-gray-400;
+          @apply ml-1 text-sm font-light text-[#888];
         }
-    }
-
-    input {
-      @apply w-full;
     }
     
     figure {
-      @apply border border-gray-20 rounded-18 text-gray-100 py-1.5 px-3.5 flex justify-center items-center w-full h-40 gap-2.5 cursor-pointer;
+      @apply border border-gray-20 rounded-[15px] text-gray-100 text-[15px] tracking-[0.005em] text-wrap py-1.5 px-3.5 flex justify-center items-center w-full h-40 gap-2.5 transition-all cursor-pointer;
 
       p {
-        @apply text-dark-100 text-base font-medium;
+        @apply text-[#777] text-base font-[450];
+      }
+
+      input {
+        @apply w-full;
       }
     }
 
@@ -316,17 +337,17 @@
       }
   
       span {
-        @apply flex flex-wrap items-end justify-center md:gap-x-8 gap-x-5 gap-y-3.5;
+        @apply flex flex-wrap items-end justify-center gap-x-5 gap-y-3.5;
 
         pre {
           @apply flex items-end gap-2;
           
           label {
-            @apply text-sm font-normal font-sans text-gray-500;
+            @apply text-[14.8px] font-normal font-sans text-[#888];
           }
   
           input {
-            @apply w-12 h-8 font-sans outline-gray-400 visible border-gray-500 border rounded-[8px] text-center text-sm text-gray-900;
+            @apply w-12 h-7 font-sans outline-gray-400 visible border-gray-500 border rounded-[8px] text-center text-sm text-gray-900;
           }
         }
 
@@ -369,29 +390,40 @@
     @apply flex flex-col gap-2;
 
     label {
-      @apply text-gray-100 text-base font-medium;
+      @apply text-[#777] text-base font-medium;
     }
 
     input,
     select,
     textarea {
-      @apply border border-gray-20 rounded-18 text-dark-100 placeholder:text-gray-400 py-2.5 px-4.5 focus:outline-pink-100 placeholder:font-normal placeholder:tracking-[0.015rem] text-[15px] font-normal;
+      @apply border border-gray-20 text-dark-100 placeholder:text-[#888] py-2.5 px-4.5 focus:outline-pink-100 placeholder:font-normal placeholder:tracking-[0.005rem] text-[16px] font-normal;
+    }
+
+    input, select {
+      @apply rounded-full;
+    }
+
+    textarea {
+      @apply rounded-[15px]
     }
   }
+
+  .logo {
+    a {
+      @apply flex items-center gap-2.5;
+  
+      h1 {
+        @apply text-xl font-black text-blue-100 font-satoshi -tracking-[0.1px];
+      }
+    }
+  }
+
   /* navbar */
   .navbar {
-    @apply h-[90px] border-b border-gray-20 flex items-center;
+    @apply h-[75px] border-b border-gray-20 flex items-center;
 
     nav {
       @apply flex items-center justify-between max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 w-full;
-
-      a {
-        @apply flex items-center gap-2.5;
- 
-        h1 {
-          @apply text-xl font-black text-blue-100 font-satoshi -tracking-[0.1px];
-        }
-      }
 
       figure {
         @apply flex items-center gap-3;
@@ -459,8 +491,16 @@
           @apply w-full h-full object-contain;
         }
 
-        p {
-          @apply text-base font-medium text-gray-100;
+        ul{
+          @apply flex flex-col gap-2 items-center;
+
+          li {
+            @apply flex flex-col gap-5;
+
+            label {
+              @apply text-[#777] text-base font-medium;
+            }
+          }
         }
       }
     }
@@ -469,19 +509,19 @@
       @apply flex justify-center gap-4 mt-4;
 
       .record-start {
-        @apply py-2.5 px-6 bg-pink-100 text-white rounded-4xl font-medium flex items-center gap-2;
+        @apply py-1.5 px-6 bg-pink-100 text-white rounded-4xl font-medium flex items-center gap-2;
       }
 
       .record-stop {
-        @apply py-2.5 px-6 bg-red-500 text-white rounded-4xl font-medium flex items-center gap-2;
+        @apply py-1.5 px-6 bg-red-500 text-white rounded-4xl font-medium flex items-center gap-2;
       }
 
       .record-again {
-        @apply py-2.5 px-6 bg-gray-100 text-white rounded-4xl font-medium;
+        @apply py-1.5 px-6 bg-gray-100 text-white rounded-4xl font-medium;
       }
 
       .record-upload {
-        @apply py-2.5 px-6 bg-pink-100 text-white rounded-4xl font-medium flex items-center gap-2;
+        @apply py-1.5 px-6 bg-pink-100 text-white rounded-4xl font-medium flex items-center gap-2;
 
         img {
           @apply brightness-0 invert;
@@ -490,21 +530,21 @@
     }
   }
 
-  .dialog {
-    @apply relative w-full h-full bg-gray-20;
+  .modal {
+    @apply bg-modal-100 fixed inset-0 z-50 flex items-center justify-center;
 
-    .dialog-content {
-      @apply relative bg-white rounded-20 p-6 shadow-lg w-full max-w-lg z-10;
+    .modal-overlay {
+      @apply absolute inset-0 bg-modal-100 backdrop-blur-xs shadow-20;
+    }
+
+    .dialog-box {
+      @apply absolute bg-white rounded-20 p-6 shadow-lg w-full max-w-lg z-10;
 
       figure {
         @apply flex justify-between items-center mb-4;
 
-        h3 {
-          @apply text-xl font-bold text-dark-100;
-        }
-
         button {
-          @apply p-2 rounded-full hover:bg-gray-20;
+          @apply p-0 rounded-full border-0 border-transparent hover:bg-gray-20;
         }
       }
     }
@@ -525,7 +565,7 @@
           @apply flex flex-col gap-1 -tracking-[0.8px];
 
           p {
-            @apply text-sm text-gray-100 font-medium;
+            @apply text-[15px] text-[#888] font-medium;
           }
 
           h1 {
@@ -538,7 +578,7 @@
         @apply flex items-center gap-2 md:gap-4;
 
         button {
-          @apply py-2.5 px-5 flex items-center gap-2.5 text-sm font-semibold text-dark-100 border border-gray-25 rounded-4xl;
+          @apply py-2 px-5 flex items-center gap-2.5 text-sm font-semibold text-dark-100 border border-gray-25 rounded-4xl;
 
           span {
             @apply truncate;
@@ -548,10 +588,10 @@
     }
 
     .search-filter {
-      @apply flex flex-col md:flex-row md:items-center gap-5 justify-between;
+      @apply flex flex-row items-center flex-wrap gap-5 justify-between;
 
       .search {
-        @apply relative max-w-[500px] w-full;
+        @apply relative md:max-w-[500px] md:w-full w-[320px];
 
         input {
           @apply border border-gray-20 py-2 pl-8 pr-5 text-dark-100 text-sm font-normal placeholder:text-gray-100 w-full rounded-[18px] focus:outline-pink-100;
@@ -564,8 +604,8 @@
     }
   }
 
-  .filter-trigger {
-    @apply flex items-center justify-center px-4 py-2 border border-gray-20 rounded-[28px] gap-3;
+  .options-trigger {
+    @apply flex items-center justify-end px-5 py-2 border border-gray-20 rounded-[28px] gap-3;
 
     figure {
       @apply flex items-center gap-1;
@@ -578,7 +618,7 @@
 
   /* video-card */
   .video-card {
-    @apply flex flex-col rounded-2xl w-full border border-gray-20 aspect-[16/9] relative;
+    @apply flex flex-col rounded-2xl max-w-[290px] w-full border border-gray-20 aspect-[16/9] relative;
 
     .thumbnail {
       @apply w-full rounded-t-2xl object-cover h-[190px];
@@ -631,7 +671,7 @@
     }
 
     .copy-btn {
-      @apply absolute top-3 right-3 size-6 z-50 shadow-md hover:shadow-lg hover:bg-gray-200 transition duration-200 bg-white rounded-full flex items-center justify-center;
+      @apply absolute top-3 right-3 size-6 z-[5] shadow-md hover:shadow-lg hover:bg-gray-200 transition duration-200 bg-white rounded-full flex items-center justify-center;
     }
 
     .duration {

@@ -12,6 +12,7 @@ import {
   FormEvent, 
   FormEventHandler, 
   useEffect, 
+  useRef, 
   useState
 } from "react";
 import { useRouter } from "next/navigation";
@@ -30,6 +31,7 @@ const page = () => {
   const [videoDuration, setVideoDuration] = useState(0);
   const [canGenerateThumbnail, setCanGenerateThumbnail] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const errorAlertInViewRef = useRef<HTMLDivElement>(null)
 
   const [formData, setFormData] = useState<VideoFormValues>({
     title: "",
@@ -41,10 +43,12 @@ const page = () => {
   const video = useFileInput(MAX_VIDEO_SIZE);
   const thumbnail = useFileInput(MAX_THUMBNAIL_SIZE);
 
+  //Getting video duration
   useEffect(()=> {
     if(video.duration !== null || 0) setVideoDuration(video.duration!)
   },[video.duration])
 
+  // Can generate thumbnail check
   useEffect(() => {
     if(video.file !== null) {
       setCanGenerateThumbnail(true)
@@ -53,13 +57,7 @@ const page = () => {
   }, [video.file])
 
   useEffect(() => {
-    if(video.file !== null) {
-      setCanGenerateThumbnail(true)
-      setVideoFile(video.file);
-    }else {setCanGenerateThumbnail(false);}
-  }, [thumbnail.file])
-
-  useEffect(() => {
+    //Stored recorded video check on upload page and filling into video file input
     const checkForRecordedVideo = async()=> {
       try {
         const storedVideo = sessionStorage.getItem('recordedVideo');
@@ -93,19 +91,12 @@ const page = () => {
         console.error(error, "Error loading recorded video")
         setError("Error loading recorded video")
       }
-    }
+    };
     checkForRecordedVideo()
   }, [video])
 
-  const handleInputChange = (e: ChangeEvent<HTMLFormElement>) => {
-    const {name, value} = e.target; 
-    setFormData(prev=> ({...prev, [name]: value}));
-  }
-
-  console.log(canGenerateThumbnail)
-  
-  useEffect(()=> {
   //storing form input values to session storage on change
+  useEffect(()=> {
     const storeFormTimer = setTimeout(()=> {
       const addedFormValues = formValues({...formData});
       sessionStorage.setItem('formValues', JSON.stringify(addedFormValues));
@@ -114,6 +105,7 @@ const page = () => {
     return ()=> clearTimeout(storeFormTimer);
   }, [formData])
 
+  //syncing form data with stored form data values
   useEffect(() => {
     const storedStrings = sessionStorage.getItem('formValues');
     const storedFormValues: Record<PropertyKey, string> = storedStrings ? JSON.parse(sessionStorage.getItem('formValues')!) : null;
@@ -121,23 +113,31 @@ const page = () => {
     if(storedFormValues) setFormData(prev => ({...prev, ...storedFormValues}))
   },[])
 
+  //error alert timeout 
   useEffect(()=> {
-    const errorTimer = setTimeout(() => error && setError(''), 3000);
-
-    return ()=> clearTimeout(errorTimer);
+    if(error) {
+      errorAlertInViewRef.current?.scrollIntoView({behavior: "smooth"})
+      const errorTimer = setTimeout(() => setError(''), 3000);
+  
+      return ()=> clearTimeout(errorTimer);
+    };
   }, [error])
 
-  //catch and alert error in handleFileChange function
-  const handleFileChangeError = (message: string)=> {
-    setError(message)
+  const handleInputChange = (e: ChangeEvent<HTMLFormElement>) => {
+    const {name, value} = e.target; 
+    setFormData(prev=> ({...prev, [name]: value}));
   }
 
   const handleSubmit = async (e: FormEvent)=> {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      if(!video.file || (!thumbnail.file || !thumbnail.previewUrl)) setError('Please upload a video and thumbnail');
-      if(!formData.title || !formData.description) setError("Please fill in all the details");
+      if(!video.file || !thumbnail.file) {
+        setError('Please upload a video and thumbnail');
+      };
+      if(!formData.title || !formData.description) {
+        setError("Please fill in all the details");
+      };
               
       //Getting video upload url
       const {
@@ -198,10 +198,11 @@ const page = () => {
 
   return (
     <main className="wrapper-md upload-page">
+      <span ref={errorAlertInViewRef} className="absolute top-0 left-[50%]"/>
       <h1>Upload a video</h1>
       {error && <div className="error-field">{error}</div>}
       <form 
-        className="rounded-20 shadow-10 gap-6 w-full flex flex-col px-5 py-7.5"
+        className="form"
         onSubmit={handleSubmit}
       >
         <FormField
@@ -238,7 +239,7 @@ const page = () => {
           inputRef={video.inputRef}
           onChange={video.handleFileChange}
           onReset={video.resetFile}
-          handleError={handleFileChangeError}
+          handleError={setError}
           onFileDrop = {video.handleFileDrop}
           previewBoxRef={video.previewBoxRef}
         /> 
@@ -252,7 +253,7 @@ const page = () => {
           inputRef={thumbnail.inputRef}
           onChange={thumbnail.handleFileChange}
           onReset={thumbnail.resetFile}
-          handleError={handleFileChangeError}
+          handleError={setError}
           onFileDrop = {thumbnail.handleFileDrop}
           previewBoxRef={thumbnail.previewBoxRef}
           previousThumbnails = {thumbnail.previousThumbnails}

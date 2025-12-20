@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import {useEffect, useState } from 'react'
+import {DragEvent, useEffect, useState } from 'react'
 
 //for thumbnail suggestion cards component
 import {cn } from '@/lib/utils';
@@ -18,18 +18,18 @@ const FileInput = ({
   inputRef,
   previewBoxRef,
   onChange,
-  onFileDrop,
+  onFileDrop: fileDrop,
   onReset,
   handleError,
   previousThumbnails,
   handleUsePreviousThumbnail,
-  handleGenerateThumbnail,
   canGenerateThumbnail,
   videoFile,
-}: FileInputProps & {canGenerateThumbnail?: boolean, videoFile?: File | null}) => {
+  handleGenerateThumbnail,
+}: FileInputProps) => {
+  
   const [isDraggedOver, setIsDraggedOver] = useState(false);
-
-  console.log(canGenerateThumbnail);
+  const [fileDropError, setFileDropError] = useState('');
 
   const handleFileChange =(fn: void)=> {
     try {
@@ -41,9 +41,36 @@ const FileInput = ({
     }
   }
 
+  const onFileDrop = (e: DragEvent<HTMLElement>) => {
+    const files = e.dataTransfer.files
+    if(!files[0].type.startsWith(`${type}/`)) {
+      setFileDropError(`???Error: ${type === "image" ? "An" : 'A'} ${type} file is expected...`);
+      return;
+    }
+    fileDrop(e);
+  }
+
   const endDrag = () => setIsDraggedOver(false);
 
+  const onDragOver = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    setIsDraggedOver(true);
+  }
+
+  const handleDrop = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    endDrag();
+    handleFileChange(onFileDrop(e))
+  }
+
   let uploadTriggerClass = previewUrl ? "no-show" : "show"
+
+useEffect(() => {
+  if(fileDropError) {
+    const errorTimer = setTimeout(() => setFileDropError(''), 3000);
+    return ()=> clearTimeout(errorTimer);
+  }
+},[fileDropError])
 
   const uploadTrigger = ({
     text, 
@@ -58,25 +85,25 @@ const FileInput = ({
         ...className
       })} 
       onClick={()=> inputRef.current?.click()}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsDraggedOver(true);
-      }} 
+      onDragOver={onDragOver} 
       onDragLeave={endDrag}
-      onDrop={(e) => {
-        e.preventDefault();
-        endDrag();
-        handleFileChange(onFileDrop(e))
-      }}
+      onDrop={handleDrop}
     >
       <Image 
         src="/assets/icons/upload.svg" 
         alt="upload" 
-        width={24} 
-        height={24} 
-        hidden={isDraggedOver}
+        width={22} 
+        height={22} 
+        hidden={isDraggedOver || !!fileDropError}
       />
-      <p>{isDraggedOver ? "Release file..." : text}</p>
+      <p className={cn({"text-red-500 text-[14.8px]": !!fileDropError})}>
+        {isDraggedOver 
+        ? "Release file..." 
+        : fileDropError 
+          ? fileDropError 
+          : text
+        }
+      </p>
 
       <input
         id={id}
@@ -93,10 +120,10 @@ const FileInput = ({
 
   return (
     <section className='file-input'>
-      <p>{label} 
+      <label>{label}
         <span>{label === "Thumbnail" && `(You can upload, ${previousThumbnails?.length! > 0 ? "choose from previous" : ""} or generate one from video)`}
         </span>
-      </p>
+      </label>
  
       {type === "video" 
       ? (uploadTrigger({text: `Upload or Drop a ${label} file`})
@@ -178,6 +205,14 @@ const ThumbnailGenerate = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [captureTime, setCaptureTime] = useState(1);
 
+  const onGenerateThumbnail = () => {
+    setIsGenerating(true);
+    setTimeout(() => {
+      handleGenerateThumbnail(captureTime, videoFile)
+    }, 1000);
+    setIsGenerating(false);
+  }
+
   return (
     <span className={uploadTriggerClass}>
       <pre>
@@ -191,12 +226,8 @@ const ThumbnailGenerate = ({
         />
       </pre>
       <button type="button"
-        disabled={!canGenerateThumbnail! || isGenerating} 
-        onClick={() => {
-          setIsGenerating(true);
-          handleGenerateThumbnail(captureTime, videoFile)
-          setIsGenerating(false);
-        }} 
+        disabled={!canGenerateThumbnail} 
+        onClick={onGenerateThumbnail} 
       >
         {isGenerating ? "Generating..." : 'Generate thumbnail'}
       </button>

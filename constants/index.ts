@@ -12,10 +12,18 @@ export const BUNNY = {
 export const emojis = ["😂", "😍", "👍"];
 
 export const filterOptions = [
-  "Most Viewed",
-  "Most Recent",
-  "Oldest First",
-  "Least Viewed",
+  {
+    label: "Most Viewed",
+  },
+  {
+    label: "Most Recent",
+  },
+  {
+    label: "Oldest First",
+  },
+  {
+    label: "Least Viewed",
+  },
 ];
 
 export const visibilities: Visibility[] = ["public", "private"];
@@ -105,10 +113,173 @@ export const dummyVideoCardProps: Array<VideoCardProps> = [
   },
 ]
 
+
 export const dummySession = {
     user:{
         id: "6523jilmkjy48jbsn",
         name: "Jose Ayomide Folarin",
-        image: "/assets/images/dummy.jpg"
+        image: "/assets/images/dummy.jpg",
+        email: "company@co.email.com"
     },
 }
+
+export const dummyVideo: UserWithVideos = {
+    videos: [
+      {
+        id: "tyw4j35ugj",
+        videoId: "6725hbkbbn",
+        title: "Trial Video for Content Management",
+        description: 'First video to be shown for offline video page testing and user interface adjustment',
+        thumbnailUrl: dummyVideoCardProps[0].thumbnailUrl,
+        videoUrl: '/assets/trial_video.mp4',
+        userId: dummySession.user.id,
+        views: dummyVideoCardProps[0].views,
+        tags: ["trial", "first", "ui/ux"],
+        visibility: "public",
+        duration: 131,
+        createdAt: new Date(Date.now()),
+        updatedAt: new Date(Date.now())
+    }
+  ],
+  user: dummySession.user,
+  count: 1
+}
+
+export const dummyVideos: VideoWithUserResult[]  = [
+  {video: {
+    id: "tyw4j35ugjyu",
+    videoId: "6725hbkbbnty",
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: dummyVideoCardProps[0].thumbnailUrl,
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummySession.user.id,
+    views: dummyVideoCardProps[0].views,
+    tags: ["trial", "first", "ui/ux"],
+    duration: 131,
+    visibility: "public",
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  },
+  user: dummySession.user
+  },
+  {video: {
+    id: "tyw4j35gje5u5",
+    videoId: "6725hbkdmyj",
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: dummyVideoCardProps[1].thumbnailUrl,
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummySession.user.id,
+    views: dummyVideoCardProps[0].views,
+    tags: ["trial", "first", "ui/ux"],
+    duration: 131,
+    visibility: "public",
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  },
+  user: dummySession.user
+  },
+  {video: {
+    id: "tyw4j34hdgj",
+    videoId: "6725fndfn5e",
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: dummyVideoCardProps[2].thumbnailUrl,
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummySession.user.id,
+    views: dummyVideoCardProps[0].views,
+    tags: ["trial", "first", "ui/ux"],
+    duration: 131,
+    visibility: "public",
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  },
+  user: dummySession.user
+  },
+  {video: {
+    id: "tyw4j35yuy36u",
+    videoId: "6725hh54y5yj",
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: dummyVideoCardProps[3].thumbnailUrl,
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummySession.user.id,
+    views: dummyVideoCardProps[0].views,
+    tags: ["trial", "first", "ui/ux"],
+    duration: 131,
+    visibility: "public",
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  },
+  user: dummySession.user
+  },
+  {video: {
+    id: "tyw4j387iki",
+    videoId: "6725h3u7ykr",
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: dummyVideoCardProps[4].thumbnailUrl,
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummySession.user.id,
+    views: dummyVideoCardProps[0].views,
+    tags: ["trial", "first", "ui/ux"],
+    duration: 131,
+    visibility: "public",
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  },
+  user: dummySession.user
+  },
+  {video: {
+    id: "tyw4j373257e",
+    videoId: "6725hb1g4t3q",
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: dummyVideoCardProps[0].thumbnailUrl,
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummySession.user.id,
+    views: dummyVideoCardProps[0].views,
+    tags: ["trial", "first", "ui/ux"],
+    duration: 131,
+    visibility: "public",
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  },
+  user: dummySession.user
+  },
+  {video: {
+    id: "tyw4j3g134g",
+    videoId: "6725hbkbiuoy",
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: dummyVideoCardProps[0].thumbnailUrl,
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummySession.user.id,
+    views: dummyVideoCardProps[0].views,
+    tags: ["trial", "first", "ui/ux"],
+    duration: 131,
+    visibility: "public",
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  },
+  user: dummySession.user
+  },
+  {video: {
+    id: "tyw4j35ugj86pmm",
+    videoId: "6725hbkbbcxzvn",
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: dummyVideoCardProps[0].thumbnailUrl,
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummySession.user.id,
+    views: dummyVideoCardProps[0].views,
+    tags: ["trial", "first", "ui/ux"],
+    duration: 131,
+    visibility: "public",
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  },
+  user: dummySession.user
+  },
+]

@@ -14,3 +14,5 @@ export {Img} from "./ActionButton";
 export {default as Pagination} from "./Pagination";
 export {default as RecordStream} from "./RecordStream";
 export {default as Modal} from "./Modal";
+export {default as Logo} from "./Logo";
+export {OptionsTrigger} from "./DropdownList";

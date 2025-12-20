@@ -1,6 +1,6 @@
 "use client"
 
-import { ActionButton, Img } from '.'
+import { ActionButton, Img, Logo } from '.'
 import { authClient } from '@/lib/authClient'
 import { useRouter, redirect} from 'next/navigation'
 import { dummySession } from '@/constants'
@@ -32,15 +32,7 @@ const {id, image} = user;
   return (
     <header className='navbar'>
         <nav>
-            <Link href="/">
-                <Img
-                    src="/assets/icons/logo.svg"
-                    alt="logo"
-                    size={32}
-                    noClass
-                />
-                <h1> ScreenCast </h1>
-            </Link>
+            <Logo/>
             {user ? (
                 <figure>
                     <ActionButton

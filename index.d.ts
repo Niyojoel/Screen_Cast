@@ -58,6 +58,8 @@ declare interface FileInputProps {
   handleUsePreviousThumbnail?: (filename: string) => void; 
   previousThumbnails?: PreviousThumbnailsType[],
   handleGenerateThumbnail?: (captureTime: number, videoFile: File) => void;
+  canGenerateThumbnail?: boolean; 
+  videoFile?: File | null;
 }
 
 declare interface ThumbnailSuggestionsProps {
@@ -73,6 +75,7 @@ declare interface ThumbnailGenerateProps {
   canGenerateThumbnail: boolean;
   uploadTriggerClass: string;
 }
+
 
 declare interface PreviousThumbnailsType {
   base64: string | ArrayBuffer,
@@ -225,6 +228,7 @@ declare interface VideoWithUserResult {
     userId: string;
     views: number;
     tags: string[];
+    duration: number;
     visibility: Visibility;
     createdAt: Date;
     updatedAt: Date;
@@ -245,6 +249,7 @@ declare interface VideoObject {
   videoUrl: string;
   userId: string;
   views: number;
+  duration: number;
   tags: string[];
   visibility: Visibility;
   createdAt: Date;
@@ -292,16 +297,24 @@ declare interface ParamsWithSearch {
 }
 
 declare interface ModalProps {
-    dialogTitle: string,
     dialogContent: React.ReactElement,
     closeModal: () => void,
+    closeIcon: React.ReactNode
+}
+
+declare type DropdownOptionsType = {
+  label: string,
+  icon?: React.ReactNode
 }
 
 declare interface DropdownListProps {
-  options: string[];
+  options: DropdownOptionsType[];
   selectedOption: string;
   onOptionSelect: (option: string) => void;
-  filterTrigger: ReactNode;
+  triggerElement: ReactNode;
+  toggleOpen: () => void;
+  close?: () => void;
+  isOpen: boolean;
 }
 
 declare interface EmptyStateProps {

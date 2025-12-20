@@ -7,42 +7,60 @@ import { cn } from '@/lib/utils';
 const DropdownList = ({
     options, 
     selectedOption, 
-    onOptionSelect, 
-    filterTrigger
+    toggleOpen,
+    isOpen,
+    triggerElement,
+    close,
+    onOptionSelect
 }: DropdownListProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleOptionClick = (option: string)=> {
-    onOptionSelect(option);
-    setIsOpen(false);
-  }
 
   return (
-    <div className='relative'>
-        <div className="cursor-pointer" onClick={()=> setIsOpen(!isOpen)}>
-            {filterTrigger}
+    <div className='relative flex flex-col'>
+        <div className="flex gap-2 items-center cursor-pointer" onClick={toggleOpen}>
+            {triggerElement}
         </div>
-        {isOpen && (
-            <ul className='dropdown'>
-                {options.map(option => (
-                    <li 
-                        key="option" 
-                        className={cn('list-item', {"bg-pink-100 text-white": selectedOption === option})}
-                        onClick={()=> handleOptionClick(option)}
-                    >
-                        {option}
-                        {selectedOption === option && (
-                            <Img
-                                src="/assets/icons/check.svg"
-                                alt="check"
-                            />
-                        )}
-                    </li>
-                ))}
-            </ul>
-        )}
+        <ul
+            className={cn('dropdown', {"expand": isOpen})}
+        >
+            {options.map(({label, icon}) => (
+                <li 
+                    key={label}
+                    className={cn('list-item', {"bg-pink-100 text-white": selectedOption === label})}
+                    onClick={()=> onOptionSelect(label)}
+                >
+                    {icon && icon}
+                    {label}
+                    {selectedOption === label && (
+                        <Img
+                            src="/assets/icons/check.svg"
+                            alt="check"
+                        />
+                    )}
+                </li>
+            ))}
+        </ul>
     </div>
   )
 }
+
+export const OptionsTrigger = ({ src, ...selectedOption}: DropdownOptionsType & {src?: string}) => (
+    <div className="options-trigger">
+        <figure >
+            {selectedOption.icon && selectedOption.icon}
+            {src && (
+                <Img
+                src={src} alt="menu"
+                size={14}
+            />
+            )}
+            <span>{selectedOption.label}</span>
+        </figure>
+        <Img
+            src="/assets/icons/arrow-down.svg" 
+            alt="arrow-down" 
+            size={20}
+        />
+    </div>
+)
 
 export default DropdownList

@@ -4,18 +4,79 @@ import { ICONS } from '@/constants'
 import { useScreenRecording } from '@/lib/hooks/useScreenRecording'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import React, { useRef, useState } from 'react'
-import ActionButton from './ActionButton'
+import React, { useMemo, useRef, useState } from 'react'
+import ActionButton, { Img } from './ActionButton'
 import { duration } from 'drizzle-orm/gel-core'
 import { authClient } from '@/lib/authClient'
 import toast from 'react-hot-toast'
-import {Modal} from './'
+import {DropdownList, Modal, OptionsTrigger} from './'
 import {dummySession} from "@/constants"
+import { AppWindowMacIcon, HomeIcon, LucideNotebookTabs, MicIcon, MicOffIcon, TvIcon, UserIcon } from 'lucide-react'
+
+const activateVideoSetting = (selectedSetting: string) => {
+    console.log(selectedSetting);
+}
+
+const activateMicSetting = (selectedMic: string) => {
+    console.log(selectedMic);
+}
+
+const settingsOptions = [
+    {
+        icon: <TvIcon size={18}/>,
+        label: "Screen and Camera"
+    },
+    {
+        icon: <TvIcon size={18}/>,
+        label: "Full Screen"
+    },
+    {
+        icon: <AppWindowMacIcon size={18}/>,
+        label: "Window"
+    },
+    {
+        icon: <LucideNotebookTabs size={18}/>,
+        label: "CurrentTab"
+    },
+    {
+        icon: <UserIcon size={18}/>,
+        label: "Camera only"
+    },
+]
+const micRecordingOptions = [
+    {
+        icon: <MicOffIcon size={18}/>,
+        label: "No microphone"
+    },
+    {
+        icon: <MicIcon size={18}/>,
+        label: "Default - MacBook Air Microphone"
+    },
+    {
+        icon: <MicIcon size={18}/>,
+        label: "Logitech StreamCam Microphone"
+    },
+    {
+        icon: <MicIcon size={18}/>,
+        label: "Rhode NT-USB Microphone"
+    },
+]
+
+const findSelectedOptionObj = (label: string, optionsArray: DropdownOptionsType[]) => {
+    return optionsArray.find(option => option.label === label);
+}
 
 const RecordStream = () => {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
-  const videoRef= useRef<HTMLVideoElement>(null)
+  const [isOpenModal, setIsOpenModal] = useState(false);
+  const [isOpenDropdown, setIsOpenDropdown] = useState(false);
+  const [selectedSetting, setSelectedSetting] = useState(settingsOptions[0].label);
+  const [selectedMic, setSelectedMic] = useState(micRecordingOptions[0].label);
+  const videoRef= useRef<HTMLVideoElement>(null);
+
+  const activeSettingObj = useMemo(()=> {
+    return settingsOptions.find(option => option.label === selectedSetting)!;
+  }, [selectedSetting])
 
 //   const {data: session} = authClient.useSession();
 
@@ -31,10 +92,10 @@ const session = dummySession;
     resetRecording
   } = useScreenRecording()
 
-  const handleOpenModal = () => setIsOpen(true);
+  const handleOpenModal = () => setIsOpenModal(true);
 
   const handleCloseModal = () => {
-    setIsOpen(false);
+    setIsOpenModal(false);
     resetRecording();
   };
 
@@ -66,13 +127,25 @@ const session = dummySession;
         })
     )
     router.push('/upload');
-    setIsOpen(false);
+    setIsOpenModal(false);
   }
 
   const handleGuestUser = () => {
     router.push('/sign-in')
     toast('You need to sign in to access recording features');
   }
+
+  const handleSettingChange = (setting: string) => {
+    setSelectedSetting(setting);
+    setIsOpenDropdown(false);
+    activateVideoSetting(setting);
+  };
+
+  const handleRecordingMicChange = (mic: string) => {
+    setSelectedMic(mic);
+    setIsOpenDropdown(false);
+    activateVideoSetting(mic);
+  };
 
   const dialogContent = () => (
     <article className='recording-elements'>
@@ -87,9 +160,41 @@ const session = dummySession;
             ): recordedVideoUrl ? (
                 <video src={recordedVideoUrl} ref={videoRef} controls/>
             ) : (
-                <p>
-                    Click record to start recording your screen
-                </p>
+                <ul>
+                    <li className=''>
+                        <label>Video settings</label>
+                        <DropdownList
+                            options= {settingsOptions}
+                            selectedOption= {selectedSetting}
+                            onOptionSelect= {handleSettingChange}
+                            triggerElement = {
+                                <OptionsTrigger
+                                    label={activeSettingObj.label}
+                                    icon = {activeSettingObj.icon}
+                                />
+                            }
+                            toggleOpen = {() => setIsOpenDropdown(!isOpenDropdown)}
+                            isOpen = {isOpenDropdown}
+                        />
+                    </li>
+                    {/* <li>
+                        <label>Recording settings</label>
+                        <DropdownList
+                            options= {micRecordingOptions}
+                            selectedOption= {selectedMic}
+                            onOptionSelect= {handleSettingChange}
+                            triggerElement = {
+                                <OptionsTrigger
+                                    label={selectedMic.label}
+                                    icon = {selectedMic.icon}
+                                />
+                            }
+                            toggleOpen = {() => setIsOpen(!isOpen)}
+                            isOpen = {isOpen}
+                        />
+                    </li> */}
+                    
+                </ul>
             )}
         </section>
         <div className="record-box">
@@ -145,15 +250,15 @@ const session = dummySession;
             alt="record"
             size={16}
         >
-            <span className='truncate'>
+            <span className='text-white font-semibold'>
                 Record a video
             </span>
         </ActionButton>
-        {isOpen && (
+        {isOpenModal && (
             <Modal
                 closeModal={handleCloseModal}
-                dialogTitle="Screen Recording"
                 dialogContent= {dialogContent()}
+                closeIcon = {<HomeIcon/>}
             />
         )}
     </div>
