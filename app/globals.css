@@ -420,7 +420,7 @@
 
   /* navbar */
   .navbar {
-    @apply h-[75px] border-b border-gray-20 flex items-center;
+    @apply h-[75px] flex items-center bg-pink-50;
 
     nav {
       @apply flex items-center justify-between max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 w-full;
@@ -538,7 +538,7 @@
     }
 
     .dialog-box {
-      @apply absolute bg-white rounded-20 p-6 shadow-lg w-full max-w-lg z-10;
+      @apply relative bg-white rounded-20 p-6 shadow-lg w-full max-w-lg z-10;
 
       figure {
         @apply flex justify-between items-center mb-4;

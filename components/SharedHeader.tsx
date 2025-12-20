@@ -1,9 +1,8 @@
 "use client"
 import { dummySession, filterOptions } from '@/constants';
-import {ActionButton, Img, DropdownList, RecordStream, OptionsTrigger} from '.'
+import {ActionButton, Img, DropdownList, RecordStream} from '.'
 import { authClient } from '@/lib/authClient'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react';
 import { updateURLParams } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -14,17 +13,9 @@ const SharedHeader = ({subHeader, title, userImg}: SharedHeaderProps) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [selectedFilter, setSelectedFilter] = useState(searchParams.get("filter") || filterOptions[0].label)
-
-const activeFilterObj = useMemo(()=>{
-    return filterOptions.find(option => option.label === selectedFilter)!;
-},[selectedFilter, filterOptions])
-
   const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "")
 
   const handleFilterChange = (filter: string) => {
-    setSelectedFilter(filter);
-    setIsOpen(false);
     const url = updateURLParams(
         searchParams,
         {filter: filter || null},
@@ -35,7 +26,6 @@ const activeFilterObj = useMemo(()=>{
 
   useEffect(() => {
     setSearchQuery(searchParams.get("query") || "");
-    setSelectedFilter(searchParams.get("filter") || filterOptions[0].label);
   }, [searchParams]);
 
   useEffect(() => {
@@ -58,8 +48,6 @@ const session = dummySession;
 
 const {user} = dummySession;
 
-const [isOpen, setIsOpen] = useState(false);
-
 const handleGoToUpload = () => {
     if(user) {
         router.push('/upload')
@@ -71,7 +59,7 @@ const handleGoToUpload = () => {
 
   return (
     <header className='header'>
-        <section className='header-container' onMouseEnter={()=> setIsOpen(false)}>
+        <section className='header-container'>
             <div className='details'>
                 {userImg && (
                     <Img
@@ -98,7 +86,7 @@ const handleGoToUpload = () => {
             </aside>
         </section>
         <section className='search-filter'>
-            <div className="search" onMouseEnter={()=> setIsOpen(false)}>
+            <div className="search">
                 <input 
                     type="text" 
                     placeholder='Search for videos, tags, folders...'
@@ -112,14 +100,8 @@ const handleGoToUpload = () => {
             </div>
             <DropdownList
                 options={filterOptions}
-                selectedOption={selectedFilter}
-                toggleOpen = {() => setIsOpen(!isOpen)}
-                isOpen = {isOpen}
-                onOptionSelect={handleFilterChange}
-                triggerElement={<OptionsTrigger 
-                    label={activeFilterObj.label} 
-                    src="/assets/icons/hamburger.svg"/>
-                }
+                action={handleFilterChange}
+                searchFilter
             />
         </section>
     </header>

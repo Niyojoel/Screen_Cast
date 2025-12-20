@@ -309,12 +309,8 @@ declare type DropdownOptionsType = {
 
 declare interface DropdownListProps {
   options: DropdownOptionsType[];
-  selectedOption: string;
-  onOptionSelect: (option: string) => void;
-  triggerElement: ReactNode;
-  toggleOpen: () => void;
-  close?: () => void;
-  isOpen: boolean;
+  action: (option: string) => void;
+  searchFilter?: boolean;
 }
 
 declare interface EmptyStateProps {

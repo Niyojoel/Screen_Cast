@@ -1,32 +1,60 @@
 "use client"
-import Image from 'next/image';
-import {useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import { Img } from './ActionButton';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'next/navigation';
 
 const DropdownList = ({
-    options, 
-    selectedOption, 
-    toggleOpen,
-    isOpen,
-    triggerElement,
-    close,
-    onOptionSelect
+    options,
+    searchFilter = false,
+    action,
 }: DropdownListProps) => {
 
+  const searchParams = useSearchParams();
+
+  const [isOpen, setIsOpen] = useState(false);
+
+    //****not appropriate for search filter***
+  const [selectedOption, setSelectedOption] = useState(searchFilter 
+    ? searchParams.get("filter") || options[0].label 
+    : options[0].label
+  );
+
+  const activeOptionObj = useMemo(()=> {
+    return options.find(option => option.label === selectedOption)!;
+  }, [options, selectedOption])
+
+  const toggleOpen = () => setIsOpen((prev) => !prev);
+
+  const onSelect = (option: string) => {
+    setIsOpen(false);
+    setSelectedOption(option);
+    action(option);
+  };
+
+  const handleLeaveUl = () => isOpen && setIsOpen(false);
+
+  useEffect(() => {
+    setSelectedOption(searchParams.get("filter") || options[0].label);
+  }, [searchParams]);
+
   return (
-    <div className='relative flex flex-col'>
+    <div className='relative flex flex-col' onMouseLeave={handleLeaveUl}>
         <div className="flex gap-2 items-center cursor-pointer" onClick={toggleOpen}>
-            {triggerElement}
+            <OptionsTrigger 
+                label={activeOptionObj.label}
+                icon={activeOptionObj.icon}
+                src= {searchFilter ? "/assets/icons/hamburger.svg" : ''}
+            />
         </div>
-        <ul
+        <ul 
             className={cn('dropdown', {"expand": isOpen})}
         >
             {options.map(({label, icon}) => (
-                <li 
+                <li
                     key={label}
                     className={cn('list-item', {"bg-pink-100 text-white": selectedOption === label})}
-                    onClick={()=> onOptionSelect(label)}
+                    onClick={()=> onSelect(label)}
                 >
                     {icon && icon}
                     {label}
@@ -43,7 +71,7 @@ const DropdownList = ({
   )
 }
 
-export const OptionsTrigger = ({ src, ...selectedOption}: DropdownOptionsType & {src?: string}) => (
+const OptionsTrigger = ({ src, ...selectedOption}: DropdownOptionsType & {src?: string}) => (
     <div className="options-trigger">
         <figure >
             {selectedOption.icon && selectedOption.icon}

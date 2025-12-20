@@ -62,21 +62,10 @@ const micRecordingOptions = [
     },
 ]
 
-const findSelectedOptionObj = (label: string, optionsArray: DropdownOptionsType[]) => {
-    return optionsArray.find(option => option.label === label);
-}
-
 const RecordStream = () => {
   const router = useRouter();
   const [isOpenModal, setIsOpenModal] = useState(false);
-  const [isOpenDropdown, setIsOpenDropdown] = useState(false);
-  const [selectedSetting, setSelectedSetting] = useState(settingsOptions[0].label);
-  const [selectedMic, setSelectedMic] = useState(micRecordingOptions[0].label);
   const videoRef= useRef<HTMLVideoElement>(null);
-
-  const activeSettingObj = useMemo(()=> {
-    return settingsOptions.find(option => option.label === selectedSetting)!;
-  }, [selectedSetting])
 
 //   const {data: session} = authClient.useSession();
 
@@ -135,18 +124,6 @@ const session = dummySession;
     toast('You need to sign in to access recording features');
   }
 
-  const handleSettingChange = (setting: string) => {
-    setSelectedSetting(setting);
-    setIsOpenDropdown(false);
-    activateVideoSetting(setting);
-  };
-
-  const handleRecordingMicChange = (mic: string) => {
-    setSelectedMic(mic);
-    setIsOpenDropdown(false);
-    activateVideoSetting(mic);
-  };
-
   const dialogContent = () => (
     <article className='recording-elements'>
         <section>
@@ -161,38 +138,20 @@ const session = dummySession;
                 <video src={recordedVideoUrl} ref={videoRef} controls/>
             ) : (
                 <ul>
-                    <li className=''>
+                    <li>
                         <label>Video settings</label>
                         <DropdownList
-                            options= {settingsOptions}
-                            selectedOption= {selectedSetting}
-                            onOptionSelect= {handleSettingChange}
-                            triggerElement = {
-                                <OptionsTrigger
-                                    label={activeSettingObj.label}
-                                    icon = {activeSettingObj.icon}
-                                />
-                            }
-                            toggleOpen = {() => setIsOpenDropdown(!isOpenDropdown)}
-                            isOpen = {isOpenDropdown}
+                            options={settingsOptions}
+                            action={activateVideoSetting}
                         />
                     </li>
-                    {/* <li>
+                    <li>
                         <label>Recording settings</label>
                         <DropdownList
-                            options= {micRecordingOptions}
-                            selectedOption= {selectedMic}
-                            onOptionSelect= {handleSettingChange}
-                            triggerElement = {
-                                <OptionsTrigger
-                                    label={selectedMic.label}
-                                    icon = {selectedMic.icon}
-                                />
-                            }
-                            toggleOpen = {() => setIsOpen(!isOpen)}
-                            isOpen = {isOpen}
+                            options={micRecordingOptions}
+                            action={activateMicSetting}
                         />
-                    </li> */}
+                    </li>
                     
                 </ul>
             )}
