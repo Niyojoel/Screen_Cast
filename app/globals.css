@@ -12,6 +12,10 @@
   --color-foreground: var(--foreground);
 }
 
+co {
+  background-color: rgb(255, 223, 234);
+}
+
 @theme {
   --color-blue-100: #2c325d;
   --color-light-100: #fff8fb;
@@ -21,6 +25,7 @@
   --color-gray-40: rgba(58, 56, 77, 0.04);
   --color-gray-100: #6c6685;
   --color-pink-10: #ffeef5;
+  --color-pink-20: #fff7fa;
   --color-pink-100: #ff4393;
   --color-orange-100: #fe6247;
   --text-28: 1.75rem;
@@ -46,8 +51,8 @@
     );
   --background-image-modal-100:
     linear-gradient(
-      rgba(108, 102, 133, 0.1),
-      rgba(0, 0, 0, 0.7) 
+      rgba(0, 0, 0, 0.05) 20%,
+      rgba(255, 223, 234)
     );
 }
 
@@ -492,7 +497,7 @@
         }
 
         ul{
-          @apply flex flex-col gap-2 items-center;
+          @apply w-full h-full border flex flex-col gap-5;
 
           li {
             @apply flex flex-col gap-5;

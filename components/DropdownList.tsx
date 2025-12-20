@@ -42,8 +42,8 @@ const DropdownList = ({
     <div className='relative flex flex-col' onMouseLeave={handleLeaveUl}>
         <div className="flex gap-2 items-center cursor-pointer" onClick={toggleOpen}>
             <OptionsTrigger 
-                label={activeOptionObj.label}
-                icon={activeOptionObj.icon}
+                label={activeOptionObj?.label}
+                icon={activeOptionObj?.icon}
                 src= {searchFilter ? "/assets/icons/hamburger.svg" : ''}
             />
         </div>
@@ -71,17 +71,17 @@ const DropdownList = ({
   )
 }
 
-const OptionsTrigger = ({ src, ...selectedOption}: DropdownOptionsType & {src?: string}) => (
+const OptionsTrigger = ({ src, icon, label}: DropdownOptionsType & {src?: string}) => (
     <div className="options-trigger">
         <figure >
-            {selectedOption.icon && selectedOption.icon}
+            {icon && icon}
             {src && (
                 <Img
                 src={src} alt="menu"
                 size={14}
             />
             )}
-            <span>{selectedOption.label}</span>
+            <span>{label}</span>
         </figure>
         <Img
             src="/assets/icons/arrow-down.svg" 
