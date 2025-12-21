@@ -173,12 +173,12 @@ const ThumbnailSuggestions = ({
 
   return (
     <section className= {
-      cn("previous-thumbnails", uploadTriggerClass, {
+      cn("thumbnail-select", uploadTriggerClass, {
       "gap": active
     })
     }>
       {uploadTrigger}
-    <ul className={cn({
+    <ul className={cn("previous-thumbnails",{
       'flex-1': active
       })}>
         {active && previousThumbnails?.map(({base64, fileName}) => (
@@ -207,9 +207,7 @@ const ThumbnailGenerate = ({
 
   const onGenerateThumbnail = () => {
     setIsGenerating(true);
-    setTimeout(() => {
-      handleGenerateThumbnail(captureTime, videoFile)
-    }, 1000);
+    handleGenerateThumbnail(captureTime, videoFile)
     setIsGenerating(false);
   }
 

@@ -24,11 +24,8 @@ const activateMicSetting = (selectedMic: string) => {
 const settingsOptions = [
     {
         icon: <TvIcon size={18}/>,
-        label: "Screen and Camera"
-    },
-    {
-        icon: <TvIcon size={18}/>,
-        label: "Full Screen"
+        label: "Full Screen",
+        default: true
     },
     {
         icon: <AppWindowMacIcon size={18}/>,
@@ -50,7 +47,8 @@ const micRecordingOptions = [
     },
     {
         icon: <MicIcon size={18}/>,
-        label: "Default - MacBook Air Microphone"
+        label: "Default - MacBook Air Microphone",
+        default: true
     },
     {
         icon: <MicIcon size={18}/>,
@@ -124,6 +122,27 @@ const session = dummySession;
     toast('You need to sign in to access recording features');
   }
 
+  const recordingSettings = () => (
+    <ul className='recording-settings'>
+        <li>
+            <p>Video settings</p>
+            <DropdownList
+                options={settingsOptions}
+                action={activateVideoSetting}
+                optionsStyle={{display: "flex", alignItems: "center", gap: "0.5rem", paddingTop: "0.7rem", paddingBottom: "0.7rem"}}
+            />
+        </li>
+        <li>
+            <p>Recording settings</p>
+            <DropdownList
+                options={micRecordingOptions}
+                action={activateMicSetting}
+                optionsStyle={{display: "flex", alignItems: "center", gap: "0.5rem"}}
+            />
+        </li>
+    </ul>
+  )
+
   const dialogContent = () => (
     <article className='recording-elements'>
         <section>
@@ -136,55 +155,33 @@ const session = dummySession;
                 </article>
             ): recordedVideoUrl ? (
                 <video src={recordedVideoUrl} ref={videoRef} controls/>
-            ) : (
-                <ul>
-                    <li>
-                        <label>Video settings</label>
-                        <DropdownList
-                            options={settingsOptions}
-                            action={activateVideoSetting}
-                        />
-                    </li>
-                    <li>
-                        <label>Recording settings</label>
-                        <DropdownList
-                            options={micRecordingOptions}
-                            action={activateMicSetting}
-                        />
-                    </li>
-                    
-                </ul>
-            )}
+            ) : (recordingSettings())}
         </section>
         <div className="record-box">
             {(!isRecording && !recordedVideoUrl) && (
                 <ActionButton
                     className='record-start'
                     action={handleStartRecording}
-                    src={ICONS.record}
-                    alt="record"
                 >
-                    Record
+                    Start Recording
                 </ActionButton>
             )}
             {isRecording && (
                 <ActionButton
                     className='record-stop'
                     action={handleStopRecording}
-                    src={ICONS.record}
-                    alt="record"
                 >
                     Stop Recording
                 </ActionButton>
             )}
             {recordedVideoUrl && (
                 <>
-                    <button
+                    <ActionButton
                         className='record-again'
-                        onClick={handleRecordAgain}
+                        action={handleRecordAgain}
                     >
                         Record Again
-                    </button>
+                    </ActionButton>
 
                     <ActionButton
                         className='record-upload'
@@ -217,7 +214,7 @@ const session = dummySession;
             <Modal
                 closeModal={handleCloseModal}
                 dialogContent= {dialogContent()}
-                closeIcon = {<HomeIcon/>}
+                closeIcon = {<HomeIcon size={22}/>}
             />
         )}
     </div>

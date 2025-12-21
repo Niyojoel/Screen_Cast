@@ -12,7 +12,7 @@ const Modal = ({
       <div className="dialog-box">
         <figure>
             <Logo/>
-            <button onClick={closeModal}>
+            <button onClick={closeModal} style={{padding: "0.5rem", border: "transparent", transition: "200ms ease-in-out"}}>
               {closeIcon}
             </button>
         </figure>

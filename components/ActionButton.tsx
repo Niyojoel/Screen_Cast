@@ -10,34 +10,18 @@ const ActionButton = ({
   size, 
   action,
   disable,
-  href,
   noImgClass = false,
   className="",
   imgClassName="" 
 }: ActionButtonProps) => {
   
-  if(href) (
-    <Link href={href}>
-        {src && (
-        <Img
-          src={src} 
-          alt={alt}
-          size={size} 
-          noClass={noImgClass}
-          className={imgClassName}
-        />
-        )}
-        {children && children}
-    </Link>
-  )
-
   return (
     <button 
       className={`cursor-pointer ${className}`} 
       onClick={action}
       disabled={disable}
     >
-        {src && (
+        {(src && alt) && (
         <Img
           src={src} 
           alt={alt} 

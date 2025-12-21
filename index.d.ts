@@ -16,15 +16,11 @@ declare interface ImgProps {
     noClass?: boolean
 }
 
-declare interface ActionButtonProps {
-  src: string;
-  alt: string;
-  children?: React.ReactNode;
+declare interface ActionButtonProps extends Omit<React.BaseHTMLAttributes, 'onClick'> {
+  src?: string;
+  alt?: string;
   size?: number;
-  action?: () => void;
-  disable?: boolean;
-  href?: string,
-  className?: string;
+  action: () => void;
   imgClassName?: string;
   noImgClass?: boolean
 } 
@@ -304,13 +300,20 @@ declare interface ModalProps {
 
 declare type DropdownOptionsType = {
   label: string,
-  icon?: React.ReactNode
+  icon?: React.ReactNode,
+  default?: boolean
+}
+
+declare type OptionsTriggerProps = DropdownOptionsType & {
+  src?: string;
+  className?: string;
 }
 
 declare interface DropdownListProps {
   options: DropdownOptionsType[];
   action: (option: string) => void;
   searchFilter?: boolean;
+  className?: string;
 }
 
 declare interface EmptyStateProps {

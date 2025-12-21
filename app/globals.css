@@ -12,10 +12,6 @@
   --color-foreground: var(--foreground);
 }
 
-co {
-  background-color: rgb(255, 223, 234);
-}
-
 @theme {
   --color-blue-100: #2c325d;
   --color-light-100: #fff8fb;
@@ -64,10 +60,6 @@ co {
     padding: 0;
     box-sizing: border-box;
     /* font-family: var(--font-geist-karla); */
-  }
-
-  p, span {
-    font-weight: 200;
   }
 
   select {
@@ -242,10 +234,14 @@ co {
 
   /* dropdown */
   .dropdown {
-    @apply absolute bg-white shadow-lg rounded-lg flex flex-col gap-1 w-full z-10 top-10 right-0 h-0 overflow-hidden;
+    @apply absolute bg-white shadow-20 rounded-lg flex flex-col gap-0.5 w-full z-10 top-10 right-0 h-0 overflow-hidden;
 
     .list-item {
-      @apply px-8 py-2 text-sm font-medium -tracking-[0.8px] relative text-dark-100 cursor-pointer hover:bg-pink-100 hover:text-white transition-colors duration-200 ease-in-out rounded-lg;
+      @apply px-3 py-2 text-sm font-medium -tracking-[0.8px] relative text-[#555] cursor-pointer hover:bg-pink-100 hover:text-white transition-colors duration-200 ease-in-out;
+
+      figure {
+        @apply flex items-center gap-2;
+      }
 
       img {
         @apply absolute right-3 top-1/2 -translate-y-1/2;
@@ -321,15 +317,15 @@ co {
     article {
       @apply flex flex-col gap-3.5;
 
-      .previous-thumbnails {
+      .thumbnail-select {
         @apply w-full flex items-center overflow-x-auto scroll-smooth;
   
         figure {
           @apply relative w-full md:min-w-[250px] min-w-[200px] md:flex-row flex-col h-30 gap-2.5;
         }
   
-        ul {
-          @apply relative w-fit flex items-center gap-2.5;
+        .previous-thumbnails {
+          @apply relative flex items-center gap-2.5;
   
           div {
             @apply relative rounded-xl bg-gray-50 w-[160px] h-30 hover:scale-[101%] cursor-pointer transition-all overflow-hidden;
@@ -465,24 +461,11 @@ co {
   }
 
   .recording-elements {
-    
-    figure {
-      @apply flex justify-between items-center mb-4;
-
-      h3 {
-        @apply text-xl font-bold text-dark-100;
-      }
-
-      button {
-        @apply p-2 rounded-full hover:bg-gray-20;
-      }
-    }
-
     section {
-      @apply w-full rounded-18 flex items-center justify-center overflow-hidden;
+      @apply w-full rounded-18 flex;
 
       article {
-        @apply flex flex-col items-center gap-2;
+        @apply w-full flex flex-col items-center gap-2;
 
         div {
           @apply w-4 h-4 bg-red-500 rounded-full animate-pulse;
@@ -495,42 +478,45 @@ co {
         video {
           @apply w-full h-full object-contain;
         }
-
-        ul{
-          @apply w-full h-full border flex flex-col gap-5;
-
-          li {
-            @apply flex flex-col gap-5;
-
-            label {
-              @apply text-[#777] text-base font-medium;
-            }
-          }
-        }
       }
     }
 
     .record-box {
-      @apply flex justify-center gap-4 mt-4;
+      @apply flex gap-4 mt-4;
+
+      button {
+        @apply w-full py-2 px-6 rounded-4xl font-normal flex items-center justify-center gap-2;
+      }
 
       .record-start {
-        @apply py-1.5 px-6 bg-pink-100 text-white rounded-4xl font-medium flex items-center gap-2;
+        @apply bg-pink-100 text-white font-normal;
       }
 
       .record-stop {
-        @apply py-1.5 px-6 bg-red-500 text-white rounded-4xl font-medium flex items-center gap-2;
+        @apply bg-red-500 text-white;
       }
 
       .record-again {
-        @apply py-1.5 px-6 bg-gray-100 text-white rounded-4xl font-medium;
-      }
+        @apply bg-gray-100  text-white gap-0}
 
       .record-upload {
-        @apply py-1.5 px-6 bg-pink-100 text-white rounded-4xl font-medium flex items-center gap-2;
+        @apply bg-pink-100 text-white;
 
         img {
           @apply brightness-0 invert;
         }
+      }
+    }
+  }
+
+  .recording-settings {
+    @apply w-full flex flex-col gap-6 py-4;
+
+    li {
+      @apply w-full list-none;
+
+      p {
+        @apply text-[#777] mb-2 text-[14.5px] font-normal;
       }
     }
   }
@@ -543,12 +529,12 @@ co {
     }
 
     .dialog-box {
-      @apply relative bg-white rounded-20 p-6 shadow-lg w-full max-w-lg z-10;
+      @apply relative bg-white rounded-20 p-6 shadow-lg sm:w-[350px] w-[90%] max-w-[350px] z-10;
 
       figure {
-        @apply flex justify-between items-center mb-4;
+        @apply flex justify-between items-center;
 
-        button {
+        .modal-home-btn {
           @apply p-0 rounded-full border-0 border-transparent hover:bg-gray-20;
         }
       }
@@ -580,7 +566,7 @@ co {
       }
 
       aside {
-        @apply flex items-center gap-2 md:gap-4;
+        @apply flex flex-wrap items-center gap-2 md:gap-4;
 
         button {
           @apply py-2 px-5 flex items-center gap-2.5 text-sm font-semibold text-dark-100 border border-gray-25 rounded-4xl;
@@ -596,10 +582,10 @@ co {
       @apply flex flex-row items-center flex-wrap gap-5 justify-between;
 
       .search {
-        @apply relative md:max-w-[500px] md:w-full w-[320px];
+        @apply relative md:max-w-[500px] md:w-full w-[335px];
 
         input {
-          @apply border border-gray-20 py-2 pl-8 pr-5 text-dark-100 text-sm font-normal placeholder:text-gray-100 w-full rounded-[18px] focus:outline-pink-100;
+          @apply border border-gray-20 bg-[#f8f8f8] py-2 pl-8 pr-5 text-dark-100 text-sm font-normal placeholder:text-gray-100 w-full rounded-[18px] overflow-hidden focus:outline-pink-100;
         }
 
         img {
@@ -610,10 +596,10 @@ co {
   }
 
   .options-trigger {
-    @apply flex items-center justify-end px-5 py-2 border border-gray-20 rounded-[28px] gap-3;
+    @apply flex w-full items-center justify-between px-3 py-2 border border-gray-20 rounded-[28px] gap-3;
 
     figure {
-      @apply flex items-center gap-1;
+      @apply flex items-center gap-2;
 
       span {
         @apply text-sm font-semibold text-dark-100 -tracking-[0.8px];
@@ -623,7 +609,7 @@ co {
 
   /* video-card */
   .video-card {
-    @apply flex flex-col rounded-2xl max-w-[290px] w-full border border-gray-20 aspect-[16/9] relative;
+    @apply flex flex-col rounded-2xl max-w-[290px] min-w-[200px] w-full border border-gray-20 aspect-[16/9] relative;
 
     .thumbnail {
       @apply w-full rounded-t-2xl object-cover h-[190px];
@@ -676,7 +662,7 @@ co {
     }
 
     .copy-btn {
-      @apply absolute top-3 right-3 size-6 z-[5] shadow-md hover:shadow-lg hover:bg-gray-200 transition duration-200 bg-white rounded-full flex items-center justify-center;
+      @apply absolute top-3 right-3 size-6 z-[5] shadow-md hover:shadow-lg hover:bg-gray-200 transition duration-200 bg-gray-200 rounded-full flex items-center justify-center;
     }
 
     .duration {
