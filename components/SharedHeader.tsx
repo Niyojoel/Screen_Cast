@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { updateURLParams } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { DropdownOptionsType, SharedHeaderProps } from '..';
 
 const SharedHeader = ({subHeader, title, userImg}: SharedHeaderProps) => {
 
@@ -13,12 +14,19 @@ const SharedHeader = ({subHeader, title, userImg}: SharedHeaderProps) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "")
+const activeFilter = useMemo(()=> filterOptions.find(option => option.label === searchParams.get ("filter")), [filterOptions, searchParams])
 
-  const handleFilterChange = (filter: string) => {
+const defaultFilter = useMemo(()=> filterOptions.filter(option => option?.default)[0], [filterOptions, searchParams])
+
+
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "")
+  const [selectedFilter, setSelectedFilter] = useState<DropdownOptionsType>(activeFilter || defaultFilter);
+
+  const handleFilterChange = (option: DropdownOptionsType) => {
+    setSelectedFilter(option);
     const url = updateURLParams(
         searchParams,
-        {filter: filter || null},
+        {filter: option.label || null},
         pathname
     );
     router.push(url);
@@ -26,6 +34,7 @@ const SharedHeader = ({subHeader, title, userImg}: SharedHeaderProps) => {
 
   useEffect(() => {
     setSearchQuery(searchParams.get("query") || "");
+    setSelectedFilter(activeFilter || defaultFilter)
   }, [searchParams]);
 
   useEffect(() => {
@@ -74,14 +83,16 @@ const handleGoToUpload = () => {
                 </article>
             </div>
             <aside>
-                <ActionButton
-                    src="/assets/icons/upload.svg"
-                    alt="upload"
-                    noImgClass
-                    action={handleGoToUpload}
+                <button
+                    onClick={handleGoToUpload}
                 >
+                    <Img
+                        src="/assets/icons/upload.svg"
+                        alt="upload"
+                        noClass
+                    />
                     <span>Upload a video</span>
-                </ActionButton>
+                </button>
                 <RecordStream/>
             </aside>
         </section>
@@ -100,8 +111,14 @@ const handleGoToUpload = () => {
             </div>
             <DropdownList
                 options={filterOptions}
-                action={handleFilterChange}
-                searchFilter
+                activeOption={selectedFilter}
+                onSelectAction={handleFilterChange}
+                triggerIcon={<Img 
+                    src="/assets/icons/hamburger.svg"
+                    alt="menu"
+                    size="14"
+                />
+                }
             />
         </section>
     </header>

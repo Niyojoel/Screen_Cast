@@ -1,5 +1,3 @@
-"use client"
-
 import {VideoDetailHeader, VideoInfo, VideoPlayer} from '@/components';
 import { dummyVideos } from '@/constants';
 import { getTranscript, getVideoById } from '@/lib/actions/video';
@@ -26,13 +24,14 @@ const page = async ({params}: Params) => {
         userImg={user?.image}
         username={user?.name!}
         videoId={video.videoId}
+        videoUrl={video.videoUrl}
         ownerId={video.userId}
         visibility={video.visibility}
         thumbnailUrl={video.thumbnailUrl}
       />
       <section className='video-details'>
         <div className="video-content">
-          <VideoPlayer id={video.id} videoId={video.videoId}/>
+          <VideoPlayer id={video.id} videoId={video.videoId} videoUrl={video.videoUrl}/>
         </div>
         <VideoInfo
           // transcript= {transcript}

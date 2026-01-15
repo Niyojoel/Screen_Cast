@@ -1,3 +1,9 @@
+"use client"
+
+import DropdownList from "./DropdownList"
+import { DropdownOptionsType, FormFieldProps} from ".."
+import { useState } from "react"
+
 const FormField = ({
     id,
     label,
@@ -21,14 +27,10 @@ const FormField = ({
           rows={3}
         />
       ) : as == 'select' ? (
-        <select 
-          id={id} 
-          name={id} 
-          value={value} 
+        <Select 
           onChange={onChange}
-        >
-          {options?.map(({label, value}) => (<option key={label} value={value}>{label}</option>))}
-        </select>
+          options={options}
+        />
       ) : (
         <input 
           id={id} 
@@ -40,6 +42,25 @@ const FormField = ({
         />
       )}
     </div>
+  )
+}
+
+
+const Select =  ({options, onChange}: Required<Pick<FormFieldProps, 'options'| 'onChange'>>) => {
+
+  const [selectedOption, setSelectedOption] = useState<DropdownOptionsType>({label: 'Select visibility (Public or Private)', placeholder: true})
+
+  const selectAction = (option: DropdownOptionsType) => {
+    setSelectedOption(option);
+    onChange({name: option.label, value: option.value})
+  }
+
+  return (
+     <DropdownList
+      activeOption={selectedOption}
+      options={options}
+      onSelectAction={selectAction}
+    />
   )
 }
 

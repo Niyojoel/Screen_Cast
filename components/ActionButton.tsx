@@ -1,12 +1,15 @@
 "use client"
 
 import Image from "next/image"
-import Link from "next/link"
+import { memo } from "react"
+import { ActionButtonProps, ImgProps } from "..";
+import { cn } from "@/lib/utils";
 
-const ActionButton = ({
+const ActionButton = memo(({
   src, 
   alt,
   children, 
+  text,
   size, 
   action,
   disable,
@@ -17,7 +20,7 @@ const ActionButton = ({
   
   return (
     <button 
-      className={`cursor-pointer ${className}`} 
+      className={cn("cursor-pointer", className)} 
       onClick={action}
       disabled={disable}
     >
@@ -29,15 +32,16 @@ const ActionButton = ({
           className={imgClassName}
         />
         )}
+        {text && text}
         {children && children}
     </button>
   )
-}
+});
 
-export default ActionButton
+export default ActionButton;
 
 
-export const Img = ({
+export const Img = memo(({
   src, 
   alt, 
   size = 16, 
@@ -47,9 +51,10 @@ export const Img = ({
     
   <Image
     src={src}
-    alt={alt} 
+    alt={alt as string}
     width={size} 
     height={size} 
-    className={!noClass ? `rounded-full ${className}` : ""}
+    style={{color: '#888'}}
+    className={cn(!noClass ? `rounded-full` : "", className)}
   />
-)
+));

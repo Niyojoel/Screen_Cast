@@ -1,3 +1,6 @@
+import { ClassValue } from "clsx";
+import { ReactNode } from "react";
+
 declare interface User {
   name: string;
   email: string;
@@ -10,7 +13,7 @@ declare interface User {
 
 declare interface ImgProps {
     src: string;
-    alt: string;
+    alt?: string;
     size?: number;
     className?: string;
     noClass?: boolean
@@ -35,7 +38,7 @@ declare interface FormFieldProps {
   ) => void;
   placeholder?: string;
   as?: "input" | "textarea" | "select";
-  options?: Array<{ value: string; label: string }>;
+  options?: DropdownOptionsType[];
 }
 
 declare interface FileInputProps {
@@ -52,28 +55,27 @@ declare interface FileInputProps {
   onReset: () => void;
   type: "video" | "image";
   handleUsePreviousThumbnail?: (filename: string) => void; 
-  previousThumbnails?: PreviousThumbnailsType[],
-  handleGenerateThumbnail?: (captureTime: number, videoFile: File) => void;
-  canGenerateThumbnail?: boolean; 
-  videoFile?: File | null;
+  previousThumbnails?: ImagesArrayType[],
+  handleOnGenerate?: (captureTime: number, videoFile: File) => void;
+  removeThumbnail?: (filename: string) => void;
 }
 
 declare interface ThumbnailSuggestionsProps {
   uploadTrigger: React.ReactNode;
-  previousThumbnails: PreviousThumbnailsType[];
+  previousThumbnails: ImagesArrayType[];
   uploadTriggerClass: string;
   handleUsePreviousThumbnail: (filename: string) => void;
+  removeThumbnail: (filename: string) => void;
 }
 
-declare interface ThumbnailGenerateProps {
-  handleGenerateThumbnail: (captureTime: number, videoFile: File) => void;
-  videoFile: File;
-  canGenerateThumbnail: boolean;
-  uploadTriggerClass: string;
+declare interface ImagesConsoleProps {
+  imagesArr: ImagesArrayType[];
+  className?: ClassValue;
+  onSelect: (id: string) => void;
+  removeFn: (id: string) => void;
 }
 
-
-declare interface PreviousThumbnailsType {
+declare interface ImagesArrayType {
   base64: string | ArrayBuffer,
   fileName: string; 
   fileType: string;
@@ -171,6 +173,13 @@ declare interface VideoDetails {
   visibility: Visibility;
   duration?: number | null;
 }
+
+declare type DeleteContentStructProps = {
+  icon: React.ReactNode,
+  headerText: string,
+  subText: string
+}
+
 
 declare interface BunnyVideoResponse {
   guid: string;
@@ -292,29 +301,77 @@ declare interface ParamsWithSearch {
   searchParams: Promise<Record<string, string | undefined>>;
 }
 
-declare interface ModalProps {
-    dialogContent: React.ReactElement,
-    closeModal: () => void,
-    closeIcon: React.ReactNode
+declare type ModalStateType = {
+  state: boolean,
+  content: React.ReactNode | null,
+  buttons?: ModalButton[] | null,
+  closeIcon?: React.ReactNode
 }
+
+declare interface ModalProps {
+  closeModal: () => void,
+  closeIcon: React.ReactNode,
+  error: string,
+  setError: (message: string) => void,
+  footerButtons?: ModalButton[] | null, 
+  contentBody: React.ReactNode
+}
+
+declare interface DialogBodyContentProps {
+  icon?: React.ReactNode, 
+  headerNode?: string | React.ReactElement, 
+  subNode?: string | React.ReactElement, 
+  className?: string,
+  actionPopup?: boolean
+}
+
+declare interface dialogContentListFeatureProps {
+  featureName: string, 
+  featureStatus: string,
+  className?: string
+}
+
+declare type ModalButton = {
+  className: string;
+  action: () => void;
+  src?: string;
+  alt?: string;
+  text: string;
+  disabled?: boolean;
+}
+
 
 declare type DropdownOptionsType = {
   label: string,
   icon?: React.ReactNode,
-  default?: boolean
+  value?: string,
+  default?: boolean,
+  inactive?: boolean,
+  placeholder?: boolean,
 }
 
-declare type OptionsTriggerProps = DropdownOptionsType & {
-  src?: string;
+declare type SelectOptionType = {
+  label: string,
+  value: Visibility,
+  placeholder?: boolean,
+} 
+
+declare type OptionsTriggerProps = {
+  activeOption: DropdownOptionsType,
+  triggerIcon?: React.ReactNode;
   className?: string;
+  disabled?: boolean;
 }
 
 declare interface DropdownListProps {
   options: DropdownOptionsType[];
-  action: (option: string) => void;
-  searchFilter?: boolean;
+  onSelectAction: (option: DropdownOptionsType) => void;
+  activeOption: DropdownOptionsType,
   className?: string;
-}
+  triggerIcon?: React.ReactNode;
+  triggerClass?: string;
+  disabled?: boolean;
+};
 
 declare interface EmptyStateProps {
   icon: string;
@@ -323,9 +380,67 @@ declare interface EmptyStateProps {
 }
 
 declare interface MediaStreams {
-  displayStream: MediaStream;
-  micStream: MediaStream | null;
+  displayStream: MediaStream | null;
+  userMediaStream: MediaStream | null;
   hasDisplayAudio: boolean;
+}
+
+type CursorOptions = "always" | "motion" | 'never'
+
+type DisplaySurfaceOptions = "monitor" | "window" | "browser" | 'camera only'
+
+type CameraOptions = "no" | "with" | 'only'
+
+type BrowserDialogOptionsType = 'Entire Screen' | 'Window' | 'Browser Tab'
+
+type CameraFacingMode = 'user' | 'environment'
+
+type RecordingStateType = 'before' | "ongoing" | "after"
+
+type DeviceType =  "camera" | "microphone"
+
+type PermissionsType = "denied" | "granted" | "prompt"
+
+type DeviceStatus = "passed" | "no-permission" | 'no-support' | "unchecked" | 'unused'
+
+type GoToUploadState = "failed" | "loading" | "redirecting" | "finished"
+
+type ActionResponseType = 'failed' | 'successful'
+
+
+declare type VideoSettingsType = {
+  cursor: CursorOptions;
+  displaySurface: DisplaySurfaceOptions;
+  camera: CameraOptions;
+  cameraFacingMode: CameraFacingMode;
+  withMic: boolean;
+}
+
+declare type RecordingDialogContentBodyProps = {
+    recordingState: RecordingStateType | null,
+    recordedVideoUrl: string,
+    goToUpload: GoToUploadState | null,
+    videoRef: RefObject<HTMLVideoElement | null>,
+    settingsGuide : string,
+    showInstructions : boolean,
+    videoSettings : VideoSettingsType,
+    selectedVideoSetting : VideoSettingsType & {systemAudio: boolean},
+    recordSettings: RecordSettingsType[],
+    downloading: boolean,
+    actionResponse: "failed" | "successful" | null;
+}
+
+declare interface RecordSettingsType {
+  options: DropdownOptionsType[];
+  title?: string,
+  updateSetting: (option: string) => void;
+  className?: string,
+  settingValue: [
+    keyof VideoSettingsType, 
+    VideoSettingsType[keyof VideoSettingsType]
+  ],
+  idIcon?: React.ReactNode,
+  disabled?: boolean,
 }
 
 declare interface BunnyRecordingState {
@@ -363,3 +478,12 @@ declare interface RecordingHandlers {
   onDataAvailable: (e: BlobEvent) => void;
   onStop: () => void;
 }
+
+type size = {ideal: number};
+
+declare type VideoConfig = {
+  width: size,
+  height: size,
+  frameRate?: size,
+  facingMode?: string
+}  

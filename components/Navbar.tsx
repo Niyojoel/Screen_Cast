@@ -31,7 +31,7 @@ const {id, image} = user;
 
   return (
     <header className='navbar'>
-        <nav>
+        <nav className='wrapper'>
             <Logo/>
             {user ? (
                 <figure>

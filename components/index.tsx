@@ -15,4 +15,7 @@ export {default as Pagination} from "./Pagination";
 export {default as RecordStream} from "./RecordStream";
 export {default as Modal} from "./Modal";
 export {default as Logo} from "./Logo";
-export {OptionsTrigger} from "./DropdownList";
+export {default as Alert} from "./Alert";
+export {default as DialogContentBody} from "./DialogContentBody";
+export {default as ImagesConsole} from "./ImagesConsole";
+export {default as FailedActionDialog} from "./FailedActionDialog";

@@ -1,10 +1,10 @@
 "use client"
 import { cn, parseTranscript } from '@/lib/utils';
-import React, { useState } from 'react'
+import React, { memo, useState } from 'react'
 import EmptyState from './EmptyState';
 import { infos } from '@/constants';
 
-const VideoInfo = ({
+const VideoInfo = memo(({
   transcript,
   createdAt,
   description,
@@ -88,6 +88,6 @@ const VideoInfo = ({
 
     </section>
   )
-}
+})
 
 export default VideoInfo;

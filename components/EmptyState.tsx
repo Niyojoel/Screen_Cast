@@ -1,7 +1,9 @@
-import Image from 'next/image'
-import React from 'react'
+"use client";
 
-const EmptyState = ({icon, title, description}: EmptyStateProps) => {
+import Image from 'next/image'
+import { memo } from 'react'
+
+const EmptyState = memo(({icon, title, description}: EmptyStateProps) => {
   return (
     <section className='empty-state'>
         <figure className="">
@@ -13,6 +15,6 @@ const EmptyState = ({icon, title, description}: EmptyStateProps) => {
         </article>
     </section>
   )
-}
+});
 
 export default EmptyState

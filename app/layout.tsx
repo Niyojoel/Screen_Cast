@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 // import { Karla } from "next/font/google";
 import "./globals.css";
 import { satoshi } from "../fonts/font";
+import GlobalProvider from "@/lib/hooks/useGlobalContext";
 
 //cannot be pulled without internet
 // const geistKarla = Karla({
@@ -28,7 +29,9 @@ export default function Layout({
       <body
         className={`${satoshi.variable}`}
       >
-        {children}
+        <GlobalProvider>
+          {children}
+        </GlobalProvider>
       </body>
     </html>
   );

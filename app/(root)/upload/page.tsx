@@ -1,6 +1,6 @@
 "use client"
 
-import {FileInput, FormField} from "@/components"
+import {Alert, DialogContentBody, FailedActionDialog, FileInput, FormField, Modal} from "@/components"
 import { 
   MAX_THUMBNAIL_SIZE, 
   MAX_VIDEO_SIZE, 
@@ -11,27 +11,28 @@ import {
   ChangeEvent, 
   FormEvent, 
   FormEventHandler, 
+  useCallback, 
   useEffect, 
+  useMemo, 
   useRef, 
   useState
 } from "react";
 import { useRouter } from "next/navigation";
-import {LoaderPinwheel} from "lucide-react";
+import {LoaderPinwheel, X} from "lucide-react";
 import { 
   getThumbnailUploadUrl, 
   getVideoUploadUrl, 
   saveVideoDetails,
 } from "@/lib/actions/video";
 import { formValues, uploadFileToBunny } from "@/lib/utils";
+import { ModalButton, ModalStateType, SelectOptionType, VideoFormValues} from "@/index";
+import { DIALOG_ICONS } from "@/constants/lists";
 
 const page = () => {
   const router = useRouter();
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
-  const [canGenerateThumbnail, setCanGenerateThumbnail] = useState(false);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const errorAlertInViewRef = useRef<HTMLDivElement>(null)
 
   const [formData, setFormData] = useState<VideoFormValues>({
     title: "",
@@ -40,21 +41,152 @@ const page = () => {
     visibility: "public"
   });
 
+  const [openModal, setOpenModal] = useState<ModalStateType>({state: false, content: null, buttons: null});
+  const [modalError, setModalError] = useState('');
+  const [captureTime, setCaptureTime] = useState(1)
+
   const video = useFileInput(MAX_VIDEO_SIZE);
   const thumbnail = useFileInput(MAX_THUMBNAIL_SIZE);
+
+  const closeModal = () => setOpenModal({state: false, content: null, buttons: null})
+
+   //Generate thumbnail features
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generated, setGenerated] = useState<'success' | 'failed' | null>(null);
+
+  const generateContent = () => (
+    !isGenerating 
+    ? !generated 
+      ? (
+        <DialogContentBody
+          headerNode = 'Generate a Thumbnail from Video'
+          icon = {DIALOG_ICONS.alert}
+          subNode = {
+            <span className="thumbnail-generate">
+              <pre>
+                <label htmlFor="gen">
+                  Time of video capture : 
+                </label>
+                <input 
+                  id="gen" 
+                  hidden={false} 
+                  value={captureTime} 
+                  onChange={(e) => setCaptureTime(Number(e.target.value))}
+                />
+              </pre>
+            </span>
+          }
+        />
+      ): generated === 'success' 
+        ? (
+          <DialogContentBody
+            icon = {DIALOG_ICONS.checked}
+            headerNode= "Action successful"
+            subNode = "Generating thumbnail is being previewed in the thumbnail box"
+          /> 
+        ) : generated === 'failed' ? (
+          <FailedActionDialog customMessage = "Failed to generate thumbnail"/>
+        )
+      : null
+    : (
+      <DialogContentBody
+        icon = {DIALOG_ICONS.loader}
+        subNode = "Generating thumbnail..."
+      />
+    )
+  )
+  
+  const onGenerateThumbnail = useCallback(async ()=> {
+    try {
+      setIsGenerating(true);
+      if(video.file) await video.handleOnGenerate(captureTime, video.file)
+      setIsGenerating(false);
+      setGenerated('success')
+    }catch(error){
+      const message = error instanceof Error ? error.message : error;
+      setIsGenerating(false);
+      setGenerated('failed')
+      console.error(error)
+    }finally{
+      const generatedTimeout = setTimeout(()=>{ 
+        setGenerated(null);
+      }, 3000);
+      clearTimeout(generatedTimeout);
+    }
+  }, [video, captureTime])
+
+  const onOpenModal = () => {
+  setOpenModal({
+    state: true,
+    content: generateContent(),
+    buttons: generateBtn
+    })
+  }
+
+  const retryGenerate = () => {
+    setIsGenerating(false);
+    setGenerated(null);
+  }
+  
+  const saveThumbnail = useCallback(() => {
+    //to be implemented
+  }, [video])
+  
+  const generateBtn = useMemo((): ModalButton[]=> {
+    let buttons: ModalButton[] = [];
+
+    if(!isGenerating && !generated) {
+      buttons = [
+        {
+          className: "btn-theme",
+          action: onGenerateThumbnail,
+          text: 'Generate'
+        }
+      ]   
+    } else if (!isGenerating && generated === "success") {
+      buttons = [
+        {
+          className: "btn-theme",
+          action: closeModal,
+          text: "Ok"
+        }
+      ]
+    } else if (!isGenerating && generated === "failed") {
+      buttons = [
+        {
+          className: "btn-theme",
+          action: saveThumbnail,
+          text: "Save To Profile"
+        },
+        {
+          className: "btn-theme",
+          action: retryGenerate,
+          text: "Retry Again"
+        },
+      ]
+    }else if (isGenerating && !setGenerated) {
+      buttons = [
+        {
+          className: "btn-theme",
+          action: () => null,
+          text: 'Generate'
+        }
+      ]   
+    }
+    return buttons;
+  }
+  ,[
+    isGenerating,
+    closeModal,
+    onGenerateThumbnail,
+    generated
+  ])
+
 
   //Getting video duration
   useEffect(()=> {
     if(video.duration !== null || 0) setVideoDuration(video.duration!)
   },[video.duration])
-
-  // Can generate thumbnail check
-  useEffect(() => {
-    if(video.file !== null) {
-      setCanGenerateThumbnail(true)
-      setVideoFile(video.file);
-    }else {setCanGenerateThumbnail(false);}
-  }, [video.file])
 
   useEffect(() => {
     //Stored recorded video check on upload page and filling into video file input
@@ -113,15 +245,12 @@ const page = () => {
     if(storedFormValues) setFormData(prev => ({...prev, ...storedFormValues}))
   },[])
 
-  //error alert timeout 
-  useEffect(()=> {
-    if(error) {
-      errorAlertInViewRef.current?.scrollIntoView({behavior: "smooth"})
-      const errorTimer = setTimeout(() => setError(''), 3000);
-  
-      return ()=> clearTimeout(errorTimer);
-    };
-  }, [error])
+  const visibilityInputChange =(option: SelectOptionType) => {
+    const value = option.value;
+    const name = option.label || "visibility";
+    console.log(name, value)
+    setFormData(prev=> ({...prev, [name]: value}));
+  }
 
   const handleInputChange = (e: ChangeEvent<HTMLFormElement>) => {
     const {name, value} = e.target; 
@@ -198,9 +327,8 @@ const page = () => {
 
   return (
     <main className="wrapper-md upload-page">
-      <span ref={errorAlertInViewRef} className="absolute top-0 left-[50%]"/>
-      <h1>Upload a video</h1>
-      {error && <div className="error-field">{error}</div>}
+      <h1> Upload video</h1>
+      <Alert error={error} setError={setError}/>
       <form 
         className="form"
         onSubmit={handleSubmit}
@@ -242,6 +370,8 @@ const page = () => {
           handleError={setError}
           onFileDrop = {video.handleFileDrop}
           previewBoxRef={video.previewBoxRef}
+          setOpenModal={setOpenModal}
+          handleOnGenerate={thumbnail.handleOnGenerate}
         /> 
         <FileInput
           id="thumbnail"
@@ -258,22 +388,31 @@ const page = () => {
           previewBoxRef={thumbnail.previewBoxRef}
           previousThumbnails = {thumbnail.previousThumbnails}
           handleUsePreviousThumbnail = {thumbnail.handleUsePreviousThumbnail}
-          handleGenerateThumbnail={thumbnail.handleGenerateThumbnail}
-          videoFile={videoFile}
-          canGenerateThumbnail={canGenerateThumbnail}
+          setOpenModal={setOpenModal}
+          removeThumbnail={thumbnail.removeThumbnail}
         />
         <FormField
           id="visibility"
           label="Visibility"
           as= "select"
-          options={visibilities.map((v) => ({value: v, label: v.replace(v.charAt(0), v.charAt(0).toUpperCase())}))}
+          options={visibilities}
           value={formData.visibility}
-          onChange={handleInputChange}
+          onChange={visibilityInputChange}
         />
         <button type="submit" disabled={isSubmitting} className="submit-button">
           {isSubmitting ? <LoaderPinwheel/> : "Upload Video"}
         </button>
       </form>
+      {openModal.state && (
+      <Modal
+        closeModal={closeModal}
+        closeIcon = {<X size={18}/>}
+        contentBody= {openModal.content}
+        footerButtons= {openModal.buttons}
+        error={modalError}
+        setError={setModalError}
+      />)
+      }
     </main>
   )
 }

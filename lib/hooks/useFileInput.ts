@@ -1,6 +1,7 @@
 'use client'
-import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
-import { base64ToFile, getVideoDuration } from "../utils";
+import { ChangeEvent, DragEvent, useCallback, useEffect, useRef, useState } from "react";
+import { base64ToFile, generateThumbnail, getVideoDuration } from "../utils";
+import { ImagesArrayType } from "@/index";
 
 export const useFileInput = (maxSize: number) => {
   const [file, setFile] = useState<File | null>(null);
@@ -10,53 +11,24 @@ export const useFileInput = (maxSize: number) => {
   const previewBoxRef = useRef<HTMLDivElement>(null);
 
   //for only thumbnail input functionality
-  const [previousThumbnails, setPreviousThumbnails] = useState<PreviousThumbnailsType[]>([])
+  const [previousThumbnails, setPreviousThumbnails] = useState<ImagesArrayType[]>([])
 
-  const handleGenerateThumbnail = (captureTime: number = 2, videoFile: File): void => {
+  const removeThumbnail = (filename: string) => { 
+    setPreviousThumbnails(prev => (prev.filter(thumb => thumb.fileName !== filename)));
+  }
 
-    const video = document.createElement('video');
-    if(!(videoFile instanceof File)) {
-      throw new Error('The video file is invalid')
-    }
-    video.src = URL.createObjectURL(videoFile!);
-    video.crossOrigin ="anonymous";
-
-    video.onloadeddata = () => {
-      video.currentTime = Math.min(captureTime, video.duration);
-    }
-
-    video.onseeked = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      const ctx = canvas.getContext('2d');
-
-      if(!ctx) throw new Error ('Could not get canvas context');
-      
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      canvas.toBlob(blob => {
-        if(blob) {
-          const imageUrl = URL.createObjectURL(blob);
-          const imageName = imageUrl.split('/')[0];
-          const imageFile = new File([blob], imageName, {type: blob.type});
-
-          fileChange(imageFile);
-
-          URL.revokeObjectURL(video.src);
-        }else {
-          throw new Error('Failed to create blob')
-        }
-      }, 'image/jpg', 2);
-    };
-
-    video.onerror = () => {
-      throw new Error('failed to load video');
+  const handleOnGenerate = async (captureTime: number = 2, videoFile: File): Promise<File | null> => {
+    try {
+      const imageFile: File = await generateThumbnail(captureTime, videoFile);
+      if(imageFile) {fileChange(imageFile)};
+      return imageFile;
+    } catch (error) {
+      console.log("Failed to generate and use image file: ", error) 
+      throw error;
     }
   }
   
-  const handleUsePreviousThumbnail = (filename: string): void => {
+  const handleUsePreviousThumbnail = useCallback((filename: string): void => {
     const selectedThumbnail = previousThumbnails?.find(tn => tn.fileName === filename)
     
     const handleFile = async () => {
@@ -64,7 +36,7 @@ export const useFileInput = (maxSize: number) => {
       fileChange(file);
     };
     handleFile();
-  }
+  },[previousThumbnails])
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]){
@@ -78,7 +50,7 @@ export const useFileInput = (maxSize: number) => {
     }
   };
 
-  const fileChange = (selectedFile: File) => {
+  const fileChange = useCallback((selectedFile: File) => {
     if (selectedFile.size > maxSize) throw new Error("Media file size exceed the size limit");
 
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -115,15 +87,15 @@ export const useFileInput = (maxSize: number) => {
         setDuration(videoDuration);
       })();
     }
-  }
+  },[file, previousThumbnails, duration, previewUrl])
   
-  const resetFile = () => {
+  const resetFile = useCallback(() => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setFile(null);
     setPreviewUrl(null);
     setDuration(null);
     if (inputRef.current) inputRef.current.value = "";
-  };
+  },[previewUrl, file, duration, inputRef]);
 
   useEffect(()=> {
     if(previousThumbnails.length > 5) {
@@ -133,7 +105,6 @@ export const useFileInput = (maxSize: number) => {
     if(previousThumbnails.length > 0) {
      localStorage.setItem("recentThumbnails", JSON.stringify(previousThumbnails));
     };
-    console.log(previousThumbnails);
   }, [previousThumbnails])
 
   useEffect(()=> {
@@ -143,5 +114,5 @@ export const useFileInput = (maxSize: number) => {
     }
   }, [])
 
-  return { file, previousThumbnails, previewUrl, duration, inputRef, previewBoxRef, handleFileChange, handleFileDrop, handleUsePreviousThumbnail, handleGenerateThumbnail, resetFile };
+  return { file, previousThumbnails, previewUrl, duration, inputRef, previewBoxRef, handleFileChange, handleFileDrop, handleUsePreviousThumbnail, handleOnGenerate, resetFile, removeThumbnail };
 };

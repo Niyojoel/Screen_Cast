@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import {Img, CopyBtn} from '.'
+import { VideoCardProps } from '..'
 
 const VideoCard = ({
   id,
@@ -15,7 +16,7 @@ const VideoCard = ({
 }: VideoCardProps) => {
 
   return (
-    <Link href={`video/${id}`} className='video-card'>
+    <Link href={`/video/${id}`} className='video-card'>
       <Image src={thumbnailUrl} alt="thumbnail" width={290} height={160} className='thumbnail'/>
       <article className=''>
           <div className="">
@@ -23,7 +24,7 @@ const VideoCard = ({
               <Img 
                 src={userImg}
                 alt="avatar" 
-                size={34} 
+                size={30} 
                 className='aspect-square'
               />
               <figcaption>
@@ -45,7 +46,7 @@ const VideoCard = ({
                 {title} - {" "} {createdAt.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric'})}
             </h2>
       </article>
-      <CopyBtn id={id}/>
+      <CopyBtn id={id} className="float-copy-btn"/>
       {duration && (
         <div className="duration">
             {Math.ceil(duration/60)} {duration/60 > 1 ? "mins": "min"} 

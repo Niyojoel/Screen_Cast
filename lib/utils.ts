@@ -2,7 +2,26 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { ilike, or, sql } from "drizzle-orm";
 import { videos } from "@/drizzle/schema";
-import { DEFAULT_VIDEO_CONFIG, DEFAULT_RECORDING_CONFIG } from "@/constants";
+import { 
+  DEFAULT_VIDEO_CONFIG, 
+  DEFAULT_RECORDING_CONFIG, 
+  DEFAULT_EMBED_CAMERA_CONFIG, 
+  DEFAULT_MIC_SETTINGS 
+} from "@/constants";
+import { 
+  BrowserDialogOptionsType, 
+  CameraFacingMode, 
+  CameraOptions, 
+  CursorOptions, 
+  DeviceType, 
+  DisplaySurfaceOptions, 
+  MediaStreams, 
+  PermissionsType, 
+  RecordingHandlers, 
+  VideoConfig, 
+  VideoSettingsType 
+} from "..";
+import { SyncCameraKeys } from "./hooks/useRecordingFeatures";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -156,38 +175,380 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
   ]
 };
 
-export const getMediaStreams = async (
-  withMic: boolean
-): Promise<MediaStreams> => {
-  const displayStream = await navigator.mediaDevices.getDisplayMedia({
-    video: DEFAULT_VIDEO_CONFIG,
-    audio: true,
-  });
+export const parseVideoSettings = (
+  key: keyof VideoSettingsType, 
+  option: string
+): VideoSettingsType[keyof VideoSettingsType] => {
 
-  const hasDisplayAudio = displayStream.getAudioTracks().length > 0;
+  let parsedValue: VideoSettingsType[keyof VideoSettingsType] = false;
   
-  let micStream: MediaStream | null = null;
+  if(key === "displaySurface") {
+    parsedValue = parseHintedDisplaySetting(option);
+  } else if (key === 'camera') {
+    parsedValue = parseSelectedCam(option);
+  } else if (key === "cameraFacingMode") {
+    parsedValue = parseCameraFacingMode(option as 'Front' | 'Back');
+  } else if (key === "cursor") {
+    parsedValue = parseCursorSetting(option);
+  } else if (key === "withMic") {
+    parsedValue = parseSelectedMic(option)
+  }
+  return parsedValue;
+}
 
-  if (withMic) {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    micStream
-      .getAudioTracks()
-      .forEach((track: MediaStreamTrack) => (track.enabled = true));
+export const parseCameraFacingMode = (selectedMode: "Front" | "Back"): CameraFacingMode => {
+  switch (selectedMode.toLowerCase()) {
+    case "back":
+      return 'environment';
+    default:
+      return 'user'
+  }
+}
+
+export const parseSelectedMic = (selectedMic: string): boolean => {
+  switch (selectedMic.toLowerCase()) {
+    case "no microphone":
+      return false;
+    default:
+      return true
+  }
+}
+
+export const parseSelectedCam = (selectedCam: string): CameraOptions => {
+  switch (selectedCam.toLowerCase()) {
+    case "no camera":
+      return "no";
+    case "with camera":
+      return "with";
+    case "camera only":
+      return "only";
+    default:
+      throw new Error('unknown option provided');
+  }
+}
+
+export const parseOutputDisplaySetting = (displaySetting: string): string => {
+  switch (displaySetting.toLowerCase()) {
+    case "monitor":
+      return "Full Screen";
+    case "window":
+      return "Window";
+    case "browser":
+      return "Current Tab";
+    case "camera only":
+      return "Camera Only";
+    default:
+      throw new Error('unknown option provided');
+
+  }
+}
+
+export const parseBrowserDialogOptions = (option: DisplaySurfaceOptions): BrowserDialogOptionsType => {
+  switch (option.toLowerCase()) {
+    case "monitor":
+      return "Entire Screen";
+    case "window":
+      return "Window";
+    case "browser":
+      return "Browser Tab";
+    default:
+      throw new Error('unknown option provided');
+
+  }
+}
+
+export const parseHintedDisplaySetting = (selectedSetting: string): DisplaySurfaceOptions => {
+  switch (selectedSetting.toLowerCase()) {
+    case "full screen":
+      return "monitor";
+    case "window":
+      return "window";
+    case "current tab":
+      return "browser";
+    case "camera only":
+      return "camera only";
+    default:
+      throw new Error('unknown option provided');
+  }
+}
+
+export const parseCursorSetting = (cursorSetting: string): CursorOptions => {
+  switch (cursorSetting.toLowerCase()) {
+    case "show always":
+      return "always";
+    case "hide cursor":
+      return "never";
+    case "show in motion":
+      return "motion";
+    default:
+      throw new Error('unknown option provided');
+      
+  }
+}
+
+export const syncCameraOnly = async(
+  key: keyof SyncCameraKeys, 
+  value: DisplaySurfaceOptions | CameraOptions,
+  videoSettings: SyncCameraKeys
+): Promise<[keyof VideoSettingsType, VideoSettingsType[keyof VideoSettingsType]] | null> => {
+  let syncSetting: [keyof VideoSettingsType, VideoSettingsType[keyof VideoSettingsType]] | null = null;
+  if(key === 'displaySurface' 
+  && value === 'camera only') {
+    syncSetting = ['camera', 'only']
+  } else if (key === 'displaySurface' 
+  && value !== 'camera only' 
+  && videoSettings.camera === "only") {
+    syncSetting = ['camera', 'no']
+  } else if (key === 'camera' 
+  && value === 'only') {
+    syncSetting = ['displaySurface', 'camera only']
+  } else if (key === 'camera' 
+  && value !== 'only' 
+  && videoSettings.displaySurface === "camera only") {
+    syncSetting = ["displaySurface", "monitor"]
+  }
+  return syncSetting;
+}
+
+export const checkHardwareSupport = async(device: DeviceType): Promise<boolean> => {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+
+  const hasDevice = devices.some(d => {
+    if(device === "camera") return d.kind === "videoinput";
+    return d.kind === "audioinput";
+  })
+
+  if(!hasDevice) return false;
+
+  return true;
+}
+
+export const checkPermission = async (device: DeviceType): Promise<PermissionsType | null> => {
+  try {
+    const permissionStatus = await navigator.permissions.query({name: device as any});
+    console.log(`${device} state: ${permissionStatus.state}`);
+
+    return permissionStatus.state;
+    
+  } catch (error) {
+    console.error('Permissions API not supported for this device in this browser.')
+    return null;
+  }
+}
+
+//helper
+const getCameraConfig = async (
+  use: CameraOptions, 
+  mode?: CameraFacingMode
+): Promise<VideoConfig>  => {
+  let config: VideoConfig | null = null;
+  
+  if(use === 'with' ) {
+    config = DEFAULT_EMBED_CAMERA_CONFIG;
+  } else {
+    config = {
+      ...DEFAULT_VIDEO_CONFIG,
+      facingMode: mode
+    }
+  }
+  return config;
+}
+
+//helper
+const getUserMediaSettings = async (
+  camera: CameraOptions, 
+  mode: CameraFacingMode, 
+  withMic: boolean
+): Promise<MediaStreamConstraints | undefined> => {
+
+  let userMediaSettings: MediaStreamConstraints | undefined = undefined;
+
+  if(camera !== 'no') {
+    userMediaSettings = {
+      video: await getCameraConfig(camera, mode),
+      audio: DEFAULT_MIC_SETTINGS,
+    }
+  }else if (withMic) {
+    userMediaSettings = {
+      audio: DEFAULT_MIC_SETTINGS,
+    }
   }
 
-  return { displayStream, micStream, hasDisplayAudio };
+  return userMediaSettings; 
+}
+
+export const getMediaStreams = async (
+  videoSettings: VideoSettingsType
+): Promise<MediaStreams> => {
+
+  const {
+    camera, 
+    cameraFacingMode: mode, 
+    withMic, 
+    displaySurface, 
+    cursor
+  } = videoSettings;
+
+  let displayStream: MediaStream | null = null;
+  let userMediaStream: MediaStream | null = null;
+  let hasDisplayAudio: boolean = false;
+
+  const userMediaConstraints = await getUserMediaSettings(camera, mode, withMic)
+
+
+  const displayMediaConstraints = {
+    video: {
+      ...DEFAULT_VIDEO_CONFIG, 
+      displaySurface, 
+      cursor
+    },
+    audio: true,
+  }
+
+  if(displaySurface !== "camera only") {
+    displayStream = await navigator.mediaDevices.getDisplayMedia(displayMediaConstraints);
+  }
+
+  if(userMediaConstraints) {
+    userMediaStream = await navigator.mediaDevices.getUserMedia(userMediaConstraints);
+  }else null;
+
+  if(displayStream) {
+    hasDisplayAudio = displayStream.getAudioTracks().length > 0;
+  }
+
+  if(userMediaStream) {
+    userMediaStream
+    .getAudioTracks()
+    .forEach((track: MediaStreamTrack) => (track.enabled = true))
+  };
+  
+  return {displayStream, userMediaStream, hasDisplayAudio};
 };
 
-export const createAudioMixer = (
+export const killMediaStreams = (streams: (MediaStream | null)[]) => {
+  streams?.forEach(stream => {
+    stream?.getTracks().forEach(track => {
+      track.stop()
+      track.enabled = false;
+    })
+  })
+}
+
+export const getCombinedCanvasStreams = async (
+  screenStream: MediaStream, 
+  cameraStream: MediaStream
+): Promise<{stream: MediaStream, stopDrawInterval: () => void}> => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d'); 
+
+  if(!(screenStream.getVideoTracks().length > 0)){
+    throw new Error ('No video available for display')
+  }
+
+  if(!(cameraStream.getVideoTracks().length > 0)){
+    throw new Error ('No active video camera')
+  }
+
+  const screenTrack: MediaStreamTrack = screenStream.getVideoTracks()[0];
+  const settings = screenTrack.getSettings();
+  canvas.width = settings.width!;
+  canvas.height = settings.height!;
+
+  const screenVideo = document.createElement('video');
+  const cameraVideo = document.createElement('video');
+
+  screenVideo.srcObject = screenStream;
+  cameraVideo.srcObject = cameraStream;
+
+  await screenVideo.play();
+  await cameraVideo.play();
+
+  const fps = 30;
+  const drawInterval = setInterval(()=> {
+    ctx?.drawImage(screenVideo, 0, 0, canvas.width, canvas.height)
+
+    const camWidth = 320;
+    const camHeight = 240;
+    const padding= 20;
+    
+    ctx?.drawImage(
+      cameraVideo,
+      canvas.width - camWidth - padding,
+      canvas.height - camHeight - padding,
+      camWidth,
+      camHeight
+    );
+  }, 1000 / fps);
+
+  const stopDrawInterval = (): void => {
+    clearInterval(drawInterval)
+    console.log('canvas interval cleared')
+  };
+
+  const stream = canvas.captureStream(fps);
+
+  const videoTrack = stream.getVideoTracks()[0];
+
+  if(videoTrack) {
+    videoTrack.enabled = true;
+  }
+
+  return {stream, stopDrawInterval};
+}
+
+export const getTrackSetting = (stream: MediaStream) => {
+  const videoTrack: MediaStreamTrack = stream.getVideoTracks()[0]; 
+  const setting: MediaTrackSettings = videoTrack.getSettings();
+  return setting;
+}
+
+export const addTrack = async (
+  stream: MediaStream, 
+  combinedStream: MediaStream, 
+  trackType: "video" | "audio" | "both"
+): Promise<void> => {
+  let track: MediaStreamTrack[] | null = null;
+
+  if(trackType === 'video') {
+    track = stream.getVideoTracks()
+  }else if (trackType === 'audio') {
+    track = stream.getAudioTracks()
+  }else {
+    track = stream.getTracks()
+  }
+
+  if(!track) {
+    throw new Error('No track to add to the combined stream');
+  }
+
+  track.forEach((track: MediaStreamTrack) => combinedStream.addTrack(track));
+}
+
+export const createAudioMixer = async (
   ctx: AudioContext,
   displayStream: MediaStream,
-  micStream: MediaStream | null,
+  userMediaStream: MediaStream | null,
   hasDisplayAudio: boolean
-) => {
-  if (!hasDisplayAudio && !micStream) return null;
+): Promise<MediaStreamAudioDestinationNode | null> => {
+  if (!hasDisplayAudio && !userMediaStream) {
+      console.log("No audio track in this streams");
+      alert('No audio track in this stream');
+      return null;
+  };
+
+  console.log({
+    displayAudio: displayStream.getAudioTracks().length,
+    userAudio: userMediaStream && userMediaStream.getAudioTracks().length
+  })
+
+  if(ctx.state === "suspended") {
+    await ctx.resume();
+  }
 
   const destination = ctx.createMediaStreamDestination();
   const mix = (stream: MediaStream, gainValue: number) => {
+    if(!stream || stream.getAudioTracks().length === 0) return;
     const source = ctx.createMediaStreamSource(stream);
     const gain = ctx.createGain();
     gain.gain.value = gainValue;
@@ -195,7 +556,7 @@ export const createAudioMixer = (
   };
 
   if (hasDisplayAudio) mix(displayStream, 0.7);
-  if (micStream) mix(micStream, 1.5);
+  if (userMediaStream) mix(userMediaStream, 1.5);
 
   return destination;
 };
@@ -227,11 +588,41 @@ export const getVideoDuration = (url: string): Promise<number | null> =>
     video.src = url;
   });
 
+export const streamMonitor = async (stream: MediaStream): Promise<string> => {
+  const hasVideo = stream.getVideoTracks().some(t => t.enabled)
+  const hasAudio = stream.getAudioTracks().some(t => t.enabled)
+
+  return hasAudio && hasVideo ? "both audio & video ok" : 'only one enabled' 
+};
+
+//helper
+const getRecorderConfig = (stream: MediaStream) => {
+
+  const types = [
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/mp4',
+  ];
+
+  let mimeType: string = "";
+
+  if(stream.getAudioTracks().length > 0){
+    mimeType = types.find(type => MediaRecorder.isTypeSupported(type)) || ''
+  }
+
+  if(!mimeType) console.log("No supported mime type. Using a fallback type")
+
+  return {
+    ...DEFAULT_RECORDING_CONFIG,
+    mimeType: mimeType ? mimeType : 'video/webm;codecs=vp8,opus'
+  }
+} 
+  
 export const setupRecording = (
   stream: MediaStream,
   handlers: RecordingHandlers
 ): MediaRecorder => {
-  const recorder = new MediaRecorder(stream, DEFAULT_RECORDING_CONFIG);
+  const recorder = new MediaRecorder(stream, getRecorderConfig(stream));
   recorder.ondataavailable = handlers.onDataAvailable;
   recorder.onstop = handlers.onStop;
   return recorder;
@@ -240,13 +631,27 @@ export const setupRecording = (
 export const cleanupRecording = (
   recorder: MediaRecorder | null,
   stream: MediaStream | null,
-  originalStreams: MediaStream[] = []
+  originalStreams: MediaStream[] = [],
+  drawInterval: () => void | null
 ) => {
-  if (recorder?.state !== "inactive") {
-    recorder?.stop();
+  try {
+    if (recorder?.state !== "inactive") {
+      recorder?.stop();
+    }
+  } catch (error) {
+    console.log('Failed to stop recorder: ', error);
   }
 
-  stream?.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+  if(drawInterval) {
+    drawInterval();
+  };
+
+  console.log('cleaning up tracks')
+  
+  stream?.getTracks().forEach((track: MediaStreamTrack) =>{ 
+    track.stop()
+    console.log("Stopped combined track: ", track.kind)
+  });
   originalStreams.forEach((s) =>
     s.getTracks().forEach((track: MediaStreamTrack) => track.stop())
   );
@@ -262,6 +667,72 @@ export const createRecordingBlob = (
 
 export const calculateRecordingDuration = (startTime: number | null): number =>
   startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
+
+
+export const generateThumbnail = ((captureTime: number = 2, videoFile: File): Promise<File> => {
+  return new Promise ((resolve, reject) => {
+    const video = document.createElement('video');
+    if(!(videoFile instanceof File)) {
+      throw new Error('The video file is invalid')
+    }
+    video.src = URL.createObjectURL(videoFile!);
+    video.crossOrigin ="anonymous";
+
+    video.onloadeddata = () => {
+      video.currentTime = Math.min(captureTime, video.duration);
+    }
+
+    video.onseeked = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const ctx = canvas.getContext('2d');
+
+      if(!ctx) throw new Error ('Could not get canvas context');
+      
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(blob => {
+        if(blob) {
+          const imageUrl = URL.createObjectURL(blob);
+          const imageName = imageUrl.split('/')[0];
+          const imageFile = new File([blob], imageName, {type: blob.type});
+
+          resolve(imageFile);
+
+          URL.revokeObjectURL(video.src);
+        }else {
+          reject (new Error('Failed to create blob'));
+        }
+      }, 'image/jpg', 2);
+    };
+
+    video.onerror = () => {
+      throw new Error('failed to load video');
+    }
+  })
+})
+
+export const downloadVideo = async (videoUrl: string) : Promise<void> => {
+  try {
+    const response = await fetch(videoUrl);
+    const blob = await response.blob();
+  
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = url.split('/')[0];
+    document.body.appendChild(a);
+    a.click();
+  
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }catch (error) {
+    console.error(error)
+    throw error
+  }
+}
 
 export function parseTranscript(transcript: string): TranscriptEntry[] {
   const lines = transcript.replace(/^WEBVTT\s*/, "").split("\n");

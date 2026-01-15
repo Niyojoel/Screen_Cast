@@ -3,10 +3,15 @@
 import { authClient } from '@/lib/authClient'
 import Image from 'next/image'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 const page = () => {
 const handleSignIn = async () => {
-  await authClient.signIn.social({provider: "google", callbackURL: "/"})
+  try {
+    await authClient.signIn.social({provider: "google", callbackURL: "/"})
+  }catch (error) {
+    toast.error("Error logging user in. Try again")
+  }
 }
   return (
     <main className='sign-in'>

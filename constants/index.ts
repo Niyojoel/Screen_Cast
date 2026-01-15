@@ -1,3 +1,12 @@
+import {v4 as uuid} from "uuid" 
+import { 
+  DropdownOptionsType, 
+  UserWithVideos, 
+  VideoCardProps, 
+  VideoConfig, 
+  VideoWithUserResult 
+} from "..";
+
 export const MAX_VIDEO_SIZE = 500 * 1024 * 1024;
 export const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024;
 
@@ -14,6 +23,7 @@ export const emojis = ["😂", "😍", "👍"];
 export const filterOptions = [
   {
     label: "Most Viewed",
+    default: true
   },
   {
     label: "Most Recent",
@@ -26,7 +36,16 @@ export const filterOptions = [
   },
 ];
 
-export const visibilities: Visibility[] = ["public", "private"];
+export const visibilities: DropdownOptionsType[] = [
+  {
+    label: "visibility", 
+    value: "public" as Visibility, 
+  }, 
+  {
+    label: "visibility", 
+    value: "private" as Visibility, 
+  }
+];
 
 export const ICONS = {
   record: "/assets/icons/record.svg",
@@ -43,14 +62,25 @@ export const initialVideoState = {
 
 export const infos = ["transcript", "metadata"];
 
-export const DEFAULT_VIDEO_CONFIG = {
+export const DEFAULT_VIDEO_CONFIG: VideoConfig = {
   width: { ideal: 1920 },
   height: { ideal: 1080 },
   frameRate: { ideal: 30 },
 };
 
+export const DEFAULT_EMBED_CAMERA_CONFIG: VideoConfig = {
+  width: {ideal: 320},
+  height: {ideal: 240},
+}
+
+export const DEFAULT_MIC_SETTINGS = {
+  noiseSuppression: true,
+  echoCancellation: true,
+  autoGainControl: true,
+  sampleRate: 44100
+}
+  
 export const DEFAULT_RECORDING_CONFIG = {
-  mimeType: "video/webm;codecs=vp9,opus",
   audioBitsPerSecond: 128000,
   videoBitsPerSecond: 2500000,
 };
@@ -130,7 +160,7 @@ export const dummyVideo: UserWithVideos = {
         videoId: "6725hbkbbn",
         title: "Trial Video for Content Management",
         description: 'First video to be shown for offline video page testing and user interface adjustment',
-        thumbnailUrl: dummyVideoCardProps[0].thumbnailUrl,
+        thumbnailUrl: "/assets/thumbnails/img1.jpg",
         videoUrl: '/assets/trial_video.mp4',
         userId: dummySession.user.id,
         views: dummyVideoCardProps[0].views,
@@ -147,11 +177,11 @@ export const dummyVideo: UserWithVideos = {
 
 export const dummyVideos: VideoWithUserResult[]  = [
   {video: {
-    id: "tyw4j35ugjyu",
-    videoId: "6725hbkbbnty",
+    id: uuid(),
+    videoId: uuid(),
     title: "Trial Video for Content Management",
     description: 'First video to be shown for offline video page testing and user interface adjustment',
-    thumbnailUrl: dummyVideoCardProps[0].thumbnailUrl,
+    thumbnailUrl: "/assets/thumbnails/img11.jpg",
     videoUrl: '/assets/trial_video.mp4',
     userId: dummySession.user.id,
     views: dummyVideoCardProps[0].views,
@@ -164,11 +194,11 @@ export const dummyVideos: VideoWithUserResult[]  = [
   user: dummySession.user
   },
   {video: {
-    id: "tyw4j35gje5u5",
-    videoId: "6725hbkdmyj",
+    id: uuid(),
+    videoId: uuid(),
     title: "Trial Video for Content Management",
     description: 'First video to be shown for offline video page testing and user interface adjustment',
-    thumbnailUrl: dummyVideoCardProps[1].thumbnailUrl,
+    thumbnailUrl: "/assets/thumbnails/img12.jpg",
     videoUrl: '/assets/trial_video.mp4',
     userId: dummySession.user.id,
     views: dummyVideoCardProps[0].views,
@@ -181,11 +211,11 @@ export const dummyVideos: VideoWithUserResult[]  = [
   user: dummySession.user
   },
   {video: {
-    id: "tyw4j34hdgj",
-    videoId: "6725fndfn5e",
+    id: uuid(),
+    videoId: uuid(),
     title: "Trial Video for Content Management",
     description: 'First video to be shown for offline video page testing and user interface adjustment',
-    thumbnailUrl: dummyVideoCardProps[2].thumbnailUrl,
+    thumbnailUrl: "/assets/thumbnails/img9.jpg",
     videoUrl: '/assets/trial_video.mp4',
     userId: dummySession.user.id,
     views: dummyVideoCardProps[0].views,
@@ -198,11 +228,11 @@ export const dummyVideos: VideoWithUserResult[]  = [
   user: dummySession.user
   },
   {video: {
-    id: "tyw4j35yuy36u",
-    videoId: "6725hh54y5yj",
+    id: uuid(),
+    videoId: uuid(),
     title: "Trial Video for Content Management",
     description: 'First video to be shown for offline video page testing and user interface adjustment',
-    thumbnailUrl: dummyVideoCardProps[3].thumbnailUrl,
+    thumbnailUrl: "/assets/thumbnails/img5.jpg",
     videoUrl: '/assets/trial_video.mp4',
     userId: dummySession.user.id,
     views: dummyVideoCardProps[0].views,
@@ -215,11 +245,11 @@ export const dummyVideos: VideoWithUserResult[]  = [
   user: dummySession.user
   },
   {video: {
-    id: "tyw4j387iki",
-    videoId: "6725h3u7ykr",
+    id: uuid(),
+    videoId: uuid(),
     title: "Trial Video for Content Management",
     description: 'First video to be shown for offline video page testing and user interface adjustment',
-    thumbnailUrl: dummyVideoCardProps[4].thumbnailUrl,
+    thumbnailUrl: "/assets/thumbnails/img6.jpg",
     videoUrl: '/assets/trial_video.mp4',
     userId: dummySession.user.id,
     views: dummyVideoCardProps[0].views,
@@ -232,11 +262,11 @@ export const dummyVideos: VideoWithUserResult[]  = [
   user: dummySession.user
   },
   {video: {
-    id: "tyw4j373257e",
-    videoId: "6725hb1g4t3q",
+    id: uuid(),
+    videoId: uuid(),
     title: "Trial Video for Content Management",
     description: 'First video to be shown for offline video page testing and user interface adjustment',
-    thumbnailUrl: dummyVideoCardProps[0].thumbnailUrl,
+    thumbnailUrl: "/assets/thumbnails/img7.jpg",
     videoUrl: '/assets/trial_video.mp4',
     userId: dummySession.user.id,
     views: dummyVideoCardProps[0].views,
@@ -249,11 +279,11 @@ export const dummyVideos: VideoWithUserResult[]  = [
   user: dummySession.user
   },
   {video: {
-    id: "tyw4j3g134g",
-    videoId: "6725hbkbiuoy",
+    id: uuid(),
+    videoId: uuid(),
     title: "Trial Video for Content Management",
     description: 'First video to be shown for offline video page testing and user interface adjustment',
-    thumbnailUrl: dummyVideoCardProps[0].thumbnailUrl,
+    thumbnailUrl: "/assets/thumbnails/img8.jpg",
     videoUrl: '/assets/trial_video.mp4',
     userId: dummySession.user.id,
     views: dummyVideoCardProps[0].views,
@@ -266,11 +296,45 @@ export const dummyVideos: VideoWithUserResult[]  = [
   user: dummySession.user
   },
   {video: {
-    id: "tyw4j35ugj86pmm",
-    videoId: "6725hbkbbcxzvn",
+    id: uuid(),
+    videoId: uuid(),
     title: "Trial Video for Content Management",
     description: 'First video to be shown for offline video page testing and user interface adjustment',
-    thumbnailUrl: dummyVideoCardProps[0].thumbnailUrl,
+    thumbnailUrl: "/assets/thumbnails/img3.jpg",
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummySession.user.id,
+    views: dummyVideoCardProps[0].views,
+    tags: ["trial", "first", "ui/ux"],
+    duration: 131,
+    visibility: "public",
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  },
+  user: dummySession.user
+  },
+  {video: {
+    id: uuid(),
+    videoId: uuid(),
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: "/assets/thumbnails/img2.jpg",
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummySession.user.id,
+    views: dummyVideoCardProps[0].views,
+    tags: ["trial", "first", "ui/ux"],
+    duration: 131,
+    visibility: "public",
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
+  },
+  user: dummySession.user
+  },
+  {video: {
+    id: uuid(),
+    videoId: uuid(),
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: "/assets/thumbnails/img1.jpg",
     videoUrl: '/assets/trial_video.mp4',
     userId: dummySession.user.id,
     views: dummyVideoCardProps[0].views,
