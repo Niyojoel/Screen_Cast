@@ -305,7 +305,7 @@ declare type ModalStateType = {
   state: boolean,
   content: React.ReactNode | null,
   buttons?: ModalButton[] | null,
-  closeIcon?: React.ReactNode
+  closeIcon?: React.ReactNode | null
 }
 
 declare interface ModalProps {
@@ -405,7 +405,7 @@ type DeviceStatus = "passed" | "no-permission" | 'no-support' | "unchecked" | 'u
 
 type GoToUploadState = "failed" | "loading" | "redirecting" | "finished"
 
-type ActionResponseType = 'failed' | 'successful'
+type ActionResponseType = 'failed' | 'successful' | null
 
 
 declare type VideoSettingsType = {
@@ -417,17 +417,16 @@ declare type VideoSettingsType = {
 }
 
 declare type RecordingDialogContentBodyProps = {
-    recordingState: RecordingStateType | null,
-    recordedVideoUrl: string,
-    goToUpload: GoToUploadState | null,
-    videoRef: RefObject<HTMLVideoElement | null>,
-    settingsGuide : string,
-    showInstructions : boolean,
-    videoSettings : VideoSettingsType,
-    selectedVideoSetting : VideoSettingsType & {systemAudio: boolean},
-    recordSettings: RecordSettingsType[],
-    downloading: boolean,
-    actionResponse: "failed" | "successful" | null;
+  recordingState: RecordingStateType | null,
+  recordedVideoUrl: string,
+  goToUpload: GoToUploadState | null,
+  videoRef: RefObject<HTMLVideoElement | null>,
+  settingsGuide : string,
+  showInstructions : boolean,
+  videoSettings : VideoSettingsType,
+  selectedVideoSetting : VideoSettingsType & {systemAudio: boolean},
+  recordSettings: RecordSettingsType[],
+  actionResponse: "failed" | "successful" | null;
 }
 
 declare interface RecordSettingsType {

@@ -13,6 +13,7 @@ import {
   CameraFacingMode, 
   CameraOptions, 
   CursorOptions, 
+  DeviceStatus, 
   DeviceType, 
   DisplaySurfaceOptions, 
   MediaStreams, 
@@ -310,7 +311,7 @@ export const syncCameraOnly = async(
   return syncSetting;
 }
 
-export const checkHardwareSupport = async(device: DeviceType): Promise<boolean> => {
+const checkHardwareSupport = async(device: DeviceType): Promise<boolean> => {
   const devices = await navigator.mediaDevices.enumerateDevices();
 
   const hasDevice = devices.some(d => {
@@ -323,7 +324,7 @@ export const checkHardwareSupport = async(device: DeviceType): Promise<boolean> 
   return true;
 }
 
-export const checkPermission = async (device: DeviceType): Promise<PermissionsType | null> => {
+const checkPermission = async (device: DeviceType): Promise<PermissionsType | null> => {
   try {
     const permissionStatus = await navigator.permissions.query({name: device as any});
     console.log(`${device} state: ${permissionStatus.state}`);
@@ -334,6 +335,24 @@ export const checkPermission = async (device: DeviceType): Promise<PermissionsTy
     console.error('Permissions API not supported for this device in this browser.')
     return null;
   }
+}
+
+export const checkDevice = async (device: DeviceType): Promise<DeviceStatus> => {
+  const supported = await checkHardwareSupport(device);
+
+  console.log({[device]: supported})
+
+  if(!supported) return 'no-support';
+  
+  const permissionStatus = await checkPermission(device);
+  
+  console.log(permissionStatus)
+  
+  if(permissionStatus !== "granted") return 'no-permission';
+
+  console.log(`setting ${device} to pass`)
+
+  return 'passed'
 }
 
 //helper

@@ -1,16 +1,15 @@
 import { 
-    useCallback, 
-    useEffect, 
-    useMemo,
-    useRef, 
-    useState 
+  useCallback, 
+  useEffect, 
+  useMemo,
+  useRef, 
+  useState 
 } from "react";
 import { useScreenRecording } from "./useScreenRecording";
 import { 
   DeviceStatus, 
   DeviceType, 
   ModalButton, 
-  RecordingStateType, 
   CameraOptions, 
   DisplaySurfaceOptions, 
   RecordSettingsType, 
@@ -27,7 +26,13 @@ import {
   micSettingsOptionsIcon, 
   screenSettingsOptions 
 } from "@/constants/lists";
-import { checkHardwareSupport, checkPermission, downloadVideo, parseVideoSettings, syncCameraOnly } from "../utils";
+import { 
+  checkDevice, 
+  downloadVideo, 
+  parseVideoSettings, 
+  syncCameraOnly 
+} from "../utils";
+import { useGlobalContext } from "./useGlobalContext";
 
 export type SyncCameraKeys = Pick<VideoSettingsType, "displaySurface" | "camera">;
 
@@ -44,22 +49,24 @@ const useRecordingFeatures = () => {
     selectedVideoSetting,
   } = useScreenRecording()
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const [modalError, setModalError] = useState("");
+  const {
+    modal,
+    modalError,
+    openModal, 
+    closeModal, 
+    actionResponse,
+    actionProcessing,
+    changeActionProcessing,
+    changeActionResponse,
+    showModalError,
+    recordingState,
+    changeRecordingState
+  } = useGlobalContext()
 
   const [showInstructions, setShowInstructions] = useState(false);
-  
-  const [recordingState, setRecordingState] = useState<RecordingStateType | null>(null)
-
-  const [actionResponse, setActionResponse] = useState<'failed' | 'successful' | null>(null);
-
-  const [downloading, setDownloading] = useState(false);
-  
+  const [goToUpload, setGoToUpload] = useState<GoToUploadState | null> (null);
   const videoRef= useRef<HTMLVideoElement>(null);
   
-  const [goToUpload, setGoToUpload] = useState<GoToUploadState | null> (null);
-
   //Settings
   const [videoSettings, setVideoSettings] = useState<VideoSettingsType>({
     cursor: "always",
@@ -163,17 +170,19 @@ const useRecordingFeatures = () => {
     micSettingsOptions
   ])
 
-
   //modal-buttons and routing----------------------
-  const handleOpenModal = useCallback(() => {
-    setIsModalOpen(true)
-    setRecordingState('before')
+  const handleOpenModal = useCallback((content: React.ReactNode, buttons: ModalButton[], closeIcon: React.ReactNode) => {
+    openModal(
+      content,
+      buttons,
+      closeIcon
+    );
+    changeRecordingState('before')
   },[]);
 
   const handleCloseModal = useCallback(() => {
-    setIsModalOpen(false);
+    closeModal();
     resetRecording();
-    setRecordingState(null);
   },[])
 
   const goingToUploadAction = useCallback((UIActions: () => void): void => {
@@ -189,7 +198,7 @@ const useRecordingFeatures = () => {
       await startRecording(videoSettings);
     }catch(error) {
       const message = error instanceof Error ? error.message : error;
-      setModalError(message as string);
+      showModalError(message as string);
     }
   },[videoSettings])
 
@@ -199,7 +208,7 @@ const useRecordingFeatures = () => {
         await startRecording(videoSettings);
     }catch(error) {
         const message = error instanceof Error ? error.message : error;
-        setModalError(message as string);
+        showModalError(message as string);
     }
 
     if(recordedVideoUrl && videoRef.current) {
@@ -208,7 +217,7 @@ const useRecordingFeatures = () => {
   },[videoSettings])
 
   const handleStopRecording = useCallback(() => {
-    setRecordingState('after')
+    changeRecordingState('after')
     setShowInstructions(false);
     stopRecording();
   },[])
@@ -237,46 +246,28 @@ const useRecordingFeatures = () => {
 
   const handleGoBack = useCallback(() => {
     resetRecording()
-    setRecordingState('before');
+    changeRecordingState('before');
   },[])
 
   const handleSaveRecordedVideo = useCallback(() => {
     if(!recordedBlob) return;
     try {
-      setDownloading(true);
+      changeActionProcessing(true);
       const videoUrl = URL.createObjectURL(recordedBlob);
       downloadVideo(videoUrl);
-      setActionResponse('successful')
+      changeActionResponse('successful')
     }catch(error){
       const errorMssg = error instanceof Error ? error.message : 'Failed to download video' 
-      setModalError(errorMssg)
-      setActionResponse('failed');
+      showModalError(errorMssg)
+      changeActionResponse('failed');
     }finally {
-      setDownloading(false);
+      changeActionProcessing(false);
     }
   },[])
   //------------------------------
 
   //Device check function
   //Not tried yet,look out for error
-  const checkDevice = async (device: DeviceType): Promise<DeviceStatus> => {
-    const supported = await checkHardwareSupport(device);
-
-    console.log({[device]: supported})
-
-    if(!supported) return 'no-support';
-    
-    const permissionStatus = await checkPermission(device);
-    
-    console.log(permissionStatus)
-    
-    if(permissionStatus !== "granted") return 'no-permission';
-
-    console.log(`setting ${device} to pass`)
-
-    return 'passed'
-  }
-
   const helpSettingsGuide = (device: DeviceType, checkStatus: DeviceStatus ) => {
     const capitalizedDevice = device.replace(device.charAt(0), device.charAt(0).toUpperCase())
     if(checkStatus === "no-permission"){
@@ -291,7 +282,7 @@ const useRecordingFeatures = () => {
     device: DeviceType
   ): Promise<DeviceStatus> => {
     if(condition) {
-      const checkResult = await checkDevice(device)
+      const checkResult = await checkDevice(device);
       helpSettingsGuide(device, checkResult)
       return checkResult;
       
@@ -321,8 +312,7 @@ const useRecordingFeatures = () => {
   }
 
   const recordingButtons = useMemo((): ModalButton[] => {
-    
-    let recordingStateBtns: ModalButton[] = [];
+    let recordingStateBtns: ModalButton[] = [];   
     
     if(recordingState === "before" && !showInstructions) {
       recordingStateBtns = [
@@ -393,7 +383,7 @@ const useRecordingFeatures = () => {
       ] 
     } else null;
    
-  return recordingStateBtns;
+    return recordingStateBtns;
   }, [
     handleStartRecording, 
     recordingState, 
@@ -401,18 +391,17 @@ const useRecordingFeatures = () => {
     handleGoBack, 
     handleRecordAgain, 
     handleGoToUpload, 
+    handleOpenModal,
     showInstructions,
     ICONS,
     goToUpload
   ])
 
   useEffect(()=>{
-      if(!isRecording && !recordedVideoUrl) setRecordingState('before')
-      if(isRecording) setRecordingState('ongoing');
-      if(recordedVideoUrl && !goToUpload) setRecordingState('after');
+      if(!isRecording && !recordedVideoUrl) changeRecordingState('before')
+      if(isRecording) changeRecordingState('ongoing');
+      if(recordedVideoUrl && !goToUpload) changeRecordingState('after');
   },[isRecording, recordedVideoUrl])
-
-  useEffect(() => console.log(recordingState), [recordingState])
 
   useEffect(()=> {
     if(settingsGuide && settingsGuide.toLowerCase().split(' ').includes('camera') && videoSettings.camera === 'no') {
@@ -421,14 +410,11 @@ const useRecordingFeatures = () => {
   },[videoSettings, settingsGuide])
 
   return {
-    modalError,
     recordingState,
     videoRef,
     recordingButtons,
     goToUpload,
     goingToUploadAction,
-    setModalError,
-    isModalOpen, 
     handleOpenModal, 
     handleCloseModal,
     recordedVideoUrl,
@@ -437,8 +423,11 @@ const useRecordingFeatures = () => {
     settingsGuide,
     videoSettings,
     recordSettings,
-    downloading,
-    actionResponse
+    actionResponse,
+    actionProcessing,
+    showModalError,
+    modal,
+    modalError,
   }
 }
 

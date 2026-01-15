@@ -31,7 +31,7 @@ const Modal = ({
             <section>
                 {contentBody}
             </section>
-            {footerButtons && (<div className="dialog-btns">
+            {footerButtons && footerButtons.length > 0 && (<div className="dialog-btns">
               {footerButtons.map(btn => (
                 <ActionButton
                   key={btn.text}

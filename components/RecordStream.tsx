@@ -3,7 +3,6 @@
 import { ICONS } from '@/constants'
 import { useRouter } from 'next/navigation'
 import React, { 
-    RefObject,
     memo,
     useCallback, 
     useEffect, 
@@ -37,35 +36,69 @@ import useRecordingFeatures from '@/lib/hooks/useRecordingFeatures'
 const RecordStream = () => {
 
   const {
-    modalError,
     recordingState,
     videoRef,
     goToUpload,
-    isModalOpen, 
-    setModalError,
-    recordingButtons,
-    handleOpenModal, 
-    handleCloseModal,
     goingToUploadAction,
     recordedVideoUrl,
     selectedVideoSetting,
     showInstructions,
     settingsGuide,
     recordSettings,
+    recordingButtons,
     videoSettings,
-    downloading,
-    actionResponse
+    actionResponse,
+    handleOpenModal,
+    handleCloseModal,
+    showModalError,
+    modal,
+    modalError,
   } = useRecordingFeatures()
 
   const router = useRouter();
 
   const session = dummySession;
 
-  const handleGuestUser = useCallback(() => {
-    router.push('/sign-in')
-    toast('You need to sign in to access recording features');
-  },[])
+  const handleGoToRecording = useCallback(() => {
+    if(!session?.user) {
+        router.push('/sign-in')
+        toast('You need to sign in to access recording features');
+        return;
+    }
+
+    handleOpenModal(
+        <RecordingDialogContentBody
+            recordingState={recordingState}
+            recordedVideoUrl ={recordedVideoUrl}
+            goToUpload ={goToUpload}
+            videoRef ={videoRef}
+            settingsGuide ={settingsGuide}
+            showInstructions ={showInstructions}
+            videoSettings ={videoSettings}
+            selectedVideoSetting ={selectedVideoSetting}
+            recordSettings = {recordSettings}
+            actionResponse = {actionResponse}
+        />, 
+        recordingButtons,
+        <HomeIcon size={22}/>
+    ) 
+  },[
+    recordingState,
+    recordedVideoUrl,
+    goToUpload,
+    settingsGuide,
+    showInstructions,
+    videoSettings,
+    selectedVideoSetting,
+    recordSettings,
+    actionResponse,
+  ])
   
+  useEffect(() => {
+    console.log("from recording stream component: ", recordingState)
+    recordingButtons
+  },[recordingState])
+
   useEffect(() => {
     if(goToUpload === "redirecting") goingToUploadAction(()=> router.push('/upload'))
   },[goToUpload])
@@ -74,9 +107,7 @@ const RecordStream = () => {
     <div className="record">
         <ActionButton
             className='primary-btn'
-            action={session?.user 
-                ? handleOpenModal 
-                : handleGuestUser}
+            action={handleGoToRecording}
             src={ICONS.record}
             alt="record"
             size={16}
@@ -85,33 +116,21 @@ const RecordStream = () => {
                 Record a video
             </span>
         </ActionButton>
-        {isModalOpen && (
+        {modal.state && (
             <Modal
+                closeIcon={modal.closeIcon}
                 closeModal={handleCloseModal}
-                closeIcon = {<HomeIcon size={22}/>}
-                contentBody= {
-                    <RecordingDialogContentBody
-                        recordingState={recordingState}
-                        recordedVideoUrl ={recordedVideoUrl}
-                        goToUpload ={goToUpload}
-                        videoRef ={videoRef}
-                        settingsGuide ={settingsGuide}
-                        showInstructions ={showInstructions}
-                        videoSettings ={videoSettings}
-                        selectedVideoSetting ={selectedVideoSetting}
-                        recordSettings = {recordSettings}
-                        downloading = {downloading}
-                        actionResponse = {actionResponse}
-                    />
-                }
-                footerButtons= {recordingButtons}
                 error={modalError}
-                setError={setModalError}
+                setError={showModalError}
+                footerButtons={modal.buttons}
+                contentBody={modal.content}
             />
         )}
     </div>
   )
 }
+
+// const 
 
 const RecordingDialogContentBody = memo(({
     recordingState,
@@ -123,11 +142,10 @@ const RecordingDialogContentBody = memo(({
     videoSettings,
     selectedVideoSetting,
     recordSettings,
-    downloading,
     actionResponse
 }: RecordingDialogContentBodyProps) => (
     <div className="recording-body">
-        {recordingState === "ongoing" 
+        {recordingState === "ongoing"
         ? (
             <article className='recording-features'>
                 <CirclePauseIcon size={50} className='animate-pulse' fill='#fb2c36' stroke='white'/>
@@ -190,8 +208,7 @@ const RecordingDialogContentBody = memo(({
                 className={cn('content-body', showInstructions ? "show" : "no-show")}
                 actionPopup = {false}
             />
-        ) 
-        : null}
+        ) : null}
     </div>
 ))
 
