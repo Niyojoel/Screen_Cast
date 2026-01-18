@@ -1,15 +1,23 @@
 
+import { useGlobalContext } from '@/lib/hooks/useGlobalContext';
 import {ActionButton, Alert, Logo} from '.';
-import { ModalProps } from '..';
+// import { ModalProps } from '..';
 
-const Modal = ({
-  closeIcon,
-  closeModal,
-  error,
-  setError,
-  footerButtons,
-  contentBody
-}: ModalProps) => {
+// {
+//   closeIcon,
+//   closeModal,
+//   error,
+//   setError,
+//   footerButtons,
+//   contentBody
+// }: ModalProps
+
+const Modal = () => {
+  const {modal, closeModal, showModalError: setError, modalError: error} = useGlobalContext();
+
+  const {closeIcon, content: contentBody, buttons: footerButtons} = modal
+
+  if(!modal.state) return null;
 
   return (
     <>

@@ -395,7 +395,7 @@ type BrowserDialogOptionsType = 'Entire Screen' | 'Window' | 'Browser Tab'
 
 type CameraFacingMode = 'user' | 'environment'
 
-type RecordingStateType = 'before' | "ongoing" | "after"
+type ActionStatusType = 'before' | "ongoing" | "after"
 
 type DeviceType =  "camera" | "microphone"
 
@@ -405,7 +405,9 @@ type DeviceStatus = "passed" | "no-permission" | 'no-support' | "unchecked" | 'u
 
 type GoToUploadState = "failed" | "loading" | "redirecting" | "finished"
 
-type ActionResponseType = 'failed' | 'successful' | null
+type Action = 'delete' | 'download' | 'check' | 'generate'
+
+type ActionResponseType = 'failed' | 'successful'
 
 
 declare type VideoSettingsType = {
@@ -417,7 +419,7 @@ declare type VideoSettingsType = {
 }
 
 declare type RecordingDialogContentBodyProps = {
-  recordingState: RecordingStateType | null,
+  recordingState: ActionStatusType | null,
   recordedVideoUrl: string,
   goToUpload: GoToUploadState | null,
   videoRef: RefObject<HTMLVideoElement | null>,

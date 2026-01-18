@@ -1,19 +1,19 @@
 'use client'
-import { ActionResponseType, ModalButton, ModalStateType, RecordingStateType} from "@/index";
-import {useState, useContext, createContext, useRef, useEffect, useCallback} from "react";
+import { ActionResponseType, ModalButton, ModalStateType, ActionStatusType, Action} from "@/index";
+import {useState, useContext, createContext, useCallback} from "react";
 
 export type GlobalContextType = {
-  actionResponse: ActionResponseType | null,
-  actionProcessing: boolean,
+  actionResponse: Record<Action, ActionResponseType | null>,
+  actionStatus: Record<Action, ActionResponseType | null>,
   modal: ModalStateType,
   openModal: (content: React.ReactNode, buttons?: ModalButton[], closeIcon?: React.ReactNode) => void,
   closeModal: () => void,
-  changeActionResponse: (response: ActionResponseType) => void,
-  changeActionProcessing: (state:boolean) => void,
+  changeActionResponse: (action: Action, response: ActionResponseType | null) => void,
+  changeActionStatus: (action: Action, status: ActionStatusType | null) => void,
   modalError: string,
   showModalError: (message: string) => void,
-  recordingState: RecordingStateType | null
-  changeRecordingState: (state: RecordingStateType | null) => void
+  recordingState: ActionStatusType | null
+  changeRecordingState: (state: ActionStatusType | null) => void
 }
 
 const GlobalContext = createContext<GlobalContextType | null>(null);
@@ -26,9 +26,19 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
     closeIcon: null
   });
   const [modalError, setModalError] = useState('')
-  const [actionResponse, setActionResponse] = useState<ActionResponseType>(null);
-  const [actionProcessing, setActionProcessing] = useState(false);
-  const [recordingState, setRecordingState] = useState<RecordingStateType | null>(null)
+  const [actionResponse, setActionResponse] = useState<Record<Action, ActionResponseType | null>>({
+    'delete': null,
+    'download': null,
+    'check': null,
+    'generate': null,
+  });
+  const [actionStatus, setActionStatus] = useState<Record<Action, ActionResponseType | null>>({
+    'delete': null,
+    'download': null,
+    'check': null,
+    'generate': null,
+  });
+  const [recordingState, setRecordingState] = useState<ActionStatusType | null>(null)
 
 
   const openModal = useCallback((
@@ -44,9 +54,9 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
     })
   }, [])
 
-  const closeModal = useCallback(()=>{
+  const closeModal = useCallback(()=> {
     if(recordingState) changeRecordingState(null);
-    if(actionResponse) setActionResponse(null);
+    // if(actionResponse) changeActionResponse({});
     setModal({
         state: false,
         content: null, 
@@ -58,13 +68,13 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
     setModalError(message)
   }, [])
 
-  const changeActionProcessing = useCallback((state: boolean) => {
-    setActionProcessing(state)
+  const changeActionStatus = useCallback((action: Action, status: ActionStatusType | null) => {
+    setActionStatus(prev => ({...prev, [action]: status}))
   }, [])
 
-  const changeActionResponse = useCallback((response: ActionResponseType) => setActionResponse(response), []);
+  const changeActionResponse = useCallback((action: Action,response: ActionResponseType | null) => setActionResponse(prev => ({...prev, [action]: response})), []);
 
-  const changeRecordingState = useCallback((state: RecordingStateType | null) => setRecordingState(state), []);
+  const changeRecordingState = useCallback((state: ActionStatusType | null) => setRecordingState(state), []);
 
   return (
     <GlobalContext.Provider value={{
@@ -72,8 +82,8 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
       openModal, 
       closeModal, 
       actionResponse,
-      actionProcessing,
-      changeActionProcessing,
+      actionStatus,
+      changeActionStatus,
       changeActionResponse,
       modalError,
       showModalError,

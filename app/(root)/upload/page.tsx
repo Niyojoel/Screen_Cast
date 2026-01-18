@@ -162,6 +162,8 @@ const page = () => {
     //Stored recorded video check on upload page and filling into video file input
     const checkForRecordedVideo = async()=> {
       try {
+        if(recordingState) changeRecordingState(null)
+
         const storedVideo = sessionStorage.getItem('recordedVideo');
 
         if(!storedVideo) return;
@@ -195,7 +197,7 @@ const page = () => {
       }
     };
     checkForRecordedVideo()
-  }, [video])
+  }, [video, recordingState])
 
   //storing form input values to session storage on change
   useEffect(()=> {
@@ -214,10 +216,6 @@ const page = () => {
     
     if(storedFormValues) setFormData(prev => ({...prev, ...storedFormValues}))
   },[])
-
-  useEffect(() => {
-    if(recordingState) changeRecordingState(null)
-  },[recordingState])
 
   const visibilityInputChange =(option: SelectOptionType) => {
     const value = option.value;
