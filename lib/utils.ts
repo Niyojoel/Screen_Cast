@@ -9,11 +9,11 @@ import {
   DEFAULT_MIC_SETTINGS 
 } from "@/constants";
 import { 
+  ActionResponseType,
   BrowserDialogOptionsType, 
   CameraFacingMode, 
   CameraOptions, 
   CursorOptions, 
-  DeviceStatus, 
   DeviceType, 
   DisplaySurfaceOptions, 
   MediaStreams, 
@@ -231,16 +231,15 @@ export const parseSelectedCam = (selectedCam: string): CameraOptions => {
 export const parseOutputDisplaySetting = (displaySetting: string): string => {
   switch (displaySetting.toLowerCase()) {
     case "monitor":
-      return "Full Screen";
+      return "Entire Screen";
     case "window":
       return "Window";
     case "browser":
-      return "Current Tab";
+      return "Browser Tab";
     case "camera only":
       return "Camera Only";
     default:
       throw new Error('unknown option provided');
-
   }
 }
 
@@ -254,17 +253,16 @@ export const parseBrowserDialogOptions = (option: DisplaySurfaceOptions): Browse
       return "Browser Tab";
     default:
       throw new Error('unknown option provided');
-
   }
 }
 
 export const parseHintedDisplaySetting = (selectedSetting: string): DisplaySurfaceOptions => {
   switch (selectedSetting.toLowerCase()) {
-    case "full screen":
+    case "entire screen":
       return "monitor";
     case "window":
       return "window";
-    case "current tab":
+    case "browser tab":
       return "browser";
     case "camera only":
       return "camera only";
@@ -311,7 +309,7 @@ export const syncCameraOnly = async(
   return syncSetting;
 }
 
-const checkHardwareSupport = async(device: DeviceType): Promise<boolean> => {
+export const checkHardwareSupport = async(device: DeviceType): Promise<boolean> => {
   const devices = await navigator.mediaDevices.enumerateDevices();
 
   const hasDevice = devices.some(d => {
@@ -324,7 +322,7 @@ const checkHardwareSupport = async(device: DeviceType): Promise<boolean> => {
   return true;
 }
 
-const checkPermission = async (device: DeviceType): Promise<PermissionsType | null> => {
+export const checkPermission = async (device: DeviceType): Promise<PermissionsType | null> => {
   try {
     const permissionStatus = await navigator.permissions.query({name: device as any});
     console.log(`${device} state: ${permissionStatus.state}`);
@@ -335,24 +333,6 @@ const checkPermission = async (device: DeviceType): Promise<PermissionsType | nu
     console.error('Permissions API not supported for this device in this browser.')
     return null;
   }
-}
-
-export const checkDevice = async (device: DeviceType): Promise<DeviceStatus> => {
-  const supported = await checkHardwareSupport(device);
-
-  console.log({[device]: supported})
-
-  if(!supported) return 'no-support';
-  
-  const permissionStatus = await checkPermission(device);
-  
-  console.log(permissionStatus)
-  
-  if(permissionStatus !== "granted") return 'no-permission';
-
-  console.log(`setting ${device} to pass`)
-
-  return 'passed'
 }
 
 //helper
@@ -397,7 +377,8 @@ const getUserMediaSettings = async (
 }
 
 export const getMediaStreams = async (
-  videoSettings: VideoSettingsType
+  videoSettings: VideoSettingsType,
+  onBrowserDialogPopUp: () => void
 ): Promise<MediaStreams> => {
 
   const {
@@ -414,7 +395,7 @@ export const getMediaStreams = async (
 
   const userMediaConstraints = await getUserMediaSettings(camera, mode, withMic)
 
-
+  
   const displayMediaConstraints = {
     video: {
       ...DEFAULT_VIDEO_CONFIG, 
@@ -423,7 +404,9 @@ export const getMediaStreams = async (
     },
     audio: true,
   }
-
+  
+  onBrowserDialogPopUp();
+  
   if(displaySurface !== "camera only") {
     displayStream = await navigator.mediaDevices.getDisplayMedia(displayMediaConstraints);
   }
@@ -454,23 +437,22 @@ export const killMediaStreams = (streams: (MediaStream | null)[]) => {
   })
 }
 
-export const getCombinedCanvasStreams = async (
+export const getCanvasStreams = async (
   screenStream: MediaStream, 
-  cameraStream: MediaStream
+  cameraStream?: MediaStream
 ): Promise<{stream: MediaStream, stopDrawInterval: () => void}> => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d'); 
 
-  if(!(screenStream.getVideoTracks().length > 0)){
+  if(screenStream.getVideoTracks().length < 1){
     throw new Error ('No video available for display')
   }
 
-  if(!(cameraStream.getVideoTracks().length > 0)){
-    throw new Error ('No active video camera')
-  }
+  const withCamera = cameraStream && cameraStream?.getVideoTracks().length > 0;
 
   const screenTrack: MediaStreamTrack = screenStream.getVideoTracks()[0];
   const settings = screenTrack.getSettings();
+  
   canvas.width = settings.width!;
   canvas.height = settings.height!;
 
@@ -478,26 +460,28 @@ export const getCombinedCanvasStreams = async (
   const cameraVideo = document.createElement('video');
 
   screenVideo.srcObject = screenStream;
-  cameraVideo.srcObject = cameraStream;
+  if(withCamera) cameraVideo.srcObject = cameraStream;
 
   await screenVideo.play();
-  await cameraVideo.play();
+  if(withCamera) await cameraVideo.play();
 
   const fps = 30;
   const drawInterval = setInterval(()=> {
     ctx?.drawImage(screenVideo, 0, 0, canvas.width, canvas.height)
 
-    const camWidth = 320;
-    const camHeight = 240;
-    const padding= 20;
-    
-    ctx?.drawImage(
-      cameraVideo,
-      canvas.width - camWidth - padding,
-      canvas.height - camHeight - padding,
-      camWidth,
-      camHeight
-    );
+    if(withCamera) {
+      const camWidth = 320;
+      const camHeight = 240;
+      const padding= 20;
+      
+      ctx?.drawImage(
+        cameraVideo,
+        canvas.width - camWidth - padding,
+        canvas.height - camHeight - padding,
+        camWidth,
+        camHeight
+      );
+    }
   }, 1000 / fps);
 
   const stopDrawInterval = (): void => {

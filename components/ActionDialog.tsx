@@ -2,29 +2,55 @@ import { DIALOG_ICONS } from '@/constants/lists'
 import DialogContentBody from './DialogContentBody'
 
 export const FailedActionDialog = ({
-    customMessage = "Try again"
-}: {customMessage?: string}) =>  (
+    customMessage,
+    header
+}: {customMessage?: string, header?: string}) =>  (
     <DialogContentBody
         icon = {DIALOG_ICONS.failed}
-        headerNode = 'Something went wrong'
-        subNode = {`${customMessage}. Try again`}
+        headerNode = {header || 'Something went wrong'}
+        subNode = {customMessage ? `${customMessage}. Try again` : 'Try again'}
     />
 )
 
 export const SuccessActionDialog = ({
     message,
-}: {message?: string}) =>  (
+    header
+}: {message: string, header?: string}) =>  (
     <DialogContentBody
         icon = {DIALOG_ICONS.checked}
+        headerNode={header}
         subNode = {message}
     />
 )
 
-export const LoadingActionDialog = ({
+export const OngoingActionDialog = ({
     message,
-}: {message?: string}) =>  (
+}: {message: string}) =>  (
     <DialogContentBody
         icon = {DIALOG_ICONS.loader}
         subNode = {message}
     />
 )
+
+export const WarningActionDialog = ({
+    header,
+    message,
+}: {message: string, header?: string}) =>  (
+    <DialogContentBody
+        icon = {DIALOG_ICONS.alert}
+        headerNode={header}
+        subNode = {message}
+    />
+)
+
+export const DialogListItem = ({text}: {text: string | null}) => {
+
+    if(!text) return null;
+
+    return (
+    <DialogContentBody
+        icon={DIALOG_ICONS.checked}
+        headerNode={text}
+    />
+    ) 
+}

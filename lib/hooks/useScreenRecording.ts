@@ -8,13 +8,13 @@ import {
   cleanupRecording,
   createRecordingBlob,
   calculateRecordingDuration,
-  getCombinedCanvasStreams,
+  getCanvasStreams,
   getTrackSetting,
   addTrack,
   streamMonitor,
   killMediaStreams,
 } from "@/lib/utils";
-import { BunnyRecordingState, DisplaySurfaceOptions, ExtendedMediaStream, VideoSettingsType } from "@/index";
+import { ActionResponseType, ActionStatusType, BunnyRecordingState, DisplaySurfaceOptions, ExtendedMediaStream, ImagesArrayType, VideoSettingsType } from "@/index";
 
 export const useScreenRecording = () => {
 
@@ -24,6 +24,7 @@ export const useScreenRecording = () => {
     recordedVideoUrl: "",
     recordingDuration: 0,
   });
+  const [screenshots, setScreenshots] = useState<ImagesArrayType[]>([])
 
   const [selectedVideoSetting, setSelectedVideoSetting] = useState<VideoSettingsType & {systemAudio: boolean}>({
     cursor: "always",
@@ -74,13 +75,17 @@ export const useScreenRecording = () => {
 
   let canvasDrawInterval: NodeJS.Timeout | null = null;
 
-  const startRecording = async (videoSettings: VideoSettingsType) => {
+  const startRecording = async (
+    videoSettings: VideoSettingsType, 
+    onBrowserDialogPopUp: () => void
+  )=> {
     setSelectedVideoSetting(prev => ({...prev, ...videoSettings}))
     console.log(videoSettings)
+
     try {
       stopRecording();
 
-      const streams = await getMediaStreams(videoSettings);
+      const streams = await getMediaStreams(videoSettings, onBrowserDialogPopUp);
 
       const {
         displayStream, 
@@ -103,143 +108,143 @@ export const useScreenRecording = () => {
 
       const recorderStream = new MediaStream() as ExtendedMediaStream;
 
-        if(displayStream) { 
+      if(displayStream) { 
 
-          console.log("in displayStream")
+        console.log("in displayStream")
 
-          const combinedStream = new MediaStream();
+        const combinedStream = new MediaStream();
 
-          audioContextRef.current = new AudioContext();
+        audioContextRef.current = new AudioContext();
 
-          console.log("getting settings")
-          //Get the user browser dialog selected option
-          const setting = getTrackSetting(displayStream);
-          const displaySurface = setting['displaySurface'] as DisplaySurfaceOptions;
-          const systemAudio = displayStream.getAudioTracks().length > 0;
-          
+        console.log("getting settings")
+        //Get the user browser dialog selected option
+        const setting = getTrackSetting(displayStream);
+        const displaySurface = setting['displaySurface'] as DisplaySurfaceOptions;
+        const systemAudio = displayStream.getAudioTracks().length > 0;
+        
+        setSelectedVideoSetting(prev => ({
+          ...prev, 
+          displaySurface, 
+          systemAudio
+        }));
+
+        console.log("starting to combine user stream")
+
+        if(userMediaStream && userMediaStream?.getVideoTracks().length > 0) {
+
+          const usingMic = userMediaStream.getAudioTracks().length > 0;
+
           setSelectedVideoSetting(prev => ({
             ...prev, 
-            displaySurface, 
-            systemAudio
-          }));
+            camera: "with",
+            withMic: usingMic ? true : false,
+          }))
 
-          console.log("starting to combine user stream")
+          const {stream, stopDrawInterval} = await getCanvasStreams(displayStream, userMediaStream);
 
-          if(userMediaStream && userMediaStream?.getVideoTracks().length > 0) {
-
-            const usingMic = userMediaStream.getAudioTracks().length > 0;
-
-            setSelectedVideoSetting(prev => ({
-              ...prev, 
-              camera: "with",
-              withMic: usingMic ? true : false,
-            }))
-
-            const {stream, stopDrawInterval} = await getCombinedCanvasStreams(displayStream, userMediaStream);
-
-            await addTrack(stream, combinedStream, "both");
-            
-            drawIntervalRef.current = stopDrawInterval;
-
-          }else {
-            if(userMediaStream && userMediaStream?.getAudioTracks().length > 0) {
-              setSelectedVideoSetting(prev => ({
-                ...prev, 
-                withMic: true,
-                camera: "no"
-              }))
-            }
-
-            if(!userMediaStream) {
-              setSelectedVideoSetting(prev => ({
-                ...prev, 
-                withMic: false, 
-                camera: 'no'
-              }))
-            }
-
-            await addTrack(displayStream, combinedStream, "video")
-          }
-
-          console.log("just added video to combined: ", combinedStream.getVideoTracks().length);
-
-          console.log("DisplayStream Audio", displayStream.getAudioTracks().length > 0)
-
-          console.log(hasDisplayAudio);
-
-          const audioDestination = await createAudioMixer(
-            audioContextRef.current, 
-            displayStream, 
-            userMediaStream, 
-            hasDisplayAudio
-          );
-
-          if(audioDestination) {
-            await addTrack(audioDestination?.stream, combinedStream, "audio")
-          }
-
-          console.log("just added audio to combined: ", combinedStream.getAudioTracks());
-
-          await addTrack(combinedStream, recorderStream, "both")
-
-          recorderStream._originalStreams = [
-            displayStream,
-            ...(userMediaStream ? [userMediaStream] : [])
-          ];
+          await addTrack(stream, combinedStream, "both");
+          
+          drawIntervalRef.current = stopDrawInterval;
 
         }else {
-          if(videoRef.current){
-            videoRef.current.srcObject = userMediaStream;
-            setIsPreviewing(true);
-
+          if(userMediaStream && userMediaStream?.getAudioTracks().length > 0) {
             setSelectedVideoSetting(prev => ({
               ...prev, 
-              camera: "only", 
-              displaySurface: 'camera only', 
-              withMic: true
+              withMic: true,
+              camera: "no"
             }))
-
-            if(userMediaStream){
-              await addTrack(userMediaStream, recorderStream, "both")
-  
-              recorderStream._originalStreams = [userMediaStream]
-            }
           }
-        };
 
-        if(!(recorderStream && recorderStream.getTracks().length > 0)) throw new Error("Cannot start recording: No video or audio track present")
-
-        const trackStatus = {
-          video: recorderStream?.getVideoTracks().length > 0,
-          audio: recorderStream?.getAudioTracks().length > 0,
-        };
-
-        const streamStatus = await streamMonitor(recorderStream);
-
-        console.log("Track check status: ", trackStatus);
-        console.log("Track stream status: ", streamStatus);
-
-        mediaRecorderRef
-        .current = setupRecording(recorderStream, 
-          {
-            onDataAvailable: (e) => e.data.size && chunksRef.current.push(e.data),
-            onStop: handleRecordingStop,
+          if(!userMediaStream) {
+            setSelectedVideoSetting(prev => ({
+              ...prev, 
+              withMic: false, 
+              camera: 'no'
+            }))
           }
-        )
 
-        streamRef.current = recorderStream;
-
-        console.log(mediaRecorderRef.current)
-
-        chunksRef.current = [];
-        startTimeRef.current = Date.now();
-
-        if(recorderStream.getVideoTracks().some(track => track.readyState === "live")){
-          mediaRecorderRef.current.start(1000);
+          await addTrack(displayStream, combinedStream, "video")
         }
-  
-        setState((prev) => ({ ...prev, isRecording: true }));
-        return true;
+
+        console.log("just added video to combined: ", combinedStream.getVideoTracks().length);
+
+        console.log("DisplayStream Audio", displayStream.getAudioTracks().length > 0)
+
+        console.log(hasDisplayAudio);
+
+        const audioDestination = await createAudioMixer(
+          audioContextRef.current, 
+          displayStream, 
+          userMediaStream, 
+          hasDisplayAudio
+        );
+
+        if(audioDestination) {
+          await addTrack(audioDestination?.stream, combinedStream, "audio")
+        }
+
+        console.log("just added audio to combined: ", combinedStream.getAudioTracks());
+
+        await addTrack(combinedStream, recorderStream, "both")
+
+        recorderStream._originalStreams = [
+          displayStream,
+          ...(userMediaStream ? [userMediaStream] : [])
+        ];
+
+      }else {
+        if(videoRef.current){
+          videoRef.current.srcObject = userMediaStream;
+          setIsPreviewing(true);
+
+          setSelectedVideoSetting(prev => ({
+            ...prev, 
+            camera: "only", 
+            displaySurface: 'camera only', 
+            withMic: true
+          }))
+
+          if(userMediaStream){
+            await addTrack(userMediaStream, recorderStream, "both")
+
+            recorderStream._originalStreams = [userMediaStream]
+          }
+        }
+      };
+
+      if(!(recorderStream && recorderStream.getTracks().length > 0)) throw new Error("Cannot start recording: No video or audio track present")
+
+      const trackStatus = {
+        video: recorderStream?.getVideoTracks().length > 0,
+        audio: recorderStream?.getAudioTracks().length > 0,
+      };
+
+      const streamStatus = await streamMonitor(recorderStream);
+
+      console.log("Track check status: ", trackStatus);
+      console.log("Track stream status: ", streamStatus);
+
+      mediaRecorderRef
+      .current = setupRecording(recorderStream, 
+        {
+          onDataAvailable: (e) => e.data.size && chunksRef.current.push(e.data),
+          onStop: handleRecordingStop,
+        }
+      )
+
+      streamRef.current = recorderStream;
+
+      console.log(mediaRecorderRef.current)
+
+      chunksRef.current = [];
+      startTimeRef.current = Date.now();
+
+      if(recorderStream.getVideoTracks().some(track => track.readyState === "live")){
+        mediaRecorderRef.current.start(1000);
+      }
+
+      setState((prev) => ({ ...prev, isRecording: true }));
+      return true;
 
     } catch (error) {
       stopRecording();
@@ -271,11 +276,21 @@ export const useScreenRecording = () => {
     startTimeRef.current = null;
   };
 
+  const handleTakeScreenShot = () => {
+    //construct filename
+
+    //push screen
+    throw new Error('This feature would be available in the future')
+    //screenshot functionality
+  }
+
+
   return {
     ...state,
     startRecording,
     stopRecording,
     resetRecording,
-    selectedVideoSetting
+    selectedVideoSetting,
+    handleTakeScreenShot
   };
 };

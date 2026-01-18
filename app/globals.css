@@ -572,18 +572,18 @@
         @apply flex flex-col gap-2 items-center text-center text-dark-100 text-base font-medium;
       }
 
-      .media-use {
-        @apply w-full flex flex-col items-center h-full mb-3;
+      .features {
+        @apply w-full flex flex-col gap-2 mb-3 bg-transparent;
 
-        .media-use-intro {
-          @apply text-[15.5px] mb-1;
+        .pre-note {
+          @apply text-[15.5px];
         }
 
-        .features-box {
-          @apply w-full flex flex-col bg-transparent;
+        .feature-box {
+          @apply w-full flex flex-col gap-2 bg-transparent;
 
           .feature {
-            @apply list-disc text-[15px] font-normal text-[#666]
+            @apply flex gap-2 items-center flex-wrap
           }
         }
       }

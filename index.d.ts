@@ -403,9 +403,7 @@ type PermissionsType = "denied" | "granted" | "prompt"
 
 type DeviceStatus = "passed" | "no-permission" | 'no-support' | "unchecked" | 'unused'
 
-type GoToUploadState = "failed" | "loading" | "redirecting" | "finished"
-
-type Action = 'delete' | 'download' | 'check' | 'generate'
+type Action = 'delete' | 'download' | 'check' | 'generate' |  'redirect' | 'record' | 'save_recording'
 
 type ActionResponseType = 'failed' | 'successful'
 

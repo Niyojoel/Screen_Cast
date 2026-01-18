@@ -1,17 +1,17 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import {ActionButton, CopyBtn, Img, DropdownList, Modal, DialogContentBody, FailedActionDialog} from "."
+import {ActionButton, CopyBtn, Img, DropdownList, FailedActionDialog, WarningActionDialog, SuccessActionDialog, OngoingActionDialog} from "."
 import { cn, daysAgo, downloadVideo } from "@/lib/utils"
 import {Dot} from "lucide-react"
-import React, { memo, useMemo, useState } from "react"
+import React, {useCallback, useEffect, useMemo, useState } from "react"
 import { authClient } from "@/lib/authClient"
 import { deleteVideo, updateVideoVisibility } from "@/lib/actions/video"
 import toast from "react-hot-toast"
 import { dummySession, visibilities } from "@/constants"
-import {DropdownOptionsType, ModalButton, ModalStateType, VideoDetailHeaderProps, Visibility } from ".."
-import { DIALOG_ICONS } from "@/constants/lists"
-import { GlobalContextType, useGlobalContext } from "@/lib/hooks/useGlobalContext"
+import {ActionResponseType, ActionStatusType, DropdownOptionsType, VideoDetailHeaderProps, Visibility } from ".."
+import {ModalContentType, modalButton, modalContent} from "@/constants/lists"
+import {useGlobalContext } from "@/lib/hooks/useGlobalContext"
 
 const VideoDetailHeader = ({
     id,
@@ -28,18 +28,25 @@ const VideoDetailHeader = ({
   const router = useRouter()
 
   const {
-    modal,
-    modalError,
-    showModalError,
     openModal, 
     closeModal, 
     actionResponse,
-    actionProcessing,
-    changeActionProcessing,
+    actionStatus,
+    changeActionStatus,
     changeActionResponse,
+    changeModalContent
   } = useGlobalContext()
 
+  const deleteActionStatus = (status: ActionStatusType | null) => changeActionStatus('delete', status)
+
+  const deleteActionResponse = (response: ActionResponseType | null) => changeActionResponse('delete', response)
+
+  const downloadActionStatus = (status: ActionStatusType | null) => changeActionStatus('download', status)
+
+  const downloadActionResponse = (response: ActionResponseType | null) => changeActionResponse('download', response)
+
   const [visibilityState, setVisibilityState] = useState<DropdownOptionsType>({label: visibility as Visibility});
+  const [isUpdating, setIsUpdating] = useState(false)
 
   // const { data: session } = authClient.useSession();
   const session = dummySession;
@@ -51,25 +58,30 @@ const VideoDetailHeader = ({
       isOwner = userId === ownerId;
   }
 
+  const showDeleteModal = () => {
+    deleteActionStatus('before');
+    openModal(deleteContent?.body, deleteContent?.buttons)
+  }
+
   const handleDelete = async () => {
     try {
-      changeActionProcessing(true);
+      deleteActionStatus('ongoing');
       await deleteVideo(videoId, thumbnailUrl);
       router.push(`/profile/${userId}`)
       toast.success("video deleted successfully")
-      changeActionResponse('successful');
+      deleteActionResponse('successful');
     } catch (error) {
       console.error("Error deleting video:", error);
       toast.error("Error deleting video");
-      changeActionResponse('failed');
+      deleteActionResponse('failed');
     } finally {
-      changeActionProcessing(false);
+      deleteActionStatus('after');
     }
-  };
+  }
 
   const handleVisibilityChange = async(option: DropdownOptionsType) => {
     if(option !== visibilityState) {
-        changeActionProcessing(true);
+        setIsUpdating(true);
         try {
           await updateVideoVisibility(videoId, option.label as Visibility);
           setVisibilityState(option);
@@ -78,54 +90,89 @@ const VideoDetailHeader = ({
           console.error("Error updating visibility:", error);
           toast("Error updating video visibility");
         }finally {
-          changeActionProcessing(false);
+          setIsUpdating(false);
         }
     }
   }
 
   const handleDownload = async () => {
     try {
+      downloadActionStatus('ongoing')
       openModal(
-        <DownloadModalContent 
-          actionProcessing={actionProcessing} 
-          actionResponse={actionResponse}
-        />,
-        downloadBtns
+        downloadContent?.body,
+        downloadContent?.buttons
       )
-      changeActionProcessing(true);
       downloadVideo(videoUrl as string);
-      changeActionResponse('successful')
+      downloadActionResponse('successful')
     } catch (error) {
       console.error(error);
       toast.error("Download failed")
-      changeActionResponse('failed')
+      downloadActionResponse('failed')
     } finally {
-      changeActionProcessing(false);
+      downloadActionStatus('after');
     }
   }
 
   const redirectToProfile = () => router.push(`/profile/${ownerId}`)
 
-  const downloadBtns = useMemo((): ModalButton[] => actionResponse === "failed" ? [
-    {
-      className: "btn-theme",
-      action: handleDownload,
-      text: 'Try again'
-    },
-  ] : [], [actionResponse])
+  const deleteContent = useMemo((): ModalContentType | null => {
+    return modalContent(
+      actionStatus.delete,
+      actionResponse.delete,
+      {
+        body: <FailedActionDialog customMessage="Failed to delete video"/>,
+        buttons: [modalButton('Retry', handleDelete, 'btn-destructive')]
+      },
+      {
+        body: <OngoingActionDialog message = "Deleting video.."/>
+      },
+      {
+        body: <SuccessActionDialog message = 'Video successfully deleted'/>
+      },
+      {
+        body: (
+          <WarningActionDialog
+            header = 'This action cannot be undone'
+            message = "Click continue to delete this video completely"
+          />
+        ),
+        buttons: [
+          modalButton('Cancel', closeModal, 'btn-white'),
+          modalButton('Continue', handleDelete, 'btn-destructive'),
+        ]
+      },
+    )
+  }, [actionStatus.delete, actionResponse.delete, modalButton, handleDelete, closeModal])
+  
+  const downloadContent = useMemo((): ModalContentType | null => {
+    return modalContent(
+      actionStatus.download,
+      actionResponse.download,
+      {
+        body: <FailedActionDialog customMessage="Failed to download video"/>,
+        buttons: [modalButton('Retry', handleDownload)]
+      },
+      {
+        body: <OngoingActionDialog message = "Downloading video.."/>
+      },
+      {
+        body: <SuccessActionDialog message = 'Video successfully downloaded'/>
+      },
+    )
+  }, [actionStatus.download, actionResponse.download, modalButton, handleDownload])
 
-  const deleteBtns = useMemo((): ModalButton[] => [
-    {
-      className: "btn-white",
-      action: closeModal,
-      text: 'Cancel'
-    },
-    {
-      className: "btn-destructive",
-      action: handleDelete,
-      text: !actionProcessing ? 'Continue' : 'Deleting...'
-    }
-  ], [actionProcessing])
+
+  useEffect(()=> {
+    if(actionStatus.delete && deleteContent) changeModalContent(
+      deleteContent.body, 
+      deleteContent?.buttons
+    );
+    if(actionStatus.download && downloadContent) changeModalContent(
+      downloadContent.body, 
+      downloadContent?.buttons
+    );
+    changeModalContent(null, null)
+  }, [deleteContent, downloadContent, actionStatus])
 
   return (
     <header className='detail-header'>
@@ -165,18 +212,13 @@ const VideoDetailHeader = ({
           <div className="user-btn">
             <button
               className="delete-btn"
-              onClick={() => openModal(
-                <DeleteModalContent 
-                  actionResponse={actionResponse}
-                />, 
-                deleteBtns
-              )}
-              disabled={actionProcessing}
+              onClick={showDeleteModal}
+              disabled={actionStatus.delete === 'ongoing'}
             >
               Delete Video
             </button>
             <div className="bar"/>
-            {actionProcessing ? (
+            {isUpdating ? (
               <div className="update-stats">
                 <p>Updating...</p>
               </div>
@@ -197,60 +239,8 @@ const VideoDetailHeader = ({
           </div>
         )}
       </aside>
-      <Modal
-        closeIcon={modal.closeIcon}
-        closeModal={closeModal}
-        error={modalError}
-        setError={showModalError}
-        footerButtons={modal.buttons}
-        contentBody={modal.content}
-      />
     </header>
   )
 }
-
-const DownloadModalContent = memo(({
-  actionProcessing, 
-  actionResponse 
-}: Pick<GlobalContextType, 'actionProcessing' | 'actionResponse'>): React.ReactNode | null=> {
-  let node: React.ReactNode | null = null;
-
-  if(actionProcessing) {
-    node = (
-      <DialogContentBody
-        icon = {DIALOG_ICONS.loader}
-        subNode = "Downloading video.."
-      />
-    )
-  } else if (actionResponse === "successful") {
-    node = (
-      <DialogContentBody
-        icon = {DIALOG_ICONS.checked} 
-        subNode = "Video successfully downloaded"
-      />
-    )
-  } else if (actionResponse === "failed") {
-    node = <FailedActionDialog customMessage="Failed to download video"/>
-  } else node = null
-  return node;
-})
-
-const DeleteModalContent = memo(({actionResponse}: Pick<GlobalContextType, 'actionResponse'>) => (
-  actionResponse === null ? (
-    <DialogContentBody
-      icon = {DIALOG_ICONS.alert}
-      headerNode = 'This action cannot be undone'
-      subNode = "Click continue to delete this video completely"
-    />
-  ): actionResponse === "failed" ? (
-    <FailedActionDialog/>
-  ): (
-    <DialogContentBody
-      icon = {DIALOG_ICONS.checked}
-      headerNode = 'Done'
-      subNode = 'Video successfully deleted'
-    />
-  )
-))
 
 export default VideoDetailHeader

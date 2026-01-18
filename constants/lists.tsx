@@ -18,8 +18,9 @@ import {
     X, 
     XCircle
 } from "lucide-react"
-import { DropdownOptionsType } from ".."
-import { JSX} from "react"
+import { ActionResponseType, ActionStatusType, DropdownOptionsType, ModalButton } from ".."
+import React, { JSX} from "react"
+import { FailedActionDialog, OngoingActionDialog, SuccessActionDialog } from "@/components"
 
 
 export const cursorDisplayOptions: DropdownOptionsType[] = [
@@ -85,7 +86,7 @@ export const cameraSettingsOptions: DropdownOptionsType[] = [
 export const screenSettingsOptions: DropdownOptionsType[] = [
     {
         icon: <MonitorIcon size={18}/>,
-        label: "Full Screen",
+        label: "Entire Screen",
         default: true
     },
     {
@@ -93,7 +94,7 @@ export const screenSettingsOptions: DropdownOptionsType[] = [
         label: "Window"},
     {
         icon: <Layout size={18}/>,
-        label: "Current Tab"
+        label: "Browser Tab"
     },
     {
         icon: <UserIcon size={18}/>,
@@ -114,4 +115,52 @@ export const DIALOG_ICONS = {
     loader: <LoaderCircle size={24} className="animate-spin"/>,
     close: <X size={18}/>,
     info: <InfoIcon size={18} stroke='blue'/>
+}
+
+export type ModalContentType = {
+    body: React.ReactElement | null,
+    buttons?: ModalButton[] | null
+}
+
+export const modalContent = (
+    actionStatus: ActionStatusType | null,
+    actionResponse : ActionResponseType | null,
+    failedContent: ModalContentType,
+    ongoingContent: ModalContentType,
+    successContent: ModalContentType,
+    beforeContent?: ModalContentType
+) => {
+    
+    if(beforeContent && actionStatus === 'before'  ) {
+        return beforeContent;
+    }
+
+    if(actionStatus ==='ongoing' && ongoingContent) {
+        return ongoingContent;
+    }
+
+    if(actionStatus ==='after' && actionResponse === 'successful' && successContent) {
+        return successContent;
+    }
+
+    if(actionStatus ==='after' && actionResponse === 'failed' && failedContent) {
+        return failedContent;
+    }
+    
+    return null;
+}
+
+// const recordingStateContent = ({
+//     recordingState,
+
+// }) => {
+
+// }
+
+export const modalButton = (text: string, action: () => void, className?: string): ModalButton => {
+    return {
+        text,
+        action,
+        className: className || "btn-theme"
+    }
 }
