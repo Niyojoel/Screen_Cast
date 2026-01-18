@@ -26,11 +26,11 @@ const VideoDetailHeader = ({
 }: VideoDetailHeaderProps & {videoUrl?: string}) => {
   const router = useRouter()
 
-  const [isDeleting, setIsDeleting] = useState<ActionStatusType | null>(null);
+  const [isDeleting, setIsDeleting] = useState<Omit<ActionStatusType, 'before'> | null>(null);
   const [actionResponse, setActionResponse] = useState<Record<string, 'failed' | 'successful' | null>>({'updated': null, 'deleted': null});
   const [visibilityState, setVisibilityState] = useState<DropdownOptionsType>({label: visibility as Visibility});
-  const [isUpdating, setIsUpdating] = useState<ActionStatusType | null>(null);
-  const [downloading, setDownloading] = <ActionStatusType | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [downloading, setDownloading] = useState<ActionStatusType | null>(null);
   const [modalError, setModalError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState<ModalStateType>({state: false, content: null, buttons: null});
 
@@ -44,13 +44,15 @@ const VideoDetailHeader = ({
       isOwner = userId === ownerId;
   }
 
+  
+
   const handleDelete = async () => {
     try {
-      setIsDeleting(true);
+      setIsDeleting('ongoing');
       await deleteVideo(videoId, thumbnailUrl);
       router.push(`/profile/${userId}`)
       toast("video deleted successfully")
-      setActionResponse('successful');
+      setActionResponse(prev => ({...prev, deleted: 'successful'}));
     } catch (error) {
       console.error("Error deleting video:", error);
       toast("Error deleting video");
