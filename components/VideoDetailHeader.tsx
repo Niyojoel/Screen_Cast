@@ -25,6 +25,7 @@ const VideoDetailHeader = ({
     thumbnailUrl
 }: VideoDetailHeaderProps & {videoUrl?: string}) => {
   const router = useRouter()
+  const 
 
   const [isDeleting, setIsDeleting] = useState<Omit<ActionStatusType, 'before'> | null>(null);
   const [actionResponse, setActionResponse] = useState<Record<string, 'failed' | 'successful' | null>>({'updated': null, 'deleted': null});

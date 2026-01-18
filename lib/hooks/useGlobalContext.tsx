@@ -1,18 +1,19 @@
 'use client'
-import { ActionResponseType, ActionStatusType, ModalButton, ModalStateType} from "@/index";
-import { HomeIcon } from "lucide-react";
-import {useState, useContext, createContext, useRef, useEffect, useCallback} from "react";
+import { ActionResponseType, ModalButton, ModalStateType, ActionStatusType, Action} from "@/index";
+import {useState, useContext, createContext, useCallback} from "react";
 
-type GlobalContextType = {
-  actionResponse: ActionResponseType | null,
-  actionStatus: ActionStatusType | null,
+export type GlobalContextType = {
+  actionResponse: Record<Action, ActionResponseType | null>,
+  actionStatus: Record<Action, ActionResponseType | null>,
   modal: ModalStateType,
-  openModal: (content: React.ReactNode, buttons: ModalButton[]) => void,
+  openModal: (content: React.ReactNode, buttons?: ModalButton[], closeIcon?: React.ReactNode) => void,
   closeModal: () => void,
-  changeActionResponse: (response: ActionResponseType | null) => void,
-  changeActionStatus: (state: ActionStatusType | null) => void,
+  changeActionResponse: (action: Action, response: ActionResponseType | null) => void,
+  changeActionStatus: (action: Action, status: ActionStatusType | null) => void,
   modalError: string,
-  showModalError: (message: string) => void
+  showModalError: (message: string) => void,
+  recordingState: ActionStatusType | null
+  changeRecordingState: (state: ActionStatusType | null) => void
 }
 
 const GlobalContext = createContext<GlobalContextType | null>(null);
@@ -22,27 +23,40 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
     state: false, 
     content: null, 
     buttons: null, 
-    closeIcon: <HomeIcon size={22}/>
+    closeIcon: null
   });
   const [modalError, setModalError] = useState('')
-  const [actionResponse, setActionResponse] = useState<'failed' | 'successful' | null>(null);
-  const [actionProcessing, setActionProcessing] = useState(false);
+  const [actionResponse, setActionResponse] = useState<Record<Action, ActionResponseType | null>>({
+    'delete': null,
+    'download': null,
+    'check': null,
+    'generate': null,
+  });
+  const [actionStatus, setActionStatus] = useState<Record<Action, ActionResponseType | null>>({
+    'delete': null,
+    'download': null,
+    'check': null,
+    'generate': null,
+  });
+  const [recordingState, setRecordingState] = useState<ActionStatusType | null>(null)
 
 
   const openModal = useCallback((
     content: React.ReactNode, 
-    buttons: ModalButton[],
+    buttons?: ModalButton[] | null,
     closeIcon?: React.ReactNode
   ) => {
     setModal({
       state: true,
       content,
-      buttons,
-      closeIcon
+      buttons: buttons ? buttons : null,
+      closeIcon: closeIcon ? closeIcon : null
     })
   }, [])
 
-  const closeModal = useCallback(()=>{
+  const closeModal = useCallback(()=> {
+    if(recordingState) changeRecordingState(null);
+    // if(actionResponse) changeActionResponse({});
     setModal({
         state: false,
         content: null, 
@@ -50,29 +64,31 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
     })
   }, [])
 
-  const showModalError = (message: string) => {
+  const showModalError = useCallback((message: string) => {
     setModalError(message)
-  }
+  }, [])
 
-  const changeActionProcessing = (state: "true" | "false") => {
-    if(state === "true") {
-        setActionProcessing(true)
-    } else setActionProcessing(false);
-  }
+  const changeActionStatus = useCallback((action: Action, status: ActionStatusType | null) => {
+    setActionStatus(prev => ({...prev, [action]: status}))
+  }, [])
 
-  const changeActionResponse = (response: ActionResponseType | null) => setActionResponse(response)
-  
+  const changeActionResponse = useCallback((action: Action,response: ActionResponseType | null) => setActionResponse(prev => ({...prev, [action]: response})), []);
+
+  const changeRecordingState = useCallback((state: ActionStatusType | null) => setRecordingState(state), []);
+
   return (
     <GlobalContext.Provider value={{
       modal, 
       openModal, 
       closeModal, 
       actionResponse,
-      actionProcessing,
-      changeActionProcessing,
+      actionStatus,
+      changeActionStatus,
       changeActionResponse,
       modalError,
       showModalError,
+      changeRecordingState,
+      recordingState
     }}>
         {children}
     </GlobalContext.Provider>
