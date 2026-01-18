@@ -18,5 +18,5 @@ export {default as Logo} from "./Logo";
 export {default as Alert} from "./Alert";
 export {default as DialogContentBody} from "./DialogContentBody";
 export {default as ImagesConsole} from "./ImagesConsole";
-export {FailedActionDialog, SuccessActionDialog,LoadingActionDialog
+export {FailedActionDialog, SuccessActionDialog, OngoingActionDialog
 } from "./ActionDialogs";

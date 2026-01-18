@@ -20,7 +20,7 @@ export const SuccessActionDialog = ({
     />
 )
 
-export const LoadingActionDialog = ({
+export const OngoingActionDialog = ({
     message,
 }: {message?: string}) =>  (
     <DialogContentBody

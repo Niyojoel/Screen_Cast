@@ -18,8 +18,9 @@ import {
     X, 
     XCircle
 } from "lucide-react"
-import { ActionResponseType, DropdownOptionsType, ActionStatusType, ModalButton } from ".."
+import { ActionResponseType, DropdownOptionsType, ActionStatusType, ModalButton} from ".."
 import { JSX} from "react"
+import { FailedActionDialog, SuccessActionDialog, OngoingActionDialog } from "@/components"
 
 
 export const cursorDisplayOptions: DropdownOptionsType[] = [
@@ -118,6 +119,17 @@ export const DIALOG_ICONS = {
 
 type ModalContentType = string | React.ReactElement | ModalButton[];
 
+type ModalContentElementType = string | React.ReactElement
+
+type ModalContentBodyProps = {
+    actionStatus: ActionStatusType | null,
+    actionResponse : ActionResponseType | null,
+    failedNode: ModalContentElementType,
+    ongoingNode?: ModalContentElementType,
+    successNode?: ModalContentElementType,
+    beforeNode?: ModalContentElementType
+}
+
 export const modalContent = (
     actionStatus: ActionStatusType | null,
     actionResponse : ActionResponseType | null,
@@ -144,4 +156,42 @@ export const modalContent = (
     }
     
     return null;
+}
+
+export const ModalContentBody = ({
+    actionStatus,
+    actionResponse,
+    failedNode,
+    ongoingNode,
+    successNode,
+    beforeNode
+}: ModalContentBodyProps) => {
+    const failedContent = typeof failedNode === 'string' 
+    ? <FailedActionDialog customMessage={failedNode}/>
+    : failedNode;
+
+    const successContent = typeof successNode === 'string' 
+    ? <SuccessActionDialog message={successNode}/>
+    : successNode;
+
+    const ongoingContent = typeof ongoingNode === 'string' 
+    ? <OngoingActionDialog message={ongoingNode}/>
+    : ongoingNode
+
+    return modalContent(
+        actionStatus,
+        actionResponse,
+        failedContent,
+        ongoingContent,
+        successContent,
+        beforeNode
+    )
+}
+
+export const modalButton = (text: string, action: () => void, className?: string): ModalButton => {
+    return {
+        text,
+        action,
+        className: className || "btn-theme"
+    }
 }
