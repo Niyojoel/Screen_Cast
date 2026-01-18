@@ -1,14 +1,14 @@
 'use client'
 
 import Image from 'next/image'
-import {DragEvent, memo, useCallback, useEffect, useMemo, useState } from 'react'
+import {DragEvent, memo, useEffect, useState } from 'react'
 
 //for thumbnail suggestion cards component
 import {cn } from '@/lib/utils';
 import { Img } from './ActionButton';
-import {DialogContentBody, ImagesConsole} from '.';
-import { FileInputProps, ModalButton, ModalStateType, RecordingStateType, ThumbnailSuggestionsProps } from '..';
-import { AlertCircleIcon, CheckCircleIcon, ImagePlus, LoaderCircle, X, XCircle } from 'lucide-react';
+import {ImagesConsole} from '.';
+import { FileInputProps, ThumbnailSuggestionsProps } from '..';
+import { ImagePlus} from 'lucide-react';
 
 
 const FileInput = memo(({
@@ -26,122 +26,12 @@ const FileInput = memo(({
   handleError,
   previousThumbnails,
   handleUsePreviousThumbnail,
-  handleOnGenerate,
   removeThumbnail,
-  setOpenModal
-}: FileInputProps & {setOpenModal :({state, content, buttons}: ModalStateType) => void}) => {
+  onOpenModal
+}: FileInputProps & {onOpenModal? :() => void}) => {
   
   const [isDraggedOver, setIsDraggedOver] = useState(false);
   const [fileDropError, setFileDropError] = useState('');
-
-  //Generate thumbnail features
-  const [isGenerating, setIsGenerating] = useState<RecordingStateType>("before");
-  const [generated, setGenerated] = useState<'success' | 'failed' | null>(null);
-  const [captureTime, setCaptureTime] = useState("1");
-
-  const generateContent = () => (
-    isGenerating === 'before' ? (
-      <DialogContentBody
-        headerNode = 'Generate a Thumbnail from Video'
-        icon = {<AlertCircleIcon size={20}/>}
-        subNode = {
-          <span className="thumbnail-generate">
-            <pre>
-              <label htmlFor="gen">
-                Time of video capture : 
-              </label>
-              <input 
-                id="gen" 
-                hidden={false} 
-                value={captureTime} 
-                onChange={(e) => {console.log(e.target.value); setCaptureTime(e.target.value)}}
-              />
-            </pre>
-          </span>
-        }
-      />
-    ): isGenerating === 'ongoing' ? (
-      <DialogContentBody
-        icon = {<LoaderCircle size={24} className="animate-spin"/>}
-        subNode = "Generating thumbnail..."
-      />
-    ): isGenerating === 'after' && generated === "success" ? 
-    (
-      <DialogContentBody
-        icon = {<CheckCircleIcon size={18} fill='#ff4393' stroke="#ffffff"/>}
-        headerNode= "Action successful"
-        subNode = "Generating thumbnail is being previewed in the thumbnail box"
-      />
-    ): isGenerating === 'after' && generated === "failed" ? (
-      <DialogContentBody
-        icon = {<XCircle size={18} stroke="#fef2f2"/>}
-        headerNode = 'Something went wrong'
-        subNode = "Try again"
-      />
-    ) : null
-  )
-  
-  const onGenerateThumbnail = useCallback(async ()=> {
-    try {
-      setIsGenerating('ongoing');
-      if(handleOnGenerate && file) await handleOnGenerate(captureTime, file)
-      setIsGenerating('after');
-      setGenerated('success')
-    }catch(error){
-      const message = error instanceof Error ? error.message : error;
-      setIsGenerating('after');
-      setGenerated('failed')
-      console.error(error)
-    }finally{
-      const generatedTimeout = setTimeout(()=>{ 
-        setIsGenerating('before')
-        setGenerated(null);
-      }, 3000);
-      clearTimeout(generatedTimeout);
-    }
-  }, [file, captureTime])
-
-  const closeModal = () => setOpenModal({state: false, content: null, buttons: null})
-
-  const onOpenModal = () => {
-  setOpenModal({
-    state: true,
-    content: generateContent(),
-    buttons: generateBtn
-    })
-  }
-  
-  const generateBtn = useMemo((): ModalButton[]=> isGenerating !== "after" ? [
-    {
-      className: "btn-theme",
-      action: onGenerateThumbnail,
-      text: isGenerating === "before" ? 'Generate' : 'Generating...'
-    }
-  ] : generated === "success" ? [
-    // {
-    //   className: "btn-theme",
-    //   action: saveThumbnail,
-    //   text: "Save To Profile"
-    // },
-    {
-      className: "btn-theme",
-      action: closeModal,
-      text: "Ok"
-    },
-  ] : [
-    {
-      className: "btn-theme",
-      action: () => setIsGenerating('before'),
-      text: "Retry"
-    },
-  ]
-  ,[
-    isGenerating,
-    closeModal,
-    onGenerateThumbnail,
-    generated
-  ])
-
 
   //File change
   const handleFileChange = (fn: void)=> {
@@ -265,9 +155,9 @@ const FileInput = memo(({
             noClass
           />
         </button>
-        <button type='button' onClick={onOpenModal}>
+        {type === 'video' && <button type='button' onClick={onOpenModal}>
           <i><ImagePlus size={16} stroke='#212121' strokeWidth={2}/></i>
-        </button>
+        </button>}
         </div>
         <p>{file?.name}</p>
       </div>

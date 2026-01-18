@@ -9,7 +9,7 @@ import { authClient } from "@/lib/authClient"
 import { deleteVideo, updateVideoVisibility } from "@/lib/actions/video"
 import toast from "react-hot-toast"
 import { dummySession, visibilities } from "@/constants"
-import {DropdownOptionsType, ModalStateType, VideoDetailHeaderProps, Visibility } from ".."
+import {ActionStatusType, DropdownOptionsType, ModalStateType, VideoDetailHeaderProps, Visibility } from ".."
 import { DIALOG_ICONS } from "@/constants/lists"
 
 const VideoDetailHeader = ({
@@ -26,11 +26,11 @@ const VideoDetailHeader = ({
 }: VideoDetailHeaderProps & {videoUrl?: string}) => {
   const router = useRouter()
 
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [actionResponse, setActionResponse] = useState<'failed' | 'successful' | null>(null);
+  const [isDeleting, setIsDeleting] = useState<ActionStatusType | null>(null);
+  const [actionResponse, setActionResponse] = useState<Record<string, 'failed' | 'successful' | null>>({'updated': null, 'deleted': null});
   const [visibilityState, setVisibilityState] = useState<DropdownOptionsType>({label: visibility as Visibility});
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState<ActionStatusType | null>(null);
+  const [downloading, setDownloading] = <ActionStatusType | null>(null);
   const [modalError, setModalError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState<ModalStateType>({state: false, content: null, buttons: null});
 
@@ -130,7 +130,6 @@ const VideoDetailHeader = ({
     ): (
       <DialogContentBody
         icon = {DIALOG_ICONS.checked}
-        headerNode = 'Done'
         subNode = 'Video successfully deleted'
       />
     )

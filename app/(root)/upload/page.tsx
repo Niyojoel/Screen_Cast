@@ -54,52 +54,10 @@ const page = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generated, setGenerated] = useState<'success' | 'failed' | null>(null);
 
-  const generateContent = () => (
-    !isGenerating 
-    ? !generated 
-      ? (
-        <DialogContentBody
-          headerNode = 'Generate a Thumbnail from Video'
-          icon = {DIALOG_ICONS.alert}
-          subNode = {
-            <span className="thumbnail-generate">
-              <pre>
-                <label htmlFor="gen">
-                  Time of video capture : 
-                </label>
-                <input 
-                  id="gen" 
-                  hidden={false} 
-                  value={captureTime} 
-                  onChange={(e) => setCaptureTime(Number(e.target.value))}
-                />
-              </pre>
-            </span>
-          }
-        />
-      ): generated === 'success' 
-        ? (
-          <DialogContentBody
-            icon = {DIALOG_ICONS.checked}
-            headerNode= "Action successful"
-            subNode = "Generating thumbnail is being previewed in the thumbnail box"
-          /> 
-        ) : generated === 'failed' ? (
-          <FailedActionDialog customMessage = "Failed to generate thumbnail"/>
-        )
-      : null
-    : (
-      <DialogContentBody
-        icon = {DIALOG_ICONS.loader}
-        subNode = "Generating thumbnail..."
-      />
-    )
-  )
-  
-  const onGenerateThumbnail = useCallback(async ()=> {
+    const onGenerateThumbnail = useCallback(async ()=> {
     try {
       setIsGenerating(true);
-      if(video.file) await video.handleOnGenerate(captureTime, video.file)
+      if(video.file) await thumbnail.handleOnGenerate(captureTime, video.file)
       setIsGenerating(false);
       setGenerated('success')
     }catch(error){
@@ -113,7 +71,7 @@ const page = () => {
       }, 3000);
       clearTimeout(generatedTimeout);
     }
-  }, [video, captureTime])
+  }, [video, thumbnail, captureTime])
 
   const onOpenModal = () => {
   setOpenModal({
@@ -131,6 +89,52 @@ const page = () => {
   const saveThumbnail = useCallback(() => {
     //to be implemented
   }, [video])
+
+  const generateContent = () => {
+    let node: React.ReactNode | null = null;  
+
+    if(!isGenerating && !generated) {
+      node = (
+        <DialogContentBody
+          headerNode = 'Generate a Thumbnail from Video'
+          icon = {DIALOG_ICONS.alert}
+          subNode = {
+            <span className="thumbnail-generate">
+              <pre>
+                <label htmlFor="gen">
+                  Time of video capture : 
+                </label>
+                <input 
+                  id="gen" 
+                  type="text"
+                  hidden={false} 
+                  value={captureTime.toString()} 
+                  onChange={(e) => setCaptureTime(Number(e.target.value))}
+                />
+              </pre>
+            </span>
+          }
+        />
+      ) 
+    } else if (!isGenerating && generated === "success") {
+      node = (
+        <DialogContentBody
+          icon = {DIALOG_ICONS.checked}
+          headerNode= "Action successful"
+          subNode = "Generating thumbnail is being previewed in the thumbnail box"
+        /> 
+      )
+    } else if (!isGenerating && generated === "failed") {
+      node = <FailedActionDialog customMessage = "Failed to generate thumbnail"/>
+    } else if (isGenerating) {
+      node = (
+        <DialogContentBody
+          icon = {DIALOG_ICONS.loader}
+          subNode = "Generating thumbnail..."
+        />
+      )
+    } else null
+  }
   
   const generateBtn = useMemo((): ModalButton[]=> {
     let buttons: ModalButton[] = [];
@@ -181,7 +185,6 @@ const page = () => {
     onGenerateThumbnail,
     generated
   ])
-
 
   //Getting video duration
   useEffect(()=> {
@@ -370,8 +373,7 @@ const page = () => {
           handleError={setError}
           onFileDrop = {video.handleFileDrop}
           previewBoxRef={video.previewBoxRef}
-          setOpenModal={setOpenModal}
-          handleOnGenerate={thumbnail.handleOnGenerate}
+          onOpenModal={onOpenModal}
         /> 
         <FileInput
           id="thumbnail"
@@ -388,7 +390,6 @@ const page = () => {
           previewBoxRef={thumbnail.previewBoxRef}
           previousThumbnails = {thumbnail.previousThumbnails}
           handleUsePreviousThumbnail = {thumbnail.handleUsePreviousThumbnail}
-          setOpenModal={setOpenModal}
           removeThumbnail={thumbnail.removeThumbnail}
         />
         <FormField

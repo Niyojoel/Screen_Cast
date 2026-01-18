@@ -10,7 +10,7 @@ import {
   DeviceStatus, 
   DeviceType, 
   ModalButton, 
-  RecordingStateType, 
+  ActionStatusType, 
   CameraOptions, 
   DisplaySurfaceOptions, 
   RecordSettingsType, 
@@ -50,7 +50,7 @@ const useRecordingFeatures = () => {
 
   const [showInstructions, setShowInstructions] = useState(false);
   
-  const [recordingState, setRecordingState] = useState<RecordingStateType | null>(null)
+  const [recordingState, setRecordingState] = useState<ActionStatusType | null>(null)
 
   const [actionResponse, setActionResponse] = useState<'failed' | 'successful' | null>(null);
 

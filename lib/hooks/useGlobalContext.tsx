@@ -1,16 +1,16 @@
 'use client'
-import { ActionResponseType, ModalButton, ModalStateType} from "@/index";
+import { ActionResponseType, ActionStatusType, ModalButton, ModalStateType} from "@/index";
 import { HomeIcon } from "lucide-react";
 import {useState, useContext, createContext, useRef, useEffect, useCallback} from "react";
 
 type GlobalContextType = {
   actionResponse: ActionResponseType | null,
-  actionProcessing: boolean,
+  actionStatus: ActionStatusType | null,
   modal: ModalStateType,
   openModal: (content: React.ReactNode, buttons: ModalButton[]) => void,
   closeModal: () => void,
-  changeActionResponse: (response: ActionResponseType) => void,
-  changeActionProcessing: (state: "true" | 'false') => void,
+  changeActionResponse: (response: ActionResponseType | null) => void,
+  changeActionStatus: (state: ActionStatusType | null) => void,
   modalError: string,
   showModalError: (message: string) => void
 }

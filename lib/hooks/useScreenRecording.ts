@@ -8,7 +8,7 @@ import {
   cleanupRecording,
   createRecordingBlob,
   calculateRecordingDuration,
-  getCombinedCanvasStreams,
+  getCanvasStreams,
   getTrackSetting,
   addTrack,
   streamMonitor,
@@ -34,6 +34,7 @@ export const useScreenRecording = () => {
     systemAudio: false
   })
 
+  const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'paused'>('idle');
   const [isPreviewing, setIsPreviewing] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -135,7 +136,7 @@ export const useScreenRecording = () => {
               withMic: usingMic ? true : false,
             }))
 
-            const {stream, stopDrawInterval} = await getCombinedCanvasStreams(displayStream, userMediaStream);
+            const {stream, stopDrawInterval} = await getCanvasStreams(displayStream, userMediaStream);
 
             await addTrack(stream, combinedStream, "both");
             
@@ -271,11 +272,31 @@ export const useScreenRecording = () => {
     startTimeRef.current = null;
   };
 
+  const handlePauseResume = () => {
+    if(!mediaRecorderRef.current) return;
+
+    if(recordingStatus === "recording") {
+      mediaRecorderRef.current.pause();
+      
+      if(drawIntervalRef.current) drawIntervalRef.current();
+      
+      setRecordingStatus('paused')
+    } else if (recordingStatus === 'paused') {
+      mediaRecorderRef.current.resume();
+
+      //start canvas loop
+
+      setRecordingStatus('recording');
+    }
+    
+  }
+
   return {
     ...state,
     startRecording,
     stopRecording,
     resetRecording,
+    handlePauseResume,
     selectedVideoSetting
   };
 };

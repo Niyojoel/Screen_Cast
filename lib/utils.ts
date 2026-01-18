@@ -435,18 +435,18 @@ export const killMediaStreams = (streams: (MediaStream | null)[]) => {
   })
 }
 
-export const getCombinedCanvasStreams = async (
+export const getCanvasStreams = async (
   screenStream: MediaStream, 
-  cameraStream: MediaStream
+  cameraStream?: MediaStream
 ): Promise<{stream: MediaStream, stopDrawInterval: () => void}> => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d'); 
 
-  if(!(screenStream.getVideoTracks().length > 0)){
+  if(screenStream.getVideoTracks().length < 1){
     throw new Error ('No video available for display')
   }
 
-  if(!(cameraStream.getVideoTracks().length > 0)){
+  if(!cameraStream || cameraStream.getVideoTracks().length < 1){
     throw new Error ('No active video camera')
   }
 

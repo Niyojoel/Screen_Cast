@@ -18,7 +18,7 @@ import {
     X, 
     XCircle
 } from "lucide-react"
-import { DropdownOptionsType } from ".."
+import { ActionResponseType, DropdownOptionsType, ActionStatusType, ModalButton } from ".."
 import { JSX} from "react"
 
 
@@ -114,4 +114,34 @@ export const DIALOG_ICONS = {
     loader: <LoaderCircle size={24} className="animate-spin"/>,
     close: <X size={18}/>,
     info: <InfoIcon size={18} stroke='blue'/>
+}
+
+type ModalContentType = string | React.ReactElement | ModalButton[];
+
+export const modalContent = (
+    actionStatus: ActionStatusType | null,
+    actionResponse : ActionResponseType | null,
+    failedContent: ModalContentType,
+    ongoingContent?: ModalContentType,
+    successContent?: ModalContentType,
+    beforeContent?: ModalContentType
+) => {
+
+    if(actionStatus ==='before' && beforeContent) {
+        return beforeContent;
+    }
+
+    if(actionStatus ==='ongoing' && ongoingContent) {
+        return ongoingContent;
+    }
+
+    if(actionStatus ==='after' && actionResponse === 'successful' && successContent) {
+        return successContent;
+    }
+
+    if(actionStatus ==='after' && actionResponse === 'failed' && failedContent) {
+        return failedContent;
+    }
+    
+    return null;
 }

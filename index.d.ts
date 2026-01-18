@@ -395,7 +395,7 @@ type BrowserDialogOptionsType = 'Entire Screen' | 'Window' | 'Browser Tab'
 
 type CameraFacingMode = 'user' | 'environment'
 
-type RecordingStateType = 'before' | "ongoing" | "after"
+type ActionStatusType = 'before' | "ongoing" | "after"
 
 type DeviceType =  "camera" | "microphone"
 
@@ -417,7 +417,7 @@ declare type VideoSettingsType = {
 }
 
 declare type RecordingDialogContentBodyProps = {
-    recordingState: RecordingStateType | null,
+    recordingState: ActionStatusType | null,
     recordedVideoUrl: string,
     goToUpload: GoToUploadState | null,
     videoRef: RefObject<HTMLVideoElement | null>,
