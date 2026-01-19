@@ -1,3 +1,4 @@
+
 export {default as CopyBtn} from "./CopyBtn";
 export {default as DropdownList} from "./DropdownList";
 export {default as EmptyState} from "./EmptyState";
@@ -19,3 +20,4 @@ export {default as Alert} from "./Alert";
 export {default as DialogContentBody} from "./DialogContentBody";
 export {default as ImagesConsole} from "./ImagesConsole";
 export {FailedActionDialog, SuccessActionDialog, OngoingActionDialog, WarningActionDialog, DialogListItem} from "./ActionDialog";
+export {default as FullScreenView} from './fullScreenView' 

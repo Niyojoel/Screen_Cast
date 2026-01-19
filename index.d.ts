@@ -395,7 +395,7 @@ type BrowserDialogOptionsType = 'Entire Screen' | 'Window' | 'Browser Tab'
 
 type CameraFacingMode = 'user' | 'environment'
 
-type ActionStatusType = 'before' | "ongoing" | "after"
+type ActionStateType = 'before' | "ongoing" | "after"
 
 type DeviceType =  "camera" | "microphone"
 
@@ -403,9 +403,16 @@ type PermissionsType = "denied" | "granted" | "prompt"
 
 type DeviceStatus = "passed" | "no-permission" | 'no-support' | "unchecked" | 'unused'
 
-type Action = 'delete' | 'download' | 'check' | 'generate' |  'redirect' | 'record' | 'save_recording'
+type Action = 'delete' | 'download' | 'check' | 'generate' |  'redirect' | 'record' | 'save' | 'load'
 
 type ActionResponseType = 'failed' | 'successful'
+
+
+declare interface ModalActionType {
+  type: Action | null,
+  state: ActionStateType | null,
+  response: ActionResponseType | null
+} 
 
 
 declare type VideoSettingsType = {
@@ -417,7 +424,7 @@ declare type VideoSettingsType = {
 }
 
 declare type RecordingDialogContentBodyProps = {
-  recordingState: ActionStatusType | null,
+  recordingState: ActionStateType | null,
   recordedVideoUrl: string,
   goToUpload: GoToUploadState | null,
   videoRef: RefObject<HTMLVideoElement | null>,

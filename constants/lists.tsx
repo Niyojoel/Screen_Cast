@@ -18,7 +18,7 @@ import {
     X, 
     XCircle
 } from "lucide-react"
-import { ActionResponseType, ActionStatusType, DropdownOptionsType, ModalButton } from ".."
+import { ActionResponseType, ActionStateType, DropdownOptionsType, ModalButton } from ".."
 import React, { JSX} from "react"
 import { FailedActionDialog, OngoingActionDialog, SuccessActionDialog } from "@/components"
 
@@ -123,7 +123,7 @@ export type ModalContentType = {
 }
 
 export const modalContent = (
-    actionStatus: ActionStatusType | null,
+    actionStatus: ActionStateType | null,
     actionResponse : ActionResponseType | null,
     failedContent: ModalContentType,
     ongoingContent: ModalContentType,

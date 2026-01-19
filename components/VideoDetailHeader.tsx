@@ -9,7 +9,7 @@ import { authClient } from "@/lib/authClient"
 import { deleteVideo, updateVideoVisibility } from "@/lib/actions/video"
 import toast from "react-hot-toast"
 import { dummySession, visibilities } from "@/constants"
-import {ActionResponseType, ActionStatusType, DropdownOptionsType, VideoDetailHeaderProps, Visibility } from ".."
+import {ActionResponseType, ActionStateType, DropdownOptionsType, VideoDetailHeaderProps, Visibility } from ".."
 import {ModalContentType, modalButton, modalContent} from "@/constants/lists"
 import {useGlobalContext } from "@/lib/hooks/useGlobalContext"
 
@@ -37,11 +37,11 @@ const VideoDetailHeader = ({
     changeModalContent
   } = useGlobalContext()
 
-  const deleteActionStatus = (status: ActionStatusType | null) => changeActionStatus('delete', status)
+  const deleteActionStatus = (status: ActionStateType | null) => changeActionStatus('delete', status)
 
   const deleteActionResponse = (response: ActionResponseType | null) => changeActionResponse('delete', response)
 
-  const downloadActionStatus = (status: ActionStatusType | null) => changeActionStatus('download', status)
+  const downloadActionStatus = (status: ActionStateType | null) => changeActionStatus('download', status)
 
   const downloadActionResponse = (response: ActionResponseType | null) => changeActionResponse('download', response)
 
