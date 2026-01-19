@@ -1,20 +1,23 @@
 import { 
-  useCallback, 
-  useEffect, 
-  useMemo,
-  useRef, 
-  useState 
+    useCallback, 
+    useEffect, 
+    useMemo,
+    useRef, 
+    useState 
 } from "react";
 import { useScreenRecording } from "./useScreenRecording";
 import { 
   DeviceStatus, 
   DeviceType, 
   ModalButton, 
+  ActionStatusType, 
   CameraOptions, 
   DisplaySurfaceOptions, 
   RecordSettingsType, 
   VideoSettingsType, 
+  GoToUploadState
 } from "@/index";
+import { ICONS } from "@/constants";
 import { 
   cameraMode, 
   cameraSettingsOptions, 
@@ -24,13 +27,7 @@ import {
   micSettingsOptionsIcon, 
   screenSettingsOptions 
 } from "@/constants/lists";
-import { 
-  checkDevice,  //add to util from master
-  downloadVideo, 
-  parseVideoSettings, 
-  syncCameraOnly 
-} from "../utils";
-import { useGlobalContext } from "./useGlobalContext";
+import { checkDevice, checkHardwareSupport, checkPermission, downloadVideo, parseVideoSettings, syncCameraOnly } from "../utils";
 
 export type SyncCameraKeys = Pick<VideoSettingsType, "displaySurface" | "camera">;
 
@@ -45,33 +42,24 @@ const useRecordingFeatures = () => {
     stopRecording,
     resetRecording,
     selectedVideoSetting,
-    handleTakeScreenShot,
-    handlePauseResume,
-    recordingStatus,
-    isFlashing
   } = useScreenRecording()
 
-  const {
-    openModal, 
-    closeModal, 
-    actionResponse,
-    actionStatus,
-    showModalError,
-    recordingState,
-    changeRecordingState,
-    changeModalContent,
-    action,
-    changeAction,
-    successfulAction,
-    actionTimeout,
-    failedAction,
-    beforeAction,
-    ongoingAction,
-    resetAction
-  } = useGlobalContext()
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [modalError, setModalError] = useState("");
+
+  const [showInstructions, setShowInstructions] = useState(false);
+  
+  const [recordingState, setRecordingState] = useState<ActionStatusType | null>(null)
+
+  const [actionResponse, setActionResponse] = useState<'failed' | 'successful' | null>(null);
+
+  const [downloading, setDownloading] = useState(false);
+  
   const videoRef= useRef<HTMLVideoElement>(null);
   
+  const [goToUpload, setGoToUpload] = useState<GoToUploadState | null> (null);
+
   //Settings
   const [videoSettings, setVideoSettings] = useState<VideoSettingsType>({
     cursor: "always",
@@ -85,6 +73,12 @@ const useRecordingFeatures = () => {
 
 
   //Settings ------------
+  const transitionNote = useCallback((incomingNote: string) => {
+    setSettingsGuide('');
+    const noteTimer = setTimeout(()=> setSettingsGuide(incomingNote), 500)
+    return ()=> clearTimeout(noteTimer);
+  },[])
+
   const helpVideoSettings = useCallback((
     key: keyof VideoSettingsType, 
     value: VideoSettingsType[keyof VideoSettingsType]
@@ -169,51 +163,43 @@ const useRecordingFeatures = () => {
     micSettingsOptions
   ])
 
+
   //modal-buttons and routing----------------------
-  const handleOpenModal = useCallback((content: React.ReactNode, buttons: ModalButton[], closeIcon: React.ReactNode) => {
-    openModal(
-      content,
-      buttons,
-      closeIcon
-    );
-    changeRecordingState('before')
-    beforeAction('check');
+  const handleOpenModal = useCallback(() => {
+    setIsModalOpen(true)
+    setRecordingState('before')
   },[]);
 
   const handleCloseModal = useCallback(() => {
-    closeModal();
+    setIsModalOpen(false);
     resetRecording();
+    setRecordingState(null);
   },[])
 
   const goingToUploadAction = useCallback((UIActions: () => void): void => {
     UIActions();
-    successfulAction();
+    setGoToUpload("finished");
+    const goToUploadTimer = setTimeout(()=> setGoToUpload(null), 500)
+    clearTimeout(goToUploadTimer);
   },[])
-
+  
   //recording buttons ------------
   const handleStartRecording = useCallback(async ()=> {
     try {
-      ongoingAction('record')
-      await startRecording(
-        videoSettings, 
-        successfulAction
-      );
+      await startRecording(videoSettings);
     }catch(error) {
       const message = error instanceof Error ? error.message : error;
-      failedAction();
-      showModalError(message as string);
+      setModalError(message as string);
     }
   },[videoSettings])
 
   const handleRecordAgain = useCallback(async ()=> {
     try {
-      resetRecording();
-      changeRecordingState('before');
-      ongoingAction('record')
-      handleStartRecording();
+        resetRecording();
+        await startRecording(videoSettings);
     }catch(error) {
         const message = error instanceof Error ? error.message : error;
-        showModalError(message as string);
+        setModalError(message as string);
     }
 
     if(recordedVideoUrl && videoRef.current) {
@@ -222,21 +208,16 @@ const useRecordingFeatures = () => {
   },[videoSettings])
 
   const handleStopRecording = useCallback(() => {
-    try {
-      changeRecordingState('after')
-      ongoingAction('load');
-      stopRecording();
-      successfulAction();
-    } catch (error) {
-      failedAction();
-    }
+    setRecordingState('after')
+    setShowInstructions(false);
+    stopRecording();
   },[])
 
   const handleGoToUpload = useCallback(()=> {
-    beforeAction('redirect');
+    setGoToUpload('loading');
 
     if(!recordedBlob) {
-      failedAction();
+      setGoToUpload('failed');
       return;
     }
     const url= URL.createObjectURL(recordedBlob);
@@ -251,205 +232,183 @@ const useRecordingFeatures = () => {
         })
     )
     // setIsModalOpen(false);
-    changeAction({state: 'ongoing'});
+    setGoToUpload('redirecting');
   },[recordedBlob, recordingDuration])
 
-  const handleBackToSettings = useCallback(() => {
-    resetRecording();
-    beforeAction('check');
-    changeRecordingState('before');
+  const handleGoBack = useCallback(() => {
+    resetRecording()
+    setRecordingState('before');
   },[])
 
   const handleSaveRecordedVideo = useCallback(() => {
     if(!recordedBlob) return;
     try {
-      ongoingAction('save');
+      setDownloading(true);
       const videoUrl = URL.createObjectURL(recordedBlob);
       downloadVideo(videoUrl);
-      successfulAction();
+      setActionResponse('successful')
     }catch(error){
-      const message = error instanceof Error ? error.message : 'Failed to download video' 
-      showModalError(message)
-      failedAction();
+      const errorMssg = error instanceof Error ? error.message : 'Failed to download video' 
+      setModalError(errorMssg)
+      setActionResponse('failed');
     }finally {
-      changeAction({type: 'load', state: 'after', response: 'successful'});
+      setDownloading(false);
     }
   },[])
   //------------------------------
 
   //Device check function
+
   const deviceCheckCondition = async (
     condition: boolean, 
     device: DeviceType
   ): Promise<DeviceStatus> => {
     if(condition) {
-      const checkResult = await checkDevice(device);
+      const checkResult = await checkDevice(device)
       return checkResult;
     } else {
       return 'unused';
     };
   }
 
-  //refactoring may not work well but needs refactoring
-  const devicesCheck = async () => {
-    if(videoSettings.camera !== "no" || videoSettings.withMic) {
-      
-      changeAction({state: 'ongoing'})
-  
-      //might not work right
-      const checkFailed = (response: DeviceStatus) => {
-        if(response === "no-support" || response === "no-permission") {
-          failedAction();
-          return
-        };
-      }
-  
-      console.log('checking devices')
-  
-      const camCheckResponse = await deviceCheckCondition(videoSettings.camera !== 'no', 'camera')
-      
-      console.log(camCheckResponse)
-  
-      checkFailed(camCheckResponse)
-      
-      const micCheckResponse = await deviceCheckCondition(videoSettings.withMic, 'microphone')
-  
-      console.log(micCheckResponse)
-  
-      checkFailed(micCheckResponse)
-  
-      successfulAction();
+  const devicesCheck = async (videoSettings: Pick<VideoSettingsType, 'camera' | 'withMic'>) => {
 
-      actionTimeout(beforeAction('record'))
+    console.log('checking devices')
 
-    } else {
-      beforeAction('record');
-    };
+    const camCheckResponse = await deviceCheckCondition(videoSettings.camera !== 'no', 'camera')
+    
+    console.log(camCheckResponse)
+
+    if(camCheckResponse === "no-support" || camCheckResponse === "no-permission") return;
+    
+    const micCheckResponse = await deviceCheckCondition(videoSettings.withMic, 'microphone')
+
+    console.log(micCheckResponse)
+
+    if(micCheckResponse === "no-support" || micCheckResponse === "no-permission") return;
+    
+    setShowInstructions(true);
   }
 
-  const handleGoBack = () => resetAction()
-
-  // const recordingButtons = useMemo((): ModalButton[] => {
-  //   let recordingStateBtns: ModalButton[] = [];   
+  const recordingButtons = useMemo((): ModalButton[] => {
     
-  //   if(recordingState === "before" && !showInstructions) {
-  //     recordingStateBtns = [
-  //       {
-  //         className:'btn-theme',
-  //         action: () => devicesCheck({
-  //           camera: videoSettings?.camera, 
-  //           withMic: videoSettings?.withMic
-  //         }),
-  //         text: "Continue",
-  //       },
-  //     ]
-  //   } else if (recordingState === "before" && showInstructions) {
-  //     recordingStateBtns = [
-  //       {
-  //         className:'btn-white',
-  //         action: () => setShowInstructions(false),
-  //         text: "Go Back"
-  //       },
-  //       {
-  //         className:'btn-theme',
-  //         action: handleStartRecording,
-  //         text: "Start Recording"
-  //       }
-  //     ]
-  //   } else if (recordingState === "ongoing") {
-  //     recordingStateBtns = [
-  //       {
-  //         className:'btn-destructive',
-  //         action: handleStopRecording,
-  //         text: "Stop Recording"
-  //       },
-  //     ]
-  //   } else if (recordingState === "after" && goToUpload === null) {
-  //     recordingStateBtns = [
-  //       {
-  //         className:'btn-white',
-  //         action: handleGoBack,
-  //         text: "Go Back"
-  //       },
-  //       {
-  //         className:'btn-white',
-  //         action: handleRecordAgain,
-  //         text: "Record Again"
-  //       },
-  //       {
-  //         className:'btn-theme',
-  //         action: handleGoToUpload,
-  //         src: ICONS.upload,
-  //         alt: "upload",
-  //         text: "Upload"
-  //       },
-  //     ]
-  //   } else if (recordingState === "after" && goToUpload === 'failed') {
-  //     recordingStateBtns = [
-  //       {
-  //         className:'btn-theme',
-  //         action: handleSaveRecordedVideo,
-  //         text: "Save Video"
-  //       },
-  //       {
-  //         className:'btn-theme',
-  //         action: handleGoToUpload,
-  //         src: ICONS.upload,
-  //         alt: "try again",
-  //         text: "Try again"
-  //       },
-  //     ] 
-  //   } else null;
+    let recordingStateBtns: ModalButton[] = [];
+    
+    if(recordingState === "before" && !showInstructions) {
+      recordingStateBtns = [
+        {
+          className:'btn-theme',
+          action: () => devicesCheck({
+            camera: videoSettings?.camera, 
+            withMic: videoSettings?.withMic
+          }),
+          text: "Continue",
+        },
+      ]
+    } else if (recordingState === "before" && showInstructions) {
+      recordingStateBtns = [
+        {
+          className:'btn-white',
+          action: () => setShowInstructions(false),
+          text: "Go Back"
+        },
+        {
+          className:'btn-theme',
+          action: handleStartRecording,
+          text: "Start Recording"
+        }
+      ]
+    } else if (recordingState === "ongoing") {
+      recordingStateBtns = [
+        {
+          className:'btn-destructive',
+          action: handleStopRecording,
+          text: "Stop Recording"
+        },
+      ]
+    } else if (recordingState === "after" && goToUpload === null) {
+      recordingStateBtns = [
+        {
+          className:'btn-white',
+          action: handleGoBack,
+          text: "Go Back"
+        },
+        {
+          className:'btn-white',
+          action: handleRecordAgain,
+          text: "Record Again"
+        },
+        {
+          className:'btn-theme',
+          action: handleGoToUpload,
+          src: ICONS.upload,
+          alt: "upload",
+          text: "Upload"
+        },
+      ]
+    } else if (recordingState === "after" && goToUpload === 'failed') {
+      recordingStateBtns = [
+        {
+          className:'btn-theme',
+          action: handleSaveRecordedVideo,
+          text: "Save Video"
+        },
+        {
+          className:'btn-theme',
+          action: handleGoToUpload,
+          src: ICONS.upload,
+          alt: "try again",
+          text: "Try again"
+        },
+      ] 
+    } else null;
    
-  //   return recordingStateBtns;
-  // }, [
-  //   handleStartRecording, 
-  //   recordingState, 
-  //   handleStopRecording, 
-  //   handleGoBack, 
-  //   handleRecordAgain, 
-  //   handleGoToUpload, 
-  //   handleOpenModal,
-  //   showInstructions,
-  //   ICONS,
-  //   goToUpload
-  // ])
+  return recordingStateBtns;
+  }, [
+    handleStartRecording, 
+    recordingState, 
+    handleStopRecording, 
+    handleGoBack, 
+    handleRecordAgain, 
+    handleGoToUpload, 
+    showInstructions,
+    ICONS,
+    goToUpload
+  ])
 
   useEffect(()=>{
-      if(!isRecording && !recordedVideoUrl) changeRecordingState('before')
-      if(isRecording) {
-        changeRecordingState('ongoing');
-        resetAction();
-      };
-      if(recordedVideoUrl && !changeAction) changeRecordingState('after');
+      if(!isRecording && !recordedVideoUrl) setRecordingState('before')
+      if(isRecording) setRecordingState('ongoing');
+      if(recordedVideoUrl && !goToUpload) setRecordingState('after');
   },[isRecording, recordedVideoUrl])
 
+  useEffect(() => console.log(recordingState), [recordingState])
+
+  useEffect(()=> {
+    if(settingsGuide && settingsGuide.toLowerCase().split(' ').includes('camera') && videoSettings.camera === 'no') {
+      transitionNote('')
+    }
+  },[videoSettings, settingsGuide])
+
   return {
+    modalError,
     recordingState,
     videoRef,
+    recordingButtons,
+    goToUpload,
     goingToUploadAction,
+    setModalError,
+    isModalOpen, 
     handleOpenModal, 
     handleCloseModal,
-    handleBackToSettings,
-    devicesCheck,
-    handleStartRecording,
-    handleStopRecording,
-    handleGoBack,
-    handleRecordAgain,
-    handleGoToUpload,
-    handleSaveRecordedVideo,
     recordedVideoUrl,
     selectedVideoSetting,
+    showInstructions,
     settingsGuide,
     videoSettings,
     recordSettings,
-    actionResponse,
-    actionStatus,
-    showModalError,
-    handleTakeScreenShot,
-    handlePauseResume,
-    recordingStatus,
-    isFlashing
+    downloading,
+    actionResponse
   }
 }
 
