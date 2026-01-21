@@ -385,23 +385,23 @@ declare interface MediaStreams {
   hasDisplayAudio: boolean;
 }
 
-type CursorOptions = 'always' | 'motion' | 'never'
+type CursorOptions = "always" | "motion" | 'never'
 
-type DisplaySurfaceOptions = 'monitor' | 'window' | 'browser' | 'camera only'
+type DisplaySurfaceOptions = "monitor" | "window" | "browser" | 'camera only'
 
-type CameraOptions = 'no' | 'with' | 'only'
+type CameraOptions = "no" | "with" | 'only'
 
 type BrowserDialogOptionsType = 'Entire Screen' | 'Window' | 'Browser Tab'
 
 type CameraFacingMode = 'user' | 'environment'
 
-type ActionStatusType = 'before' | "ongoing" | "after"
+type ActionStateType = 'before' | 'ongoing' | 'after'
 
-type DeviceType =  'camera' | 'microphone'
+type DeviceType =  "camera" | "microphone"
 
-type PermissionsType = 'denied' | 'granted' | 'prompt'
+type PermissionsType = "denied" | "granted" | "prompt"
 
-type DeviceStatus = 'passed' | 'no-permission' | 'no-support' | 'unchecked' | 'unused'
+type DeviceStatus = "passed" | "no-permission" | 'no-support' | "unchecked" | 'unused'
 
 type Action = 'delete' | 'download' | 'check' | 'generate' |  'redirect' | 'record' | 'save_recording'
 
@@ -426,7 +426,7 @@ declare type RecordingDialogContentBodyProps = {
   videoSettings : VideoSettingsType,
   selectedVideoSetting : VideoSettingsType & {systemAudio: boolean},
   recordSettings: RecordSettingsType[],
-  actionResponse: 'failed' | 'successful' | null;
+  actionResponse: "failed" | "successful" | null;
 }
 
 declare interface RecordSettingsType {

@@ -336,6 +336,7 @@ const checkPermission = async (device: DeviceType): Promise<PermissionsType | nu
   }
 }
 
+
 export const checkDevice = async (device: DeviceType): Promise<DeviceStatus> => {
   const supported = await checkHardwareSupport(device);
 
@@ -353,6 +354,7 @@ export const checkDevice = async (device: DeviceType): Promise<DeviceStatus> => 
 
   return 'passed'
 }
+
 
 //helper
 const getCameraConfig = async (
