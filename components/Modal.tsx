@@ -1,6 +1,6 @@
 
 import { useGlobalContext } from '@/lib/hooks/useGlobalContext';
-import {ActionButton, Alert, FullScreenView, Logo} from '.';
+import {ActionButton, Alert, Logo} from '.';
 // import { ModalProps } from '..';
 
 // {
@@ -13,7 +13,7 @@ import {ActionButton, Alert, FullScreenView, Logo} from '.';
 // }: ModalProps
 
 const Modal = () => {
-  const {modal, closeModal, showModalError: setError, modalError: error, } = useGlobalContext();
+  const {modal, closeModal, showModalError: setError, modalError: error} = useGlobalContext();
 
   const {closeIcon, content: contentBody, buttons: footerButtons} = modal
 
@@ -23,7 +23,6 @@ const Modal = () => {
     <>
     <main className="modal">
     <div className="modal-overlay" onClick={closeModal}/>
-    {<FullScreenView/>}
     <Alert error={error} setError={setError} className='modal-error-alert'/>
       <section className='modal-content'>
         <div className="dialog-box">

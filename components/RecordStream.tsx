@@ -9,13 +9,12 @@ import React, {
     useMemo, 
     useState 
 } from 'react'
-import ActionButton, { Img } from './ActionButton'
+import ActionButton from './ActionButton'
 import { authClient } from '@/lib/authClient'
 import {DialogContentBody, DialogListItem, DropdownList, FailedActionDialog, ImagesConsole, Modal, OngoingActionDialog, SuccessActionDialog} from './'
 import {dummySession} from "@/constants"
 import {
     CirclePauseIcon,
-    CirclePlayIcon,
     Dot,
     HomeIcon, 
 } from 'lucide-react'
@@ -60,8 +59,7 @@ const RecordStream = () => {
     handleRecordAgain,
     handleGoToUpload,
     handleSaveRecordedVideo,
-    handlePauseResume,
-    recordingStatus
+    
   } = useRecordingFeatures()
 
   const router = useRouter();
@@ -76,9 +74,21 @@ const RecordStream = () => {
     }
 
     handleOpenModal(
-        content: recordingContent,
-        butt
-    )
+        <RecordingDialogContentBody
+            recordingState={recordingState}
+            recordedVideoUrl ={recordedVideoUrl}
+            goToUpload ={goToUpload}
+            videoRef ={videoRef}
+            settingsGuide ={settingsGuide}
+            showInstructions ={showInstructions}
+            videoSettings ={videoSettings}
+            selectedVideoSetting ={selectedVideoSetting}
+            recordSettings = {recordSettings}
+            actionResponse = {actionResponse}
+        />, 
+        recordingButtons,
+        <HomeIcon size={22}/>
+    ) 
   },[
     recordingState,
     recordedVideoUrl,
@@ -148,12 +158,7 @@ const RecordStream = () => {
 
   const onGoingRecordingContent = () => (
     <article className='recording-features'>
-        <button onClick={handlePauseResume}>
-            {recordingStatus === "recording" 
-            ? <CirclePauseIcon size={50} className='animate-pulse' fill='#fb2c36' stroke='white'/>
-            : <CirclePlayIcon size={50} className='animate-pulse' fill='#fb2c36' stroke='white'/>
-            }   
-        </button>
+        <CirclePauseIcon size={50} className='animate-pulse' fill='#fb2c36' stroke='white'/>
         <p>
             Recording in progress
         </p>
@@ -191,7 +196,7 @@ const RecordStream = () => {
             ),
             buttons: [
                 modalButton("Go back", handleGoBack, 'btn-white'),
-                modalButton("Start recording", handleGoBack, 'btn-white'),
+                modalButton("Start recording", handleStartRecording),
             ]
         }
     )
@@ -269,7 +274,7 @@ const RecordStream = () => {
       {
         body: <FailedActionDialog customMessage = "Sorry, recorded blob seem lost or not loading"/>,
         buttons: [
-            modalButton('Start over', handleRecordAgain, 'btn-white'),
+            modalButton('Start over', handleStartRecording, 'btn-white'),
             modalButton('Recover blob', handleStopRecording)
         ]
       },
@@ -287,19 +292,7 @@ const RecordStream = () => {
             subNode = "Loading recorded video.."
         />),
       } : !actionStatus.redirect 
-        ? (
-            <div className="recorded-video">
-                <video src={recordedVideoUrl} ref={videoRef} controls/>
-                <button type='button' className='float-btn' onClick ={handleSaveRecordedVideo}>
-                    <Img
-                        src="/assets/icons/download.svg" 
-                        alt="save"
-                        size={16} 
-                        noClass
-                    />
-                </button>
-            </div>
-        )
+        ? <video src={recordedVideoUrl} ref={videoRef} controls/>
         : 
         body: <SuccessActionDialog message = 'Video successfully deleted'/>
       },

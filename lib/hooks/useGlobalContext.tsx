@@ -1,40 +1,28 @@
 'use client'
 import { ModalContentType } from "@/constants/lists";
-import { ActionResponseType, ModalButton, ModalStateType, ActionStateType, Action, ModalActionType} from "@/index";
-import {useState, useContext, createContext, useCallback, useEffect, Dispatch, SetStateAction} from "react";
+import { ActionResponseType, ModalButton, ModalStateType, ActionStatusType, Action} from "@/index";
+import {useState, useContext, createContext, useCallback, useEffect} from "react";
 
 export type GlobalContextType = {
   actionResponse: Record<Action, ActionResponseType | null>,
-  actionStatus: Record<Action, ActionStateType | null>,
+  actionStatus: Record<Action, ActionStatusType | null>,
   modal: ModalStateType,
   openModal: (content: React.ReactNode, buttons?: ModalButton[], closeIcon?: React.ReactNode) => void,
   closeModal: () => void,
   changeActionResponse: (action: Action, response: ActionResponseType | null) => void,
-  changeActionStatus: (action: Action, status: ActionStateType | null) => void,
+  changeActionStatus: (action: Action, status: ActionStatusType | null) => void,
   modalError: string,
   showModalError: (message: string) => void,
-  recordingState: ActionStateType | null
-  changeRecordingState: (state: ActionStateType | null) => void,
+  recordingState: ActionStatusType | null
+  changeRecordingState: (state: ActionStatusType | null) => void,
   changeModalContent: (body: React.ReactElement | null, buttons?: ModalButton[] | null) => void,
-  changeAction: (action: ChangeActionProps) => void,
-  successfulAction : () => void,
-  actionTimeout: (callback: void, timeout?: number) => void
-  failedAction : () => void,
-  beforeAction : (type: Action) => void,
-  ongoingAction : (type: Action) => void,
-  resetAction: () => void, 
-  action: ModalActionType
+  changeRecordingResponse: (response: ActionResponseType | null) => void,
+  recordingResponse: ActionResponseType | null
 }
 
 type ModalContentStoreType = {
     body: React.ReactElement | null,
     buttons?: ModalButton[] | null
-}
-
-type ChangeActionProps = {
-  type?: Action,
-  state?: ActionStateType,
-  response?: ActionResponseType
 }
 
 const GlobalContext = createContext<GlobalContextType | null>(null);
@@ -50,12 +38,6 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
   });
 
   const [modalError, setModalError] = useState('')
-
-  const [action, setAction] = useState<ModalActionType>({
-    type: null, 
-    state: null, 
-    response: null
-  })
   const [actionResponse, setActionResponse] = useState<Record<Action, ActionResponseType | null>>({
     'delete': null,
     'download': null,
@@ -63,21 +45,20 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
     'generate': null,
     'redirect': null,
     'record': null,
-    'save': null,
-    'load': null
+    'save_recording': null,
   });
-  const [actionStatus, setActionStatus] = useState<Record<Action, ActionStateType | null>>({
+  const [actionStatus, setActionStatus] = useState<Record<Action, ActionStatusType | null>>({
     'delete': null,
     'download': null,
     'check': null,
     'generate': null,
     'redirect': null,
     'record': null,
-    'save': null,
-    'load': null
+    'save_recording': null,
   });
+  const [recordingState, setRecordingState] = useState<ActionStatusType | null>(null)
+  const [recordingResponse, setRecordingResponse] = useState<ActionResponseType | null>(null)
 
-  const [recordingState, setRecordingState] = useState<ActionStateType | null>(null)
 
   const openModal = useCallback((
     content: React.ReactNode, 
@@ -99,15 +80,10 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
     setModalContent({body, buttons})
   }, [])
 
-  const resetAction = () => setAction({type: null, state: null, response: null})
-
-  const resetModal = () => {
-     if(recordingState) setRecordingState(null);
-    resetAction()
-  }
-
   const closeModal = useCallback(()=> {
-    resetModal();
+    if(recordingState) changeRecordingState(null);
+    if(recordingResponse) changeRecordingResponse(null);
+    // if(actionResponse) changeActionResponse({});
     setModal({
         state: false,
         content: null, 
@@ -119,37 +95,16 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
     setModalError(message)
   }, [])
 
-  const changeActionStatus = useCallback((action: Action, status: ActionStateType | null) => {
+  const changeActionStatus = useCallback((action: Action, status: ActionStatusType | null) => {
     setActionStatus(prev => ({...prev, [action]: status}))
   }, [])
 
-  const changeAction = useCallback((action: {
-    type?: Action,
-    state?: ActionStateType,
-    response?: ActionResponseType
-  }) => {
-    setAction(prev => ({...prev, ...action}))
-  }, [])
-
-  const successfulAction = () => changeAction({state: 'after', response: 'successful'})
-
-  const failedAction = () => changeAction({state: 'after', response: 'failed'})
-
-  const beforeAction = (type: Action) => setAction({type, state: 'before', response: null})
-
-  const ongoingAction = (type: Action) => setAction({type, state: 'ongoing', response: null})
-
   const changeActionResponse = useCallback((action: Action,response: ActionResponseType | null) => setActionResponse(prev => ({...prev, [action]: response})), []);
 
-  const changeRecordingState = useCallback((state: ActionStateType | null) => setRecordingState(state), []);
+  const changeRecordingState = useCallback((state: ActionStatusType | null) => setRecordingState(state), []);
 
-  const actionTimeout = (callback: void, timeout?: number) => {
-    const timer = setTimeout(() => callback, timeout || 2000)
+  const changeRecordingResponse = useCallback((state: ActionResponseType | null) => setRecordingResponse(state), []);
 
-    return clearTimeout(timer);
-  }
-
-  //likely to complain about size changes on re-renders
   useEffect(()=> {
     setModal(prev =>({...prev, content: modalContent?.body, buttons: modalContent?.buttons}))
   },[modalContent])
@@ -166,16 +121,10 @@ const GlobalProvider = ({children}:{children: React.ReactNode}) => {
       modalError,
       showModalError,
       changeRecordingState,
+      changeRecordingResponse,
       recordingState,
       changeModalContent,
-      changeAction,
-      resetAction,
-      action,
-      successfulAction,
-      actionTimeout,
-      failedAction,
-      beforeAction,
-      ongoingAction
+      recordingResponse
     }}>
         {children}
     </GlobalContext.Provider>

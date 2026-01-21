@@ -25,7 +25,7 @@ import {
   saveVideoDetails,
 } from "@/lib/actions/video";
 import { formValues, uploadFileToBunny } from "@/lib/utils";
-import { ActionResponseType, ActionStateType, ModalButton, SelectOptionType, VideoFormValues} from "@/index";
+import { ActionResponseType, ActionStatusType, ModalButton, SelectOptionType, VideoFormValues} from "@/index";
 import { DIALOG_ICONS } from "@/constants/lists";
 import { GlobalContextType, useGlobalContext } from "@/lib/hooks/useGlobalContext";
 
@@ -61,11 +61,11 @@ const page = () => {
   
   const [captureTime, setCaptureTime] = useState(1)
 
-   const generateActionStatus = (status: ActionStateType | null) => changeActionStatus('generate', status)
+   const generateActionStatus = (status: ActionStatusType | null) => changeActionStatus('generate', status)
 
   const generateActionResponse = (response: ActionResponseType | null) => changeActionResponse('generate', response)
 
-  const downloadActionStatus = (status: ActionStateType | null) => changeActionStatus('download', status)
+  const downloadActionStatus = (status: ActionStatusType | null) => changeActionStatus('download', status)
 
   const downloadActionResponse = (response: ActionResponseType | null) => changeActionResponse('download', response)
 

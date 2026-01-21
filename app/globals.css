@@ -589,18 +589,10 @@
       }
     }
 
-    .recorded-video {
-      @apply relative;
-    
-      video {
-        @apply w-full h-full object-contain;
-      }
-
-      .float-btn {
-        @apply absolute top-3 right-3 size-6 z-20 shadow-md hover:shadow-lg hover:bg-gray-200 transition duration-200 bg-gray-200;
-      }
+    video {
+      @apply w-full h-full object-contain;
     }
-    
+
     .settings-box {
       @apply flex flex-col;
 
