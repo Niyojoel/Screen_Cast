@@ -18,9 +18,12 @@ import {
     X, 
     XCircle
 } from "lucide-react"
-import { ActionResponseType, ActionStatusType, DropdownOptionsType, ModalButton } from ".."
+import {Action, ActionResponseType, ActionStateType, DropdownOptionsType, ModalButton, ModalContentType, RecordSettingsType, VideoSettingsType } from ".."
 import React, { JSX} from "react"
-import { FailedActionDialog, OngoingActionDialog, SuccessActionDialog } from "@/components"
+import { DialogContentBody, FailedActionDialog, OngoingActionDialog, SuccessActionDialog } from "@/components"
+import { ImgProps } from "next/dist/shared/lib/get-img-props"
+import { NoNameModalActionType } from "@/lib/hooks/useGlobalContext"
+import { contentClassNameByState, getActionStateButtons, getModalButton } from "@/lib/modalContentUtil"
 
 
 export const cursorDisplayOptions: DropdownOptionsType[] = [
@@ -109,58 +112,119 @@ export const cameraMode: DropdownOptionsType[] = [
 ]
 
 export const DIALOG_ICONS = {
-    alert: <AlertTriangle size={18} stroke="#fef2f2"/>,
+    alert: <AlertTriangle size={18} stroke="#ff4393"/>,
     checked: <CheckCircleIcon size={24} fill='#ff4393' stroke="#ffffff"/>,
     failed: <XCircle size={18} stroke="red"/>,
-    loader: <LoaderCircle size={24} className="animate-spin"/>,
+    loader: <LoaderCircle size={24} stroke="#ff4393" className="animate-spin"/>,
     close: <X size={18}/>,
-    info: <InfoIcon size={18} stroke='blue'/>
+    info: <InfoIcon size={18} stroke='ff4393'/>
 }
 
-export type ModalContentType = {
-    body: React.ReactElement | null,
-    buttons?: ModalButton[] | null
+type ActionBodyProps = {
+    action: NoNameModalActionType, 
+    beforeRender?: React.ReactElement
 }
 
-export const modalContent = (
-    actionStatus: ActionStatusType | null,
-    actionResponse : ActionResponseType | null,
-    failedContent: ModalContentType,
-    ongoingContent: ModalContentType,
-    successContent: ModalContentType,
-    beforeContent?: ModalContentType
-) => {
-    
-    if(beforeContent && actionStatus === 'before'  ) {
-        return beforeContent;
-    }
+type ActionProp = Pick<ActionBodyProps, 'action'>
 
-    if(actionStatus ==='ongoing' && ongoingContent) {
-        return ongoingContent;
-    }
+const CheckBody = ({
+    action,
+    checkResponse,
+    beforeRender
+}: ActionBodyProps & {checkResponse: string}) => {
+    if(action) {
+        const state = action?.state
+        const response = action?.response
 
-    if(actionStatus ==='after' && actionResponse === 'successful' && successContent) {
-        return successContent;
-    }
-
-    if(actionStatus ==='after' && actionResponse === 'failed' && failedContent) {
-        return failedContent;
-    }
-    
-    return null;
+        return state && (
+            <>
+                <DialogContentBody subNode= {beforeRender} className={contentClassNameByState(state === 'before')}/>
+                <OngoingActionDialog text = 'Checking user devices...' className={contentClassNameByState(state === 'ongoing')}/>
+                <FailedActionDialog header ='Check failed' text={checkResponse} className={contentClassNameByState(state === 'after' &&  response === 'failed')}/>
+                <SuccessActionDialog text = 'Check passed' className={contentClassNameByState(state === 'after' && response === 'successful')}/>
+            </>
+        )
+    } else return null
 }
 
-// const recordingStateContent = ({
-//     recordingState,
+const RecordGuideBody = ({
+    action,
+    beforeRender,
+}: ActionBodyProps) => {
+    if(action) {
+        const state = action?.state
+        const response = action?.response
 
-// }) => {
+        return state && (
+            <>
+                <DialogContentBody
+                    icon={DIALOG_ICONS.info}
+                    headerNode = 'Guide'
+                    subNode = {beforeRender}
+                    actionPopup = {false}
+                    className={contentClassNameByState(state === 'before')}
+                />
+                <OngoingActionDialog text = 'Loading browser dialog...' className={contentClassNameByState(state === 'ongoing')}/>
+                <FailedActionDialog text='Recording session has been canceled' className={contentClassNameByState(state === 'after' &&  response === 'failed')}/>
+                <SuccessActionDialog text = 'Dialog opened' className={contentClassNameByState(state === 'after' && response === 'successful')}/>
+            </>
+        )
+    } else return null
+}
 
-// }
+const RedirectBody = ({
+    action,
+}: ActionProp) => {
+    if(action) {
+        const state = action?.state
+        const response = action?.response
 
-export const modalButton = (text: string, action: () => void, className?: string): ModalButton => {
-    return {
-        text,
-        action,
-        className: className || "btn-theme"
-    }
+        return state && (
+            <>
+                <OngoingActionDialog text='Accessing recording blob...' className={contentClassNameByState(state === 'before')}/>
+                <OngoingActionDialog text='Redirecting to Upload page...' className={contentClassNameByState(state === 'ongoing')}/>
+                <FailedActionDialog text='You can try again or save video and self upload' className={contentClassNameByState(state === 'after' &&  response === 'failed')}/>
+            </>
+        )
+    } else return null
+}
+
+const loadBody = ({
+    action,
+    beforeRender,
+    successRender
+}: ActionBodyProps & {successRender: React.ReactElement}) => {
+    if(action) {
+        const state = action?.state
+        const response = action?.response
+
+        return state && (
+            <>
+                <DialogContentBody
+                    subNode = {beforeRender}
+                    className={contentClassNameByState(state === 'before')}
+                />
+                <OngoingActionDialog text='Loading recorded video...' className={contentClassNameByState(state === 'ongoing')}/>
+                <FailedActionDialog text='Sorry, recorded blob seem lost or not loading' className={contentClassNameByState(state === 'after' &&  response === 'failed')}/>
+                <DialogContentBody subNode={successRender} className={contentClassNameByState(state === 'after' && response === 'successful')}/>
+            </>
+        )
+    } else return null
+}
+
+const saveBody = ({
+    action,
+}: ActionProp) => {
+    if(action) {
+        const state = action?.state
+        const response = action?.response
+
+        return state && (
+            <>
+                <OngoingActionDialog text='"Downloading recorded video...' className={contentClassNameByState(state === 'ongoing')}/>
+                <FailedActionDialog text='Failed to save video' className={contentClassNameByState(state === 'after' &&  response === 'failed')}/>
+                <SuccessActionDialog text={'Video downloaded'} className={contentClassNameByState(state === 'after' && response === 'successful')}/>
+            </>
+        )
+    } else return null
 }

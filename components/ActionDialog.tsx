@@ -1,45 +1,55 @@
 import { DIALOG_ICONS } from '@/constants/lists'
 import DialogContentBody from './DialogContentBody'
+import { CheckCircleIcon } from 'lucide-react'
 
 export const FailedActionDialog = ({
-    customMessage,
+    text,
+    className,
     header
-}: {customMessage?: string, header?: string}) =>  (
+}: {text?: string, header?: string, className?: string}) =>  (
     <DialogContentBody
         icon = {DIALOG_ICONS.failed}
         headerNode = {header || 'Something went wrong'}
-        subNode = {customMessage ? `${customMessage}. Try again` : 'Try again'}
+        subNode = {text ? `${text}. Try again` : 'Try again'}
     />
 )
 
 export const SuccessActionDialog = ({
-    message,
+    text,
+    className,
     header
-}: {message: string, header?: string}) =>  (
+}: {text: string, header?: string, className?: string}) => header ? (
     <DialogContentBody
         icon = {DIALOG_ICONS.checked}
         headerNode={header}
-        subNode = {message}
+        subNode = {text}
+    />
+) : (
+    <DialogContentBody
+        icon = {DIALOG_ICONS.checked}
+        subNode = {text}
     />
 )
 
 export const OngoingActionDialog = ({
-    message,
-}: {message: string}) =>  (
+    text,
+    className,
+}: {text: string, className?: string}) =>  (
     <DialogContentBody
         icon = {DIALOG_ICONS.loader}
-        subNode = {message}
+        subNode = {text}
     />
 )
 
 export const WarningActionDialog = ({
     header,
-    message,
-}: {message: string, header?: string}) =>  (
+    text,
+    className,
+}: {text: string, header?: string, className?: string}) =>  (
     <DialogContentBody
         icon = {DIALOG_ICONS.alert}
         headerNode={header}
-        subNode = {message}
+        subNode = {text}
     />
 )
 
@@ -49,7 +59,7 @@ export const DialogListItem = ({text}: {text: string | null}) => {
 
     return (
     <DialogContentBody
-        icon={DIALOG_ICONS.checked}
+        icon={<CheckCircleIcon size={16} stroke="#ff4393"/>}
         headerNode={text}
     />
     ) 

@@ -1,5 +1,5 @@
 import React from 'react'
-import { DialogBodyContentProps, dialogContentListFeatureProps } from '..'
+import { DialogBodyContentProps, DialogContentListFeatureProps } from '..'
 import { cn } from '@/lib/utils'
 
 const DialogContentBody = ({
@@ -15,7 +15,7 @@ const DialogContentBody = ({
       {(headerNode && typeof headerNode === 'string') || icon ? (
         <p className={cn("flex items-center gap-2 text-center")}>
             {icon && <i className="text-pink-100">{icon}</i>}
-            {headerNode && <span className="font-medium">{headerNode}</span>}
+            {headerNode && <span className="">{headerNode}</span>}
         </p>
       ): headerNode && typeof headerNode === 'object' 
         ? headerNode
@@ -38,7 +38,7 @@ export const DialogContentListFeature = ({
     featureName, 
     featureStatus,
     className = ""
- }: dialogContentListFeatureProps) => (
+ }: DialogContentListFeatureProps) => (
     <li className={cn('feature', className)}>
         <span className=''>
             {featureName}

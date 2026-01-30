@@ -9,14 +9,17 @@ import React, {
     useMemo, 
     useState 
 } from 'react'
-import ActionButton from './ActionButton'
 import { authClient } from '@/lib/authClient'
-import {DialogContentBody, DialogListItem, DropdownList, FailedActionDialog, ImagesConsole, Modal, OngoingActionDialog, SuccessActionDialog} from './'
+import {ActionButton, DialogContentBody, DialogListItem, DropdownList, FailedActionDialog, OngoingActionDialog} from './'
 import {dummySession} from "@/constants"
 import {
+    CheckCircleIcon,
     CirclePauseIcon,
-    Dot,
-    HomeIcon, 
+    Download,
+    HomeIcon,
+    LoaderCircle,
+    Upload,
+    X,
 } from 'lucide-react'
 import { 
     cn,
@@ -25,41 +28,53 @@ import {
     parseVideoSettings, 
 } from '@/lib/utils'
 import {
+    Action,
     DropdownOptionsType, 
+    ModalContentType, 
     RecordSettingsType,
     RecordingDialogContentBodyProps,
+    VideoSettingsType,
 } from '..'
 import toast from 'react-hot-toast';
-import { DialogContentListFeature } from './DialogContentBody'
-import { DIALOG_ICONS, ModalContentType, modalButton, modalContent } from '@/constants/lists'
+import { DIALOG_ICONS} from '@/constants/lists'
 import useRecordingFeatures from '@/lib/hooks/useRecordingFeatures'
+import { 
+    ModalContentTypeAdapted, 
+    getActionStateContent, 
+    getContentByAction, 
+    getModalButton, 
+} from '@/lib/modalContentUtil'
+import { NoNameModalActionType } from '@/lib/hooks/useGlobalContext'
 
 const RecordStream = () => {
 
   const {
-    recordingState,
+    modalOpen,
     videoRef,
-    actionStatus,
     goingToUploadAction,
     recordedVideoUrl,
     selectedVideoSetting,
     settingsGuide,
     recordSettings,
     videoSettings,
-    actionResponse,
+    modalAction,
+    saveAfterLoadAction,
+    setVideoPlaying,
     handleOpenModal,
     handleCloseModal,
-    showModalError,
     handleBackToSettings,
-    devicesCheck,
     handleStartRecording,
     handleStopRecording,
     handleGoBack,
     handleTakeScreenShot,
     handleRecordAgain,
     handleGoToUpload,
-    handleSaveRecordedVideo,
-    
+    handleCheckDevices,
+    handleSaveAfterLoad,
+    handleSaveOnFailedRedirect,
+    handlePauseResume,
+    recordingStatus,
+    syncModalContent,
   } = useRecordingFeatures()
 
   const router = useRouter();
@@ -73,42 +88,55 @@ const RecordStream = () => {
         return;
     }
 
-    handleOpenModal(
-        <RecordingDialogContentBody
-            recordingState={recordingState}
-            recordedVideoUrl ={recordedVideoUrl}
-            goToUpload ={goToUpload}
-            videoRef ={videoRef}
-            settingsGuide ={settingsGuide}
-            showInstructions ={showInstructions}
-            videoSettings ={videoSettings}
-            selectedVideoSetting ={selectedVideoSetting}
-            recordSettings = {recordSettings}
-            actionResponse = {actionResponse}
-        />, 
-        recordingButtons,
-        <HomeIcon size={22}/>
-    ) 
+    handleOpenModal({closeIcon: <HomeIcon size={22}/>}) 
   },[
-    recordingState,
-    recordedVideoUrl,
-    goToUpload,
-    settingsGuide,
-    showInstructions,
-
-    videoSettings,
-    selectedVideoSetting,
-    recordSettings,
-    actionResponse,
+    session,
   ])
 
-  const guideNote = () => (
-    note(
-        videoSettings.displaySurface !== 'camera only',
-        `When the browser dialog picker appears, your screen setting option ${parseBrowserDialogOptions(videoSettings.displaySurface)} would be preset on the tab. </n>
-        Click in the box underneath to choose which exact screen to record. You can also enable system audio.`,
-    )
-  )
+  const note = (
+    preNoteCondition: boolean,
+    falseConditionRender: string | React.ReactElement,
+    featureList?: React.ReactElement | null,
+     featureHeaderText?: string,
+     className?: string,
+   ) => {
+     return (
+        <div className='w-full flex flex-col gap-2 mb-3 bg-transparent'>
+            <p className='text-[15.5px] text-gray-600'>
+                 {
+                 preNoteCondition
+                 ? falseConditionRender
+                 : `You are using camera only.`
+                 }
+             </p>
+            <div className="w-full flex flex-col gap-2 bg-transparent">
+                {featureHeaderText && <span>{featureHeaderText}</span>}
+                <ul className="w-full flex gap-2 items-center flex-wrap">
+                    {featureList && featureList}   
+                     <DialogListItem
+                         text={videoSettings.cursor === 'always' ? 'Cursor display' : videoSettings.cursor === 'motion' ? 'Cursor display on motion' : 'Cursor hidden'}
+                    />
+                </ul>
+            </div>
+        </div>
+     )
+   }
+
+  const guideNote = () => note(
+    videoSettings.displaySurface !== 'camera only',
+    <>
+        <span className='block'>
+            <span>When the browser dialog picker appears, your screen setting option</span> {" "}
+            <span className='font-medium'>{`(${parseBrowserDialogOptions(videoSettings.displaySurface)})`}</span> {" "}
+            <span>would be preset on the tab.</span>
+        </span>
+        <span className='block'>
+            Click in the box underneath to choose which exact screen to record. You can also enable system audio.
+        </span>
+    </>,
+    null,
+    'Active features'
+)
 
   const ongoingRecordingNote = () => (
     note(
@@ -118,209 +146,222 @@ const RecordStream = () => {
     )
   ) 
 
-  const note = (
-    preNoteCondition: boolean,
-    falseConditionRender: string,
-    featureList?: React.ReactElement,
-    featureHeaderText?: string,
-    className?: string,
-  ) => {
-    return (
-        <div className='features'>
-            <p className='pre-note'>
-                {
-                preNoteCondition 
-                ? falseConditionRender 
-                : `You are using camera only.`
-                }
-            </p>
-            <div className="feature-box">
-                <p className='w-full flex items-center gap-2'>
-                    {<Dot fill='#ff4393'/>}
-                    <span>{ featureHeaderText || 'Active feature'}</span>
-                </p>
-                <ul className="feature">
-                    {featureList}   
-                    <DialogListItem
-                        text={videoSettings.cursor === 'always' ? 'Cursor display' : videoSettings.cursor === 'motion' ? 'Cursor display on motion' : 'Cursor hidden'}
-                    />
-                    <DialogListItem
-                        text={videoSettings.camera === 'with' ? 'Camera' : null}
-                    />
-                    <DialogListItem
-                        text={videoSettings.withMic ? 'Microphone' : null}
-                    />
-                </ul>
-            </div>
-        </div>  
-    )
-  } 
-
   const onGoingRecordingContent = () => (
     <article className='recording-features'>
-        <CirclePauseIcon size={50} className='animate-pulse' fill='#fb2c36' stroke='white'/>
-        <p>
+    <div className='flex flex-col items-center'>
+        <button onClick={handlePauseResume} className='w-fit h-fit border-none outline-none rounded-full hover:bg-pink-100'>
+            <CirclePauseIcon size={30} className={recordingStatus !== 'pause' ? 'animate-pulse' : 'animate-none'} fill='#fb2c36' stroke='white'/>
+        </button>
+        <p className='text-center text-dark-100 text-base font-medium'>
             Recording in progress
         </p>
+    </div>
         {ongoingRecordingNote()}
     </article>
   )
 
-  //
-  const recordGuideContent = useMemo((): ModalContentType | null => {
-    return modalContent (
-        actionStatus.record,
-        actionResponse.record,
+  const goBackButton = useCallback((text?: string) => getModalButton(text || 'Go back', handleGoBack, 'btn-white'),[handleGoBack, getModalButton])
+
+  const recordAgain = useMemo(() => getModalButton('Record again', handleRecordAgain, 'btn-white'),[handleRecordAgain, getModalButton])
+
+  const uploadButton = useCallback((text?: string) => getModalButton(text || 'Upload', handleGoToUpload, 'btn-theme', <Upload size={16}/>),[getModalButton, handleGoToUpload])
+
+  const recordButtons = useMemo(() => [
+    goBackButton(), 
+    getModalButton('Record', handleStartRecording)
+  ],[goBackButton, getModalButton, handleStartRecording])
+
+  const settingsContent = useCallback((settings: RecordSettingsType[]): ModalContentTypeAdapted => {
+    return {
+        node: (
+            <DialogContentBody subNode = {<RecordingSettings recordSettings={settings}/>}
+            />
+        ),
+        buttons: [
+            getModalButton("Continue", handleCheckDevices)
+        ]
+    }
+  }, [getModalButton, handleCheckDevices, recordSettings])
+
+  const loadAfterSuccessContent = useMemo((): ModalContentTypeAdapted | null => {
+    return modalAction.name === 'load' && modalAction.load?.state === 'success' && saveAfterLoadAction.response !== 'failed' ?
         {
-            body: <FailedActionDialog customMessage= "Recording session has been canceled"/>,
-            buttons: [
-                modalButton('Go back', handleGoBack, 'btn-white'), 
-                modalButton('Try again', handleStartRecording)
-            ]   
+            node: (
+                <div className='video-wrapper'>
+                    <video 
+                        src={recordedVideoUrl} 
+                        ref={videoRef} 
+                        controls 
+                        onPlay={() => setVideoPlaying(true)}onEnded={() => setVideoPlaying(false)}
+                        onPause={() => setVideoPlaying(false)}
+                    />
+                    <button className='float-btn' onClick={()=> handleSaveAfterLoad}>
+                        {getActionStateContent(
+                            saveAfterLoadAction.state,
+                            saveAfterLoadAction.response,
+                            {node: <X size={18} stroke="red"/>},
+                            {node: <LoaderCircle size={16} className="animate-spin"/>},
+                            {node: <CheckCircleIcon size={24} fill='#ff4393' stroke="#ffffff"/>},
+                            {node: <Download size={16}/>},
+                        ).body}
+                    </button>
+                </div>
+            ),
+            buttons: [getModalButton('Go Back', handleBackToSettings, 'btn-white'), recordAgain, uploadButton()]
+        } : null
+  },[uploadButton, recordAgain, goBackButton, getModalButton, handleBackToSettings, handleSaveAfterLoad, getActionStateContent, saveAfterLoadAction, recordedVideoUrl, modalAction]);
+  
+  const recordGuideContent = useCallback((
+    action: NoNameModalActionType): ModalContentType => {
+    return getActionStateContent(
+      action.state,
+      action.response,
+        {
+            node: "Recording session has been canceled",
+            buttons: recordButtons
         },
         {
-            body: <OngoingActionDialog message = 'Loading browser dialog...'/>
+            node: 'Loading browser dialog...'
         },
         {
-            body: <SuccessActionDialog message = 'Dialog opened option selection'/>
+            node: 'Dialog opened'
         }, 
         {
-            body: (
+            node: (
                 <DialogContentBody
                     icon={DIALOG_ICONS.info}
                     headerNode = 'Guide'
                     subNode = {guideNote()}
-                    className={cn('content-body', actionStatus.record ? "show" : "no-show")}
                     actionPopup = {false}
                 />
             ),
-            buttons: [
-                modalButton("Go back", handleGoBack, 'btn-white'),
-                modalButton("Start recording", handleStartRecording),
-            ]
+            buttons: recordButtons
         }
-    )
-  }, [actionStatus.record, actionResponse.record, handleGoBack, handleStartRecording])
+    ) 
+  }, [getActionStateContent, guideNote, recordButtons, DIALOG_ICONS, guideNote])
 
-  const settingsContent = useMemo((): ModalContentType => {
-    return {
-        body: (
-            <DialogContentBody
-                subNode = {<RecordingSettings recordSettings={recordSettings}/>}
-                className={cn('settings-box', actionStatus.record ? "no-show" : "show")}
-            />
-        ),
-        buttons: [
-            modalButton("Continue", () => devicesCheck )
-        ]
-    }
-  }, [actionStatus.record, actionResponse.check, settingsGuide, handleBackToSettings, devicesCheck, videoSettings])
-
-  const checkContent = useMemo((): ModalContentType | null => {
-    return modalContent (
-        actionStatus.check,
-        actionResponse.check,
+  const checkContent = useCallback((
+    action: NoNameModalActionType, 
+    settings: RecordSettingsType[],
+    checkResponse: string,
+  ): ModalContentType | null => {
+    return getActionStateContent(
+        action.state,
+        action.response,
         {
-            body: <FailedActionDialog header ='Check failed' customMessage={settingsGuide}/>,
+            node: <FailedActionDialog header ='Check failed' text={checkResponse}/>,
             buttons: [
-                modalButton('Change Settings', handleGoBack), 
-                modalButton('Retry Check', () => devicesCheck())
+                goBackButton('Adjust setting'), 
+                getModalButton('Retry Check', handleCheckDevices)
             ]
         },
         {
-            body: <OngoingActionDialog message = {videoSettings.camera !== 'no' && videoSettings.withMic ? "Checking user devices..." : "Checking user device..."}/>
+            node: 'Checking user devices...'
         },
         {
-            body: <SuccessActionDialog message = 'Check passed'/>
+            node: 'Check passed'
         },
-        settingsContent
+        settingsContent(settings)
     )
-  }, [actionStatus.check, actionResponse.check, settingsGuide, handleBackToSettings, devicesCheck, videoSettings])
+  }, [getActionStateContent, goBackButton, getModalButton, handleCheckDevices, settingsContent])
 
-  const redirectContent = useMemo((): ModalContentType | null => {
-    return modalContent (
-        actionStatus.redirect,
-        actionResponse.redirect,
+  const redirectContent = useCallback((action: NoNameModalActionType): ModalContentType | null => {
+    return getActionStateContent(
+        action.state,
+        action.response,
         {
-            body: <FailedActionDialog customMessage = "You can save video"/>,
+            node: "You can try again or save video and self upload",
             buttons: [
-                modalButton('Change Settings', handleGoBack), 
-                modalButton('Retry Redirect', () => devicesCheck())
+                getModalButton('Save Recording', handleSaveOnFailedRedirect),
+                uploadButton('Retry')
             ]
         },
         {
-            body: <OngoingActionDialog message = {videoSettings.camera !== 'no' && videoSettings.withMic ? "Checking user devices..." : "Checking user device..."}/>
+            node: "Redirecting to Upload page..."
         },
+        null,
         {
-            body: <SuccessActionDialog message = 'Check passed'/>
-        },
-        {
-            body: <>
-                <video src={recordedVideoUrl} ref={videoRef} controls/>
-                <ImagesConsole
-                    imagesArr={screenshots}
-                />
-            </>,
-
+            node: 'Accessing recording blob...'
         }
     )
-  }, [actionStatus.check, actionResponse.check, settingsGuide, handleBackToSettings, devicesCheck, videoSettings])
+  }, [getActionStateContent, handleSaveOnFailedRedirect, uploadButton, getModalButton])
 
-
-   const recordingContent = useMemo((): ModalContentType | null => {
-    return modalContent(
-      recordingState,
-      actionResponse.delete,
-      {
-        body: <FailedActionDialog customMessage = "Sorry, recorded blob seem lost or not loading"/>,
-        buttons: [
-            modalButton('Start over', handleStartRecording, 'btn-white'),
-            modalButton('Recover blob', handleStopRecording)
-        ]
-      },
-      {
-        body: onGoingRecordingContent(),
-        buttons: [
-            modalButton('Stop recording', handleStopRecording, 'btn-destructive'),
-            modalButton('Screenshot stream', handleTakeScreenShot) 
-        ]
-      },
-      !recordedVideoUrl ? {
-        body: (
-        <DialogContentBody
-            icon = {DIALOG_ICONS.loader}
-            subNode = "Loading recorded video.."
-        />),
-      } : !actionStatus.redirect 
-        ? <video src={recordedVideoUrl} ref={videoRef} controls/>
-        : 
-        body: <SuccessActionDialog message = 'Video successfully deleted'/>
-      },
-      actionStatus.check && checkContent 
-      ? {
-        body: checkContent.body,
-        buttons: checkContent.buttons
-      } 
-      : actionStatus.record && recordGuideContent
-        ? {
-            body: recordGuideContent.body,
-            buttons: recordGuideContent.buttons
-        } 
-        : {
-            body: null,
-            buttons: null
-        }
+  const loadContent = useCallback((action: NoNameModalActionType): ModalContentType | null => {
+    return getActionStateContent(
+        action.state,
+        action.response,
+        {
+            node: "Sorry, recorded blob seem lost or not loading",
+            buttons: [
+                recordAgain,
+                getModalButton('Recover', handleStopRecording)
+            ]
+        },
+        {
+            node: "Loading recorded video..."
+        },
+        loadAfterSuccessContent,
+        {
+            node: onGoingRecordingContent(),
+            buttons: [
+                getModalButton('Stop recording', handleStopRecording, 'btn-destructive'),
+                getModalButton('Screenshot stream', handleTakeScreenShot) 
+            ]
+        },
     )
-  }, [actionStatus.check, actionStatus.record, actionResponse.delete, modalButton, handleDelete, closeModal, recordGuideContent, checkContent])
+  }, [getModalButton, handleTakeScreenShot, getActionStateContent, getModalButton, getContentByAction, handleStopRecording, loadAfterSuccessContent, recordedVideoUrl, saveAfterLoadAction])
+  
+  const saveContent = useCallback((action: NoNameModalActionType): ModalContentType | null => {
+    return getActionStateContent(
+        action.state,
+        action.response,
+        {
+            node: "Failed to save video",
+            buttons: [
+                getModalButton('Retry save', () => handleSaveOnFailedRedirect)
+            ]
+        },
+        {
+            node: "Downloading recorded video..."
+        },
+        {
+            node: 'Video downloaded',
+            buttons: [getModalButton('Exit', handleCloseModal)]
+        },
+    )
+  }, [getActionStateContent, handleCloseModal, getModalButton, handleSaveOnFailedRedirect,])
   
   useEffect(() => {
-    console.log("from recording stream component: ", recordingState)
-    recordingButtons
-  },[recordingState])
+    let content: ModalContentType | null = null;
+    if(modalAction.name === 'check') {
+        content = checkContent(
+            modalAction?.check,
+            recordSettings,
+            settingsGuide,
+        )
+    } 
+    if(modalAction.name === 'record') {
+        content = recordGuideContent(modalAction?.record)
+    } 
+    if(modalAction.name === 'load') {
+        content = loadContent(modalAction?.load)
+    } 
+    if(modalAction.name === 'redirect') {
+        content = redirectContent(modalAction?.redirect)
+    } 
+    if(modalAction.name === 'save_record') {
+        content = saveContent(modalAction?.save_record)
+    }
+    console.log(modalAction);
+
+    if(modalAction.name) syncModalContent('record', content!)
+  },[modalAction, videoSettings, recordSettings, settingsGuide])
 
   useEffect(() => {
-    if(actionStatus.redirect === "ongoing") goingToUploadAction(()=> router.push('/upload'))
-  },[actionStatus.redirect])
+    if(modalAction.name === 'redirect') {
+        modalAction.redirect?.state === 'ongoing' && goingToUploadAction(()=> router.push('/upload'))
+    }
+  },[modalAction.name])
 
   return (
     <div className="record">
@@ -339,87 +380,6 @@ const RecordStream = () => {
   )
 }
 
-// const 
-
-const RecordingDialogContentBody = memo(({
-    recordingState,
-    recordedVideoUrl,
-    goToUpload,
-    videoRef,
-    settingsGuide,
-    showInstructions,
-    videoSettings,
-    selectedVideoSetting,
-    recordSettings,
-    actionResponse
-}: RecordingDialogContentBodyProps) => (
-    <div className="recording-body">
-        {recordingState === "ongoing"
-        ? (
-            <article className='recording-features'>
-                <CirclePauseIcon size={50} className='animate-pulse' fill='#fb2c36' stroke='white'/>
-                <p>
-                    Recording in progress
-                </p>
-                <RecordingOnSubNode selectedVideoSetting={selectedVideoSetting}/>
-            </article>
-        ): recordingState === "after" 
-        ? (
-            recordedVideoUrl ?
-            (!goToUpload 
-                ? <video src={recordedVideoUrl} ref={videoRef} controls/> 
-                : goToUpload === 'failed' 
-                    ? !actionResponse 
-                      ? <FailedActionDialog customMessage = "You can save video"/>
-                      : actionResponse === "failed" 
-                        ? <FailedActionDialog customMessage='Video failed to save'/>
-                        : <DialogContentBody
-                            icon = {DIALOG_ICONS.checked} 
-                            subNode = "Video has been saved"
-                        />
-                    : <DialogContentBody
-                        icon = {DIALOG_ICONS.loader}
-                        subNode = "Redirecting to Upload page.."
-                      />
-            )
-            : <DialogContentBody
-                icon = {DIALOG_ICONS.loader}
-                subNode = "Loading recorded video.."
-            />
-            
-        ) : recordingState === "before" 
-        ? (!showInstructions ? 
-            <DialogContentBody
-                headerNode = {
-                    settingsGuide ? <div className="guide">
-                        <i className='animate-pulse'>           
-                            {settingsGuide.split(' ').includes("supported") 
-                            ? DIALOG_ICONS.failed 
-                            : settingsGuide.split(' ').includes("permission") 
-                                ? DIALOG_ICONS.alert 
-                                : null} 
-                        </i>
-                        <p className={settingsGuide ? 'opacity-100 h-7' : 'opacity-0 h-0'}>
-                            {settingsGuide}
-                        </p>
-                    </div>
-                    : ""
-                }
-                subNode = {<RecordingSettings recordSettings={recordSettings}/>}
-                className={cn('settings-box', showInstructions ? "no-show" : "show")}
-            /> :
-            <DialogContentBody
-                icon={DIALOG_ICONS.info}
-                headerNode = 'Guide'
-                subNode = {videoSettings.camera !== 'only' 
-                ? `When the browser dialog picker appears, display surface option on the tab would be preset to ${parseBrowserDialogOptions(videoSettings.displaySurface)}. Click in the box underneath to choose which screen to record. You can also enable system audio.` 
-                : `You are using only camera ${videoSettings.withMic ? 'with microphone' : 'without microphone'}`}
-                className={cn('content-body', showInstructions ? "show" : "no-show")}
-                actionPopup = {false}
-            />
-        ) : null}
-    </div>
-))
 
   //dialogContent settings - ul child Element
 const RecordingSettings = memo(({
@@ -492,7 +452,5 @@ const DropdownWithIdIcon = memo(({idIcon, children}: {idIcon: React.ReactNode, c
         <span>{children}</span>
     </div>
 ))
-
-
 
 export default RecordStream

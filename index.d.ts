@@ -301,11 +301,15 @@ declare interface ParamsWithSearch {
   searchParams: Promise<Record<string, string | undefined>>;
 }
 
-declare type ModalStateType = {
-  state: boolean,
-  content: React.ReactNode | null,
-  buttons?: ModalButton[] | null,
-  closeIcon?: React.ReactNode | null
+declare type ModalOpenType = {
+  isOpen: boolean;
+  type: ModalType | null;
+  closeIcon?: React.ReactNode
+}
+
+declare type ModalContentType = {
+  body: React.ReactElement,
+  buttons?: ModalButton[]
 }
 
 declare interface ModalProps {
@@ -325,7 +329,7 @@ declare interface DialogBodyContentProps {
   actionPopup?: boolean
 }
 
-declare interface dialogContentListFeatureProps {
+declare interface DialogContentListFeatureProps {
   featureName: string, 
   featureStatus: string,
   className?: string
@@ -334,12 +338,9 @@ declare interface dialogContentListFeatureProps {
 declare type ModalButton = {
   className: string;
   action: () => void;
-  src?: string;
-  alt?: string;
   text: string;
-  disabled?: boolean;
+  icon?: React.ReactNode;
 }
-
 
 declare type DropdownOptionsType = {
   label: string,
@@ -395,18 +396,47 @@ type BrowserDialogOptionsType = 'Entire Screen' | 'Window' | 'Browser Tab'
 
 type CameraFacingMode = 'user' | 'environment'
 
-type ActionStateType = 'before' | 'ongoing' | 'after'
-
 type DeviceType =  "camera" | "microphone"
 
 type PermissionsType = "denied" | "granted" | "prompt"
 
 type DeviceStatus = "passed" | "no-permission" | 'no-support' | "unchecked" | 'unused'
 
-type Action = 'delete' | 'download' | 'check' | 'generate' |  'redirect' | 'record' | 'save_recording'
+
+type ModalType = 'record' | 'upload' | 'post';
+
+type ParentContentType = 'record' | 'generate' 
+
+type RecordAction = 'check' | 'record' | 'load' | 'redirect' | 'save_record'
+
+type UploadAction = GenerateAction | 'edit'
+
+type GenerateAction =  'generate' | 'add_to_video' | 'save_thumbnail' 
+
+type PostAction = 'delete' | 'download'
+
+type Action = RecordAction | UploadAction | PostAction;
+
+type ActionStateType = 'before' | 'ongoing' | 'after'
 
 type ActionResponseType = 'failed' | 'successful'
 
+declare type BeforeModalActionType = {
+  name: Action | '';
+  state: ActionStateType | null;
+  response: ActionResponseType | null;
+}
+
+declare type OngoingModalActionType = {
+  name: Action | '';
+  state: Omit<ActionStateType, 'before'> | null;
+  response: ActionResponseType | null;
+}
+
+declare type OpenModalArgs = {
+  type: ModalType;
+  closeIcon?: React.ReactNode
+}
 
 declare type VideoSettingsType = {
   cursor: CursorOptions;
@@ -417,7 +447,7 @@ declare type VideoSettingsType = {
 }
 
 declare type RecordingDialogContentBodyProps = {
-  recordingState: ActionStatusType | null,
+  modalParentContent: ActionStatusType | null,
   recordedVideoUrl: string,
   goToUpload: GoToUploadState | null,
   videoRef: RefObject<HTMLVideoElement | null>,

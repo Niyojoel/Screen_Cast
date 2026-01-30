@@ -1,25 +1,15 @@
-
+'use client'
 import { useGlobalContext } from '@/lib/hooks/useGlobalContext';
 import {ActionButton, Alert, Logo} from '.';
-// import { ModalProps } from '..';
-
-// {
-//   closeIcon,
-//   closeModal,
-//   error,
-//   setError,
-//   footerButtons,
-//   contentBody
-// }: ModalProps
 
 const Modal = () => {
-  const {modal, closeModal, showModalError: setError, modalError: error} = useGlobalContext();
+  const {modalOpen, modalContent, closeModal, showModalError: setError, modalError: error} = useGlobalContext();
 
-  const {closeIcon, content: contentBody, buttons: footerButtons} = modal
+  const {closeIcon, isOpen} = modalOpen
 
-  if(!modal.state) return null;
+  if(!isOpen) return null;
 
-  return (
+  return modalContent.body && (
     <>
     <main className="modal">
     <div className="modal-overlay" onClick={closeModal}/>
@@ -37,18 +27,18 @@ const Modal = () => {
           </figure>
           <article className='dialog-content'>
             <section>
-                {contentBody}
+                {modalContent?.body}
             </section>
-            {footerButtons && footerButtons.length > 0 && (<div className="dialog-btns">
-              {footerButtons.map(btn => (
+            {modalContent?.buttons && modalContent?.buttons.length > 0 && (<div className="dialog-btns">
+              {modalContent?.buttons.map(btn => (
                 <ActionButton
                   key={btn.text}
                   action={btn.action}
                   className= {btn.className}
-                  src= {btn?.src}
-                  alt= {btn?.alt}
                   text = {btn.text}
-                />
+                >
+                  {btn?.icon && btn.icon}
+                </ActionButton>
               )
               )}
             </div>)}

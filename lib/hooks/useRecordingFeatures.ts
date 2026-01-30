@@ -8,22 +8,24 @@ import {
 import { useScreenRecording } from "./useScreenRecording";
 import { 
   DeviceStatus, 
-  DeviceType, 
-  ModalButton, 
+  DeviceType,
   CameraOptions, 
   DisplaySurfaceOptions, 
   RecordSettingsType, 
-  VideoSettingsType, 
+  VideoSettingsType,
+  OpenModalArgs,
+  Action,
+  ActionStateType,
+  ActionResponseType,
+  BeforeModalActionType, 
 } from "@/index";
 import { 
-  ModalContentType,
   cameraMode, 
   cameraSettingsOptions, 
   cursorDisplayOptions, 
   cursorDisplayOptionsIcon, 
   micSettingsOptions, 
   micSettingsOptionsIcon, 
-  modalContent, 
   screenSettingsOptions 
 } from "@/constants/lists";
 import { 
@@ -32,9 +34,17 @@ import {
   parseVideoSettings, 
   syncCameraOnly 
 } from "../utils";
-import { useGlobalContext } from "./useGlobalContext";
+import { ActionType, useGlobalContext } from "./useGlobalContext";
 
 export type SyncCameraKeys = Pick<VideoSettingsType, "displaySurface" | "camera">;
+
+type NoNameBeforeAction = Omit<BeforeModalActionType, 'name'>
+
+type NonNullPropertyValue<T>= {
+  [K in keyof NoNameBeforeAction]: K extends T ? NonNullable<NoNameBeforeAction[K]> : NoNameBeforeAction[K]
+}
+
+type SaveAfterLoadActionType = NonNullPropertyValue<'state'>
 
 const useRecordingFeatures = () => {
 
@@ -54,25 +64,26 @@ const useRecordingFeatures = () => {
   } = useScreenRecording()
 
   const {
+    modalOpen,
     openModal, 
     closeModal, 
-    actionResponse,
-    actionStatus,
     showModalError,
-    recordingState,
-    changeRecordingState,
-    changeModalContent,
-    action,
-    changeAction,
+    changeContentParent,
+    modalAction,
+    modalContentParent,
     successfulAction,
     actionTimeout,
     failedAction,
     beforeAction,
     ongoingAction,
-    resetAction
+    changeState,
+    syncModalContent,
+    actionTrue,
   } = useGlobalContext()
 
   const videoRef= useRef<HTMLVideoElement>(null);
+
+  const [videoPlaying, setVideoPlaying] = useState(false);
   
   //Settings
   const [videoSettings, setVideoSettings] = useState<VideoSettingsType>({
@@ -85,6 +96,7 @@ const useRecordingFeatures = () => {
   
   const [settingsGuide, setSettingsGuide] = useState('');
 
+  const [saveAfterLoadAction, setSaveAfterLoadAction] = useState<SaveAfterLoadActionType>({state: 'before', response: null})
 
   //Settings ------------
   const helpVideoSettings = useCallback((
@@ -106,7 +118,6 @@ const useRecordingFeatures = () => {
         camera: videoSettings.camera
       }
     )
-    console.log(syncSetting);
     if(syncSetting) helpVideoSettings(syncSetting[0], syncSetting[1]);
 
   },[videoSettings])
@@ -123,7 +134,6 @@ const useRecordingFeatures = () => {
       )
     }
   },[syncCamera]);
-
 
   const recordSettings = useMemo((): RecordSettingsType[] => [
     {
@@ -172,13 +182,9 @@ const useRecordingFeatures = () => {
   ])
 
   //modal-buttons and routing----------------------
-  const handleOpenModal = useCallback((content: React.ReactNode, buttons: ModalButton[], closeIcon: React.ReactNode) => {
-    openModal(
-      content,
-      buttons,
-      closeIcon
-    );
-    changeRecordingState('before')
+  const handleOpenModal = useCallback((content: Omit<OpenModalArgs, 'type'>) => {
+    openModal({type: 'record', closeIcon: content.closeIcon});
+    changeContentParent('record');
     beforeAction('check');
   },[]);
 
@@ -189,20 +195,83 @@ const useRecordingFeatures = () => {
 
   const goingToUploadAction = useCallback((UIActions: () => void): void => {
     UIActions();
-    successfulAction();
+    successfulAction('redirect');
   },[])
 
   //recording buttons ------------
+   //Device check function
+  const helpSettingsGuide = (device: DeviceType, checkResult: DeviceStatus ) => {
+    const capitalizedDevice = device.replace(device.charAt(0), device.charAt(0).toUpperCase())
+    if(checkResult === "no-permission"){
+      setSettingsGuide(`Please allow ${device} permission to proceed`);
+    } else {
+      setSettingsGuide(`${capitalizedDevice} not supported on this device. Try adjusting settings`);
+    }
+  }
+
+  const deviceCheckCondition = async (
+    condition: boolean, 
+    device: DeviceType
+  ): Promise<DeviceStatus> => {
+    if(condition) {
+      const checkResult = await checkDevice(device);
+      if(checkResult === 'no-permission' || 'no-support') {
+        helpSettingsGuide(device, checkResult);
+      }
+      return checkResult;
+    } else {
+      return 'unused';
+    };
+  }
+
+  //refactoring may not work well but needs refactoring
+  const handleCheckDevices = useCallback(async () => {
+    if(videoSettings.camera !== "no" || videoSettings.withMic) {
+      
+      changeState('check','ongoing')
+  
+      console.log('checking devices')
+  
+      const camCheckResponse = await deviceCheckCondition(videoSettings.camera !== 'no', 'camera')
+      
+      console.log(camCheckResponse)
+  
+      if(camCheckResponse === "no-support" || camCheckResponse === "no-permission") {
+          failedAction('check');
+          return
+        };
+      
+      const micCheckResponse = await deviceCheckCondition(videoSettings.withMic, 'microphone')
+  
+      console.log(micCheckResponse)
+  
+      if(micCheckResponse === "no-support" || micCheckResponse === "no-permission") {
+          failedAction('check');
+          return
+        };
+  
+      successfulAction('check');
+
+      actionTimeout(() => beforeAction('record'), 2000)
+    } else {
+      beforeAction('record');
+    };
+  }, [videoSettings])
+
+  const handleGoBack = useCallback(() => {
+    beforeAction('check')
+  },[])
+
   const handleStartRecording = useCallback(async ()=> {
     try {
-      ongoingAction('record')
+      changeState('record', 'ongoing')
       await startRecording(
         videoSettings, 
-        successfulAction
+        () => successfulAction('record')
       );
     }catch(error) {
       const message = error instanceof Error ? error.message : error;
-      failedAction();
+      failedAction('record');
       showModalError(message as string);
     }
   },[videoSettings])
@@ -210,9 +279,11 @@ const useRecordingFeatures = () => {
   const handleRecordAgain = useCallback(async ()=> {
     try {
       resetRecording();
-      changeRecordingState('before');
-      ongoingAction('record')
-      handleStartRecording();
+      ongoingAction('record');
+      await startRecording(
+        videoSettings, 
+        () => successfulAction('record')
+      );
     }catch(error) {
         const message = error instanceof Error ? error.message : error;
         showModalError(message as string);
@@ -225,12 +296,12 @@ const useRecordingFeatures = () => {
 
   const handleStopRecording = useCallback(() => {
     try {
-      changeRecordingState('after')
-      ongoingAction('load');
+      changeState('load', 'ongoing');
       stopRecording();
-      successfulAction();
+      successfulAction('load');
+      console.log(modalAction.load)
     } catch (error) {
-      failedAction();
+      failedAction('load');
     }
   },[])
 
@@ -238,7 +309,7 @@ const useRecordingFeatures = () => {
     beforeAction('redirect');
 
     if(!recordedBlob) {
-      failedAction();
+      failedAction('redirect');
       return;
     }
     const url= URL.createObjectURL(recordedBlob);
@@ -253,202 +324,107 @@ const useRecordingFeatures = () => {
         })
     )
     // setIsModalOpen(false);
-    changeAction({state: 'ongoing'});
+    changeState('redirect', 'ongoing');
   },[recordedBlob, recordingDuration])
 
   const handleBackToSettings = useCallback(() => {
     resetRecording();
     beforeAction('check');
-    changeRecordingState('before');
   },[])
 
-  const handleSaveRecordedVideo = useCallback(() => {
+  const changeSaveAfterLoad = useCallback((state: ActionStateType, response?: ActionResponseType) => {
+    setSaveAfterLoadAction(prev => {
+      return response ? {state, response} : {state, response: null};
+    })
+  },[])
+
+  const saveRecording = useCallback((
+    ongoingAction: () => void,
+    afterSuccessAction: () => void,
+    afterFailureAction: () => void,
+  ) => {
     if(!recordedBlob) return;
     try {
-      ongoingAction('save');
+      ongoingAction();
       const videoUrl = URL.createObjectURL(recordedBlob);
       downloadVideo(videoUrl);
-      successfulAction();
+      afterSuccessAction();
     }catch(error){
       const message = error instanceof Error ? error.message : 'Failed to download video' 
       showModalError(message)
-      failedAction();
-    }finally {
-      changeAction({type: 'load', state: 'after', response: 'successful'});
+      afterFailureAction();
     }
   },[])
+
+  const handleSaveAfterLoad = useCallback((failedFallback?: (name: Action, type: ActionType) => void) => {
+    saveRecording(
+      () => {
+        if(failedFallback) failedFallback('load', 'before');
+        changeSaveAfterLoad('ongoing');
+      },
+      () => {
+        changeSaveAfterLoad('after', 'successful');
+        actionTimeout(() => changeSaveAfterLoad('before'), 2000)
+      },
+      () => {
+        changeSaveAfterLoad('after', 'failed')
+        failedAction('save_record', 'ongoing')
+        if(videoPlaying)videoRef.current?.pause()
+        // resetAction();
+      },
+    );
+  },[saveRecording, changeSaveAfterLoad])
+
+  const handleSaveOnFailedRedirect = useCallback(() => {
+    if(saveAfterLoadAction.response === 'failed') {
+      handleSaveAfterLoad(successfulAction);
+      return;
+    }
+    saveRecording(
+      () => ongoingAction('save_record'),
+      () => {
+        successfulAction('save_record')
+        actionTimeout(() => successfulAction('load', 'before'), 2000);
+      },
+      () => failedAction('save_record')
+    );
+  },[saveRecording, ongoingAction, successfulAction, failedAction])
+
+  const handleGoToRecordedVideo = () => successfulAction('load', 'before')
   //------------------------------
 
-  //Device check function
-  const deviceCheckCondition = async (
-    condition: boolean, 
-    device: DeviceType
-  ): Promise<DeviceStatus> => {
-    if(condition) {
-      const checkResult = await checkDevice(device);
-      return checkResult;
-      
-    } else {
-      helpSettingsGuide(device, "unused")
-      return 'unused';
-    };
-  }
-
-  //refactoring may not work well but needs refactoring
-  const devicesCheck = async () => {
-    if(videoSettings.camera !== "no" || videoSettings.withMic) {
-      
-      changeAction({state: 'ongoing'})
-  
-      //might not work right
-      const checkFailed = (response: DeviceStatus) => {
-        if(response === "no-support" || response === "no-permission") {
-          failedAction();
-          return
-        };
-      }
-  
-      console.log('checking devices')
-  
-      const camCheckResponse = await deviceCheckCondition(videoSettings.camera !== 'no', 'camera')
-      
-      console.log(camCheckResponse)
-  
-      checkFailed(camCheckResponse)
-      
-      const micCheckResponse = await deviceCheckCondition(videoSettings.withMic, 'microphone')
-  
-      console.log(micCheckResponse)
-  
-      checkFailed(micCheckResponse)
-  
-      successfulAction();
-
-      actionTimeout(beforeAction('record'))
-
-    } else {
-      beforeAction('record');
-    };
-  }
-
-  const handleGoBack = () => resetAction()
-
-  // const recordingButtons = useMemo((): ModalButton[] => {
-  //   let recordingStateBtns: ModalButton[] = [];   
-    
-  //   if(recordingState === "before" && !showInstructions) {
-  //     recordingStateBtns = [
-  //       {
-  //         className:'btn-theme',
-  //         action: () => devicesCheck({
-  //           camera: videoSettings?.camera, 
-  //           withMic: videoSettings?.withMic
-  //         }),
-  //         text: "Continue",
-  //       },
-  //     ]
-  //   } else if (recordingState === "before" && showInstructions) {
-  //     recordingStateBtns = [
-  //       {
-  //         className:'btn-white',
-  //         action: () => setShowInstructions(false),
-  //         text: "Go Back"
-  //       },
-  //       {
-  //         className:'btn-theme',
-  //         action: handleStartRecording,
-  //         text: "Start Recording"
-  //       }
-  //     ]
-  //   } else if (recordingState === "ongoing") {
-  //     recordingStateBtns = [
-  //       {
-  //         className:'btn-destructive',
-  //         action: handleStopRecording,
-  //         text: "Stop Recording"
-  //       },
-  //     ]
-  //   } else if (recordingState === "after" && goToUpload === null) {
-  //     recordingStateBtns = [
-  //       {
-  //         className:'btn-white',
-  //         action: handleGoBack,
-  //         text: "Go Back"
-  //       },
-  //       {
-  //         className:'btn-white',
-  //         action: handleRecordAgain,
-  //         text: "Record Again"
-  //       },
-  //       {
-  //         className:'btn-theme',
-  //         action: handleGoToUpload,
-  //         src: ICONS.upload,
-  //         alt: "upload",
-  //         text: "Upload"
-  //       },
-  //     ]
-  //   } else if (recordingState === "after" && goToUpload === 'failed') {
-  //     recordingStateBtns = [
-  //       {
-  //         className:'btn-theme',
-  //         action: handleSaveRecordedVideo,
-  //         text: "Save Video"
-  //       },
-  //       {
-  //         className:'btn-theme',
-  //         action: handleGoToUpload,
-  //         src: ICONS.upload,
-  //         alt: "try again",
-  //         text: "Try again"
-  //       },
-  //     ] 
-  //   } else null;
-   
-  //   return recordingStateBtns;
-  // }, [
-  //   handleStartRecording, 
-  //   recordingState, 
-  //   handleStopRecording, 
-  //   handleGoBack, 
-  //   handleRecordAgain, 
-  //   handleGoToUpload, 
-  //   handleOpenModal,
-  //   showInstructions,
-  //   ICONS,
-  //   goToUpload
-  // ])
-
   useEffect(()=>{
-      if(!isRecording && !recordedVideoUrl) changeRecordingState('before')
       if(isRecording) {
-        changeRecordingState('ongoing');
-        resetAction();
+        beforeAction('load');
       };
-      if(recordedVideoUrl && !changeAction) changeRecordingState('after');
-  },[isRecording, recordedVideoUrl])
+  },[isRecording])
 
   return {
-    recordingState,
+    modalOpen,
     videoRef,
+    modalAction,
+    modalContentParent,
+    actionTrue,
     goingToUploadAction,
     handleOpenModal, 
     handleCloseModal,
     handleBackToSettings,
-    devicesCheck,
+    handleCheckDevices,
     handleStartRecording,
     handleStopRecording,
     handleGoBack,
     handleRecordAgain,
     handleGoToUpload,
-    handleSaveRecordedVideo,
+    handleSaveAfterLoad,
+    handleSaveOnFailedRedirect,
+    syncModalContent,
+    saveAfterLoadAction,
     recordedVideoUrl,
     selectedVideoSetting,
     settingsGuide,
     videoSettings,
     recordSettings,
-    actionResponse,
-    actionStatus,
+    setVideoPlaying,
     showModalError,
     handleTakeScreenShot,
     handlePauseResume,
