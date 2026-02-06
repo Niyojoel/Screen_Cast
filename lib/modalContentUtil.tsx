@@ -28,10 +28,9 @@ const parseContentNode = (
 export const getActionStateButtons = (
     action: NoNameModalActionType,
     failedButtons: ModalButton[],
-    beforeButtons: ModalButton[],
+    beforeButtons?: ModalButton[] | null,
     successButtons?: ModalButton[],
-) => {
-
+): ModalButton[] => {
     if(action.state ==='after' && action.response === 'successful' && successButtons) {
         return successButtons;
     }
@@ -39,8 +38,10 @@ export const getActionStateButtons = (
     if(action.state ==='after' && action.response === 'failed') {
         return failedButtons;
     }
-    
-    return beforeButtons
+
+    if(action.state ==='before' && beforeButtons) return beforeButtons
+
+    return [];
 } 
 
 export const getActionStateContent = (
@@ -78,12 +79,6 @@ export const getModalButton = (text: string, action: () => void, className?: str
         className: className || "btn-theme",
         icon
     }
-}
-
-export const getContentByAction = (
-    contents: ModalContentByActionArg[],
-): ModalContentType | ModalContentTypeAdapted => {
-    return contents.find(content => content) as ModalContentType | ModalContentTypeAdapted
 }
 
 export const contentClassNameByState = (stateTrue: boolean) => stateTrue ? 'show' : 'no-show'

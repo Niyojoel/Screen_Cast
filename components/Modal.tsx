@@ -1,9 +1,9 @@
 'use client'
 import { useGlobalContext } from '@/lib/hooks/useGlobalContext';
-import {ActionButton, Alert, Logo} from '.';
+import {ActionButton, Alert, FullView, Logo} from '.';
 
 const Modal = () => {
-  const {modalOpen, modalContent, closeModal, showModalError: setError, modalError: error} = useGlobalContext();
+  const {modalOpen, modalContent, exitModal, closeModal} = useGlobalContext();
 
   const {closeIcon, isOpen} = modalOpen
 
@@ -12,8 +12,8 @@ const Modal = () => {
   return modalContent.body && (
     <>
     <main className="modal">
-    <div className="modal-overlay" onClick={closeModal}/>
-    <Alert error={error} setError={setError} className='modal-error-alert'/>
+      <FullView/>
+      <div className="modal-overlay" onClick={closeModal}/>
       <section className='modal-content'>
         <div className="dialog-box">
           <div className="header-constraint">
@@ -21,7 +21,7 @@ const Modal = () => {
           </div>
           <figure className='dialog-header'>
               <Logo inactive />
-              <button className='modal-home-btn' onClick={closeModal}>
+              <button className='modal-home-btn' onClick={exitModal}>
                 {closeIcon}
               </button>
           </figure>

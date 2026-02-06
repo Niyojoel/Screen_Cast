@@ -1,5 +1,6 @@
 import { ClassValue } from "clsx";
 import { ReactNode } from "react";
+import { RecordingTimerType } from "./lib/hooks/useRecordingFeatures";
 
 declare interface User {
   name: string;
@@ -50,7 +51,6 @@ declare interface FileInputProps {
   inputRef: React.RefObject<HTMLInputElement | null>;
   previewBoxRef: React.RefObject<HTMLDivElement | null>;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  handleError: (message:string)=> void;
   onFileDrop: (e: DragEvent<HTMLElement>)=> void;
   onReset: () => void;
   type: "video" | "image";
@@ -71,15 +71,39 @@ declare interface ThumbnailSuggestionsProps {
 declare interface ImagesConsoleProps {
   imagesArr: ImagesArrayType[];
   className?: ClassValue;
-  onSelect: (id: string) => void;
-  removeFn: (id: string) => void;
+  cardClass?: ClassValue;
+  onSelect?: (id: string) => void;
+  onRemove: (id: string) => void;
+  onClick: (id: string) => void;
+  onSave?: (id: string) => void;
 }
 
 declare interface ImagesArrayType {
-  base64: string | ArrayBuffer,
-  fileName: string; 
-  fileType: string;
+  url: string | ArrayBuffer,
+  name: string; 
+  type: string;
+  selected?: boolean;
 } 
+
+declare interface CanvasProcessor {
+  stream: MediaStream; 
+  stopLoop: () => void; 
+  pause: () => void;
+  resume: () => void;
+  takeScreenShot: () => Promise<File>;
+  end: () => void
+}
+
+declare interface VideoDisplay {
+  video: HTMLVideoElement, 
+  width?: number | undefined, 
+  height?: number | undefined
+}
+
+declare interface CanvasDisplay {
+  ctx: CanvasRenderingContext2D, 
+  canvas: HTMLCanvasElement
+}
 
 declare interface TranscriptEntry {
   time: string;
@@ -361,6 +385,7 @@ declare type OptionsTriggerProps = {
   activeOption: DropdownOptionsType,
   triggerIcon?: React.ReactNode;
   className?: string;
+  isOpen: boolean;
   disabled?: boolean;
 }
 
@@ -405,15 +430,17 @@ type DeviceStatus = "passed" | "no-permission" | 'no-support' | "unchecked" | 'u
 
 type ModalType = 'record' | 'upload' | 'post';
 
-type ParentContentType = 'record' | 'generate' 
+type ParentContentType = 'record' | 'thumbnail' | 'delete'
 
 type RecordAction = 'check' | 'record' | 'load' | 'redirect' | 'save_record'
 
-type UploadAction = GenerateAction | 'edit'
+type UploadAction = ThumbnailAction | 'edit'
 
-type GenerateAction =  'generate' | 'add_to_video' | 'save_thumbnail' 
+type ThumbnailAction =  'generate' | 'add' | 'save_thumbnail'
 
-type PostAction = 'delete' | 'download'
+type DeleteAction = 'delete' | 'to_profile'
+
+type PostAction = DeleteAction | 'download'
 
 type Action = RecordAction | UploadAction | PostAction;
 
@@ -446,15 +473,19 @@ declare type VideoSettingsType = {
   withMic: boolean;
 }
 
+declare type StreamSettingsType = VideoSettingsType & {
+  systemAudio: boolean
+}
+
 declare type RecordingDialogContentBodyProps = {
   modalParentContent: ActionStatusType | null,
   recordedVideoUrl: string,
   goToUpload: GoToUploadState | null,
   videoRef: RefObject<HTMLVideoElement | null>,
-  settingsGuide : string,
+  failedCheck : string,
   showInstructions : boolean,
   videoSettings : VideoSettingsType,
-  selectedVideoSetting : VideoSettingsType & {systemAudio: boolean},
+  streamSettings : VideoSettingsType & {systemAudio: boolean},
   recordSettings: RecordSettingsType[],
   actionResponse: "failed" | "successful" | null;
 }
@@ -477,6 +508,7 @@ declare interface BunnyRecordingState {
   recordedBlob: Blob | null;
   recordedVideoUrl: string;
   recordingDuration: number;
+  recordingStatus: RecordingState;
 }
 
 declare interface ExtendedMediaStream extends MediaStream {

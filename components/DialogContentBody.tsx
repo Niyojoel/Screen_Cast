@@ -15,7 +15,7 @@ const DialogContentBody = ({
       {(headerNode && typeof headerNode === 'string') || icon ? (
         <p className={cn("flex items-center gap-2 text-center")}>
             {icon && <i className="text-pink-100">{icon}</i>}
-            {headerNode && <span className="">{headerNode}</span>}
+            {headerNode && <span className="font-medium">{headerNode}</span>}
         </p>
       ): headerNode && typeof headerNode === 'object' 
         ? headerNode

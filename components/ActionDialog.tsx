@@ -10,8 +10,10 @@ export const FailedActionDialog = ({
     <DialogContentBody
         icon = {DIALOG_ICONS.failed}
         headerNode = {header || 'Something went wrong'}
-        subNode = {text ? `${text}. Try again` : 'Try again'}
+        className={className}
+        subNode = {text ? text : 'Try again'}
     />
+
 )
 
 export const SuccessActionDialog = ({
@@ -22,13 +24,17 @@ export const SuccessActionDialog = ({
     <DialogContentBody
         icon = {DIALOG_ICONS.checked}
         headerNode={header}
-        subNode = {text}
+        className={className}
+        subNode = {text && text}
     />
+
 ) : (
     <DialogContentBody
         icon = {DIALOG_ICONS.checked}
+        className={className}
         subNode = {text}
     />
+
 )
 
 export const OngoingActionDialog = ({
@@ -37,8 +43,10 @@ export const OngoingActionDialog = ({
 }: {text: string, className?: string}) =>  (
     <DialogContentBody
         icon = {DIALOG_ICONS.loader}
+        className={className}
         subNode = {text}
     />
+
 )
 
 export const WarningActionDialog = ({
@@ -49,17 +57,19 @@ export const WarningActionDialog = ({
     <DialogContentBody
         icon = {DIALOG_ICONS.alert}
         headerNode={header}
+        className={className}
         subNode = {text}
     />
+
 )
 
-export const DialogListItem = ({text}: {text: string | null}) => {
+export const DialogListItem = ({text, icon}: {text: string | null, icon?: React.ReactElement}) => {
 
     if(!text) return null;
 
     return (
     <DialogContentBody
-        icon={<CheckCircleIcon size={16} stroke="#ff4393"/>}
+        icon={icon || <CheckCircleIcon size={16} stroke="#ff4393"/>}
         headerNode={text}
     />
     ) 

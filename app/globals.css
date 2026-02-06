@@ -328,18 +328,23 @@
   }
 
   .images-console {
-    @apply relative flex items-center gap-2.5;
+    @apply relative flex flex-row items-center gap-3;
 
-    div {
-      @apply relative rounded-xl bg-gray-50 w-[160px] h-30 hover:scale-[101%] cursor-pointer transition-all overflow-hidden;
+    .image-class {
+      @apply relative h-full rounded-xl bg-gray-50 w-[170px] hover:scale-[101%] cursor-pointer transition-all overflow-hidden;
 
-      .remove-image {
-        @apply absolute top-2 right-2 size-6 p-1.5 z-[5] bg-gray-25;
+      .btns {
+        @apply absolute top-2 z-[5] right-2 h-fit w-fit flex items-center gap-2;
+    
+        button {
+          @apply bg-gray-25 text-white p-1 w-fit h-fit flex items-center justify-center rounded-full opacity-80 hover:opacity-100 cursor-pointer;
+        }
       }
 
       img {
         @apply object-cover;
       }
+
     }
   }
   
@@ -367,14 +372,14 @@
     }
 
     .gap {
-      @apply gap-2.5;
+      @apply gap-3;
     }
 
     .thumbnail-select {
       @apply w-full flex items-center overflow-x-auto scroll-smooth;
 
       figure {
-        @apply relative w-full md:min-w-[250px] min-w-[200px] md:flex-row flex-col h-30 gap-2.5;
+        @apply relative w-full md:min-w-[220px] min-w-[200px] md:flex-row flex-col h-30 gap-2.5;
       }
     }
     
@@ -397,11 +402,11 @@
         @apply object-contain;
       }
 
-      .video-btns {
-        @apply absolute top-2 right-2 h-fit w-fit flex items-center gap-2;
-        
+      .preview-btns {
+        @apply absolute top-2 right-5 h-fit w-fit flex items-center gap-2;
+
         button {
-          @apply  bg-gray-20 text-white p-2 rounded-full opacity-90 hover:opacity-100 cursor-pointer;
+          @apply bg-gray-20 text-white p-2 rounded-full opacity-90 hover:opacity-100 cursor-pointer;
         }
       }
 
@@ -491,7 +496,7 @@
     }
 
     .dialog-box {
-      @apply relative bg-white rounded-20 flex flex-col gap-2 shadow-lg p-6 sm:w-[400px] w-[90%] max-w-[420px] z-20;
+      @apply relative bg-white rounded-20 flex flex-col gap-2 shadow-lg p-6 sm:w-[380px] w-[90%] max-w-[380px] z-20;
 
       .header-constraint {
         @apply absolute inset-0 bg-transparent select-none rounded-20 -z-10 overflow-hidden;
@@ -510,13 +515,13 @@
       }
 
       .dialog-content {
-        @apply flex flex-col gap-2;
+        @apply min-h-60 flex flex-col gap-2;
 
         section {
-          @apply w-full rounded-18 flex min-h-52 justify-center items-center;
+          @apply w-full flex-1 rounded-18 flex justify-center items-center;
 
           .content-body {
-            @apply flex flex-col gap-3.5 justify-center;
+            @apply flex flex-col gap-3 justify-center;
 
             .header {
               @apply flex items-center gap-2 text-center;
@@ -561,11 +566,6 @@
   .recording-body {
     @apply w-full flex-col;
 
-    .recording-features {
-      @apply w-full flex flex-col gap-4;
-
-    }
-
     .video-wrapper {
       @apply relative;
 
@@ -600,7 +600,7 @@
   .recording-settings {
 
     .settings-col-grid {
-      @apply w-full grid grid-cols-3 gap-x-1.5 gap-y-2;
+      @apply w-full grid grid-cols-5 gap-x-1.5 gap-y-2;
       
       .setting {
         @apply w-full list-none;

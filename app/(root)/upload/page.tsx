@@ -3,25 +3,21 @@
 import {
   Alert, 
   DialogContentBody, 
-  FailedActionDialog, 
   FileInput, 
   FormField, 
-  OngoingActionDialog
 } from "@/components"
 import { 
   MAX_THUMBNAIL_SIZE, 
   MAX_VIDEO_SIZE, 
   visibilities 
 } from "@/constants";
-import { useFileInput } from "@/lib/hooks/useFileInput";
+import { useFileInput } from "@/lib/hooks/useUpload/useFileInput";
 import {
   ChangeEvent, 
   FormEvent, 
-  memo, 
-  useCallback, 
   useEffect, 
-  useMemo,
-  useState
+  useCallback,
+  useState,
 } from "react";
 import { useRouter } from "next/navigation";
 import {LoaderPinwheel, X} from "lucide-react";
@@ -30,40 +26,40 @@ import {
   getVideoUploadUrl, 
   saveVideoDetails,
 } from "@/lib/actions/video";
-import { formValues, uploadFileToBunny } from "@/lib/utils";
-import { 
-  Action,
-  ActionStateType,
-  ModalButton, 
+import { base64ToFile, fileToBase64, formValues, generateThumbnail, uploadFileToBunny } from "@/lib/utils";
+import {  
+  ImagesArrayType,
   ModalContentType, 
   SelectOptionType, 
+  UploadAction, 
   VideoFormValues
 } from "@/index";
-import { DIALOG_ICONS } from "@/constants/lists";
-import { useGlobalContext } from "@/lib/hooks/useGlobalContext";
-import {getContentByAction, getModalButton} from "@/lib/modalContentUtil";
+import { DIALOG_ICONS, exitContent, successfulRedirectContent } from "@/constants/lists";
+import { NoNameModalActionType, useGlobalContext } from "@/lib/hooks/useGlobalContext";
+import {getActionStateContent, getModalButton} from "@/lib/modalContentUtil";
 import Image from "next/image";
 
 const page = () => {
   const router = useRouter();
   const {
     modalOpen,
-    modalError,
+    actionError,
     modalContentParent,
     changeContentParent,
-    showModalError,
+    logActionError,
     openModal, 
+    cancelExit,
     closeModal, 
+    resetModal,
+    exit,
     modalAction,
     changeAction,
     successfulAction,
-    actionTimeout,
     failedAction,
     beforeAction,
     ongoingAction,
     syncModalContent,
     actionTrue,
-    actionContentWrapper,
     resetAction,
     changeState
   } = useGlobalContext()
@@ -83,48 +79,117 @@ const page = () => {
   const thumbnail = useFileInput(MAX_THUMBNAIL_SIZE);
   
   const [captureTime, setCaptureTime] = useState(1)
+  const [generatedThumbnail, setGeneratedThumbnail] = useState<ImagesArrayType | null>({
+    url: '',
+    name: '',
+    type: ''
+  })
+  const [failedText, setFailedText] = useState<string>('')
+
+  const onErrorHandle = (action: UploadAction, error: Error) => {
+    const message = error instanceof Error ? error.message : `Failed to ${action} thumbnail`;
+    setFailedText(message);
+    failedAction(action);
+    console.error(error)
+  } 
 
   const handleOnGenerateThumbnail = useCallback(async ()=> {
     try {
-      changeState('ongoing');
+      changeState('ongoing', 'generate');
       //split the process. just generate thumbnail here and load
-      if(video.file) await video.handleOnGenerate(captureTime, video.file)
-      successfulAction();
-    }catch(error){
-      const message = error instanceof Error ? error.message : error;
-      failedAction();
-      console.error(error)
-    }
-  }, [video, captureTime])
 
-  const onThumbnailModal = () => {
-    if(generateContent) openModal({type: 'upload', ...generateContent})
-    changeContentParent('generate');
-    beforeAction('generate');
-  }
+      if(!video.file) return;
+
+      const imageFile = await generateThumbnail(captureTime, video.file);
+      console.log(imageFile)
+      const url = await fileToBase64(imageFile);
+
+      setGeneratedThumbnail({
+        url,
+        name: imageFile.name,
+        type: imageFile.type
+      })
+      
+      successfulAction('generate');
+    }catch(error){
+      onErrorHandle('generate', error as Error)
+    }
+  }, [video, captureTime, fileToBase64, generateThumbnail, failedAction, successfulAction])
+
+  //check how it works
+  const onOpenModal = useCallback(() => {
+    console.log('opening modal')
+    if(modalOpen.type === 'upload' && modalAction.name) {
+      openModal();
+    } else {
+      openModal({type: 'upload'})
+      changeContentParent('thumbnail');
+      beforeAction('generate');
+    }
+  },[beforeAction, changeContentParent, openModal, modalOpen, modalAction])
 
   const handleGenerateAgain = useCallback(() => {
     beforeAction('generate');
-  },[])
+  },[beforeAction])
   
   const handleSaveThumbnail = useCallback(() => {
-    //to be implemented
+    try {
+      //to be implemented
+      //first implement db
+      //create a store for saved shots
+      //add image to store
+      throw new Error('This feature is not yet available')
+    } catch (error) {
+      error instanceof Error && setFailedText(error.message);
+      failedAction('save_thumbnail');
+    }
   }, [])
 
   const handleGoToEdit = () => {
+    try {
+      throw new Error('This feature is not yet available')
+    } catch (error) {
+      error instanceof Error && setFailedText(error.message);
+      failedAction('edit');
+    }
     //redirect to some video editing application with video loaded in
   }
 
-  const handleAddThumbnail = () => {
-    //just passes generated thumbnail file to fileInput()
-    actionTimeout(successfulAction('generate', 'before'), 2000)
+  const handleAddThumbnail = async () => {
+    try {
+      ongoingAction('add');
+      //just passes generated thumbnail file to fileInput()
+      if(!generatedThumbnail) return;
+  
+      const file = await base64ToFile(generatedThumbnail);
+
+      //look out for the effect of using thumbnail
+      thumbnail.handleUseGenerated(file);
+
+      successfulAction('add');
+
+      setTimeout(() => {
+        successfulAction('generate', 'before')
+      }, 2000)
+
+    } catch (error) {
+      onErrorHandle('add' , error as Error);
+    }
   }
 
-  const generateContent = useMemo((): ModalContentType | null => {
-  return actionContentWrapper(
-    'generate',
+  const onCaptureTimeChange = (e: ChangeEvent<HTMLInputElement>) => {setCaptureTime(Number(e.target.value))};
+
+  const generateContent = useCallback((
+    action: NoNameModalActionType,
+    captureTime: number,
+    imageUrl: string,  
+    failedText: string,
+  ): ModalContentType | null => {
+  return action ? getActionStateContent(
+    action.state,
+    action.response,
     {
-      node: 'Failed to generate thumbnail',
+      node: failedText,
       buttons: [
         getModalButton('Try again', handleOnGenerateThumbnail)
       ]
@@ -137,8 +202,8 @@ const page = () => {
         <DialogContentBody
           subNode={
             //add styles later
-            <div className="w-full">
-              <Image src ={"/assets/images/dummy.jpg"} alt= "generated_thumbnail" fill/>
+            imageUrl && <div className="w-full h-30 ">
+              <Image src ={imageUrl} alt= "generated_thumbnail" fill className="object-contain"/>
             </div>}
         />
       ),
@@ -152,7 +217,6 @@ const page = () => {
       node: (
         <DialogContentBody
           headerNode = 'Generate a Thumbnail from Video'
-          icon = {DIALOG_ICONS.alert}
           subNode = {
             <span className="thumbnail-generate">
               <pre>
@@ -163,7 +227,7 @@ const page = () => {
                   id="gen" 
                   hidden={false} 
                   value={captureTime} 
-                  onChange={(e) => setCaptureTime(Number(e.target.value))}
+                  onChange={onCaptureTimeChange}
                 />
               </pre>
             </span>
@@ -174,79 +238,112 @@ const page = () => {
         getModalButton('Generate', handleOnGenerateThumbnail)
       ]
     },
-  )
-},[actionContentWrapper, getModalButton, handleOnGenerateThumbnail, handleGenerateAgain, handleSaveThumbnail, handleAddThumbnail])
+  ): null
+  },[getActionStateContent, getModalButton, handleOnGenerateThumbnail, handleGenerateAgain, handleSaveThumbnail, handleAddThumbnail, onCaptureTimeChange])
 
-const saveContent = useMemo((): ModalContentType | null => {
-  return actionContentWrapper(
-    'save_thumbnail',
-    {
-        node: "Failed to save thumbnail",
-        buttons: [
-            getModalButton('Retry', () => handleSaveThumbnail)
-        ]
-    },
-    {
-        node: "Saving thumbnail..."
-    },
-    {
-        node: 'Thumbnail saved to your profile collection',
-        buttons: [getModalButton('Ok', () => successfulAction('generate'))]
-    },
-  )
-}, [actionContentWrapper, handleSaveThumbnail, getModalButton, successfulAction,])
+  const saveContent = useCallback((action: NoNameModalActionType): ModalContentType | null => {
+    return action ? getActionStateContent(
+      action.state,
+      action.response,
+      {
+          node: "Failed to save thumbnail",
+          buttons: [
+              getModalButton('Retry', () => handleSaveThumbnail)
+          ]
+      },
+      {
+          node: "Saving thumbnail..."
+      },
+      {
+          node: 'Thumbnail saved to your profile collection',
+          buttons: [getModalButton('Ok', () => successfulAction('generate'))]
+      },
+    ): null
+  }, [getActionStateContent, handleSaveThumbnail, getModalButton, successfulAction,])
 
-const addContent = useMemo((): ModalContentType | null=> {
-  return actionContentWrapper(
-    'add_to_video',
-    {
-        node: "Thumbnail file could not be accessed",
-        buttons: [
-            getModalButton('Retry', () => handleAddThumbnail)
-        ]
-    },
-    {
-        node: "Processing thumbnail file..."
-    },
-    {
-        node: 'Thumbnail added to video',
-        buttons: [getModalButton('Exit', closeModal)]
-    },
-  )
-}, [actionContentWrapper, handleAddThumbnail, getModalButton, closeModal])
+  const addContent = useCallback((
+    action: NoNameModalActionType,
+    failedText: string
+  ): ModalContentType | null=> {
+    return action ? getActionStateContent(
+      action.state,
+      action.response,
+      {
+          node: failedText,
+          buttons: [
+              getModalButton('Retry', handleAddThumbnail)
+          ]
+      },
+      {
+          node: "Processing thumbnail file..."
+      },
+      {
+          node: 'Thumbnail added to video',
+          buttons: [getModalButton('Exit', closeModal)]
+      },
+    ): null
+  }, [getActionStateContent, handleAddThumbnail, getModalButton, closeModal])
 
-const generateThumbnailContent = useMemo((): ModalContentType | null => {
-  return modalContentParent === 'generate' ? getContentByAction ([
-      generateContent,
-      saveContent,
-      addContent
-    ] 
-  ) as ModalContentType : null
-}, [actionTrue, getContentByAction])
+  const editContent = useCallback((
+    action: NoNameModalActionType,
+    failedText: string
+  ): ModalContentType | null => {
+    return action ? getActionStateContent(
+      action.state,
+      action.response,
+      {
+          node: failedText || "Failed to load editing features",
+          buttons: [
+              getModalButton('Retry', () => handleGoToEdit)
+          ]
+      },
+      {
+          node: "Accessing editing features..."
+      },
+      null,
+    ): null
+  }, [getActionStateContent, handleGoToEdit, getModalButton])
 
-const editContent = useMemo((): ModalContentType | null => {
-  return actionContentWrapper(
-    'edit',
-    {
-        node: "Failed to load editing features",
-        buttons: [
-            getModalButton('Retry', () => handleGoToEdit)
-        ]
-    },
-    {
-        node: "Accessing editing features..."
-    },
-    null,
-  )
-}, [actionContentWrapper, handleGoToEdit, getModalButton])
+  //generic content
+  const exitModalContent = useCallback((action: boolean): ModalContentType | null => exitContent(resetModal, cancelExit, action)
+  ,[resetModal, cancelExit, exitContent])
 
-const uploadContent = useMemo((): ModalContentType => {
-  return getContentByAction ([
-      generateThumbnailContent,
-      editContent
-    ]
-  ) as ModalContentType;
-}, [actionTrue, getContentByAction, editContent, generateThumbnailContent])
+  const redirectedContent = useCallback((action: boolean): ModalContentType | null => successfulRedirectContent(resetModal, action),[resetModal, successfulRedirectContent])
+
+  //setting upload modal content
+  useEffect(() => {
+    let content: ModalContentType | null = null;
+
+    const redirected: boolean = (modalAction?.redirect?.state === 'after' && modalAction?.redirect?.response === 'successful')
+
+    console.log(modalAction)
+    
+    if(redirected) {
+      content = redirectedContent(redirected)
+    } else if(exit) {
+      content = exitModalContent(exit)
+    } else if(modalAction.name === 'generate' && generatedThumbnail) {
+      content = generateContent(
+        modalAction?.generate, 
+        captureTime,
+        generatedThumbnail.url as string, 
+        failedText
+      )
+    } else if(modalAction.name === 'save_thumbnail') {
+      content = saveContent(modalAction?.save_thumbnail)
+    } else if(modalAction.name === 'add') {
+      content = addContent(modalAction?.add, failedText)
+    } else if(modalAction.name === 'edit') {
+      content = editContent(modalAction?.edit, failedText)
+    } 
+    
+    console.log(content)
+    if(content) syncModalContent('upload', content);
+
+  }, [modalAction, exit, generatedThumbnail, failedText, captureTime, modalOpen])
+
+  //resetting failedText on action change
+  useEffect(() => setFailedText(''),[modalAction.name]);
 
   //Getting video duration
   useEffect(()=> {
@@ -255,45 +352,71 @@ const uploadContent = useMemo((): ModalContentType => {
 
   useEffect(() => {
     //Stored recorded video check on upload page and filling into video file input
-    const checkForRecordedVideo = async()=> {
-      try {
-        //close and reset modal action and content from recording on redirect if they exist
-        closeModal()
+    const inputChange = (
+      type: typeof video | typeof thumbnail,
+      file: File
+    ) => {
+      if(type.inputRef.current) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        type.inputRef.current.files = dataTransfer.files;
 
+        const event = new Event('change', {bubbles: true});
+
+        type.inputRef.current.dispatchEvent(event);
+        type.handleFileChange({
+          target: {files: dataTransfer.files}
+        } as ChangeEvent<HTMLInputElement>)
+      }
+    }
+    const checkForRecordedVideo = async()=> {
+      try {  
         const storedVideo = sessionStorage.getItem('recordedVideo');
 
         if(!storedVideo) return;
 
-        const {url, name, type, duration} = JSON.parse(storedVideo);
-        const blob = await fetch(url).then(res=> res.blob());
-        const file = new File([blob], name, {type, lastModified: Date.now()})
+        successfulAction('redirect')
+        setTimeout(closeModal, 2000);
 
-        if(video.inputRef.current) {
-          const dataTransfer = new DataTransfer();
-          dataTransfer.items.add(file);
-          video.inputRef.current.files = dataTransfer.files;
+        try {
+          const {url, name, type, duration} = JSON.parse(storedVideo);
+          const blob = await fetch(url).then(res=> res.blob());
+          const videoFile = new File([blob], name, {type, lastModified: Date.now()})
+  
+          inputChange(video, videoFile);
 
-          const event = new Event('change', {bubbles: true});
-
-          video.inputRef.current.dispatchEvent(event);
-          video.handleFileChange({
-            target: {files: dataTransfer.files}
-          } as ChangeEvent<HTMLInputElement>)
+          if(duration) setVideoDuration(duration);
+  
+          sessionStorage.removeItem("recordedVideo");
+  
+          URL.revokeObjectURL(url);
+        } catch {
+          throw new Error('Error loading recorded video')
         }
 
-        if(duration) setVideoDuration(duration);
 
-        sessionStorage.removeItem("recordedVideo");
+        //check for selected screenshot intended to be used as thumbnail
+        const selectedShot = sessionStorage.getItem('selectedShot');
 
-        URL.revokeObjectURL(url);
+        if(!selectedShot) return;
+        
+        try {
+          const shot = JSON.parse(selectedShot);
+          const thumbnailFile = await base64ToFile(shot);
+          inputChange(thumbnail, thumbnailFile);
+          sessionStorage.removeItem("selectedShot");
+        } catch {
+          throw new Error('Error loading selected thumbnail')
+        }
 
       } catch (error) {
-        console.error(error, "Error loading recorded video")
-        setError("Error loading recorded video")
+        console.error(error);
+        error instanceof Error && setError(error.message)
       }
     };
+
     checkForRecordedVideo()
-  }, [video, closeModal])
+  }, [/*video, thumbnail*/])
 
   //storing form input values to session storage on change
   useEffect(()=> {
@@ -312,11 +435,6 @@ const uploadContent = useMemo((): ModalContentType => {
     
     if(storedFormValues) setFormData(prev => ({...prev, ...storedFormValues}))
   },[])
-
-  //setting upload modal content
-  useEffect(() => {
-    if(uploadContent) syncModalContent('upload', uploadContent)
-  },[uploadContent])
 
   const visibilityInputChange =(option: SelectOptionType) => {
     const value = option.value;
@@ -436,15 +554,15 @@ const uploadContent = useMemo((): ModalContentType => {
           type="video"
           accept="video/*"
           file={video.file}
+          fileChangeError={video.fileError}
+          logError={video.logFileError}
           previewUrl={video.previewUrl}
           inputRef={video.inputRef}
           onChange={video.handleFileChange}
           onReset={video.resetFile}
-          handleError={setError}
           onFileDrop = {video.handleFileDrop}
           previewBoxRef={video.previewBoxRef}
-          onOpenModal={onThumbnailModal}
-          handleOnGenerate={thumbnail.handleOnGenerate}
+          onOpenModal={onOpenModal}
         /> 
         <FileInput
           id="thumbnail"
@@ -452,11 +570,12 @@ const uploadContent = useMemo((): ModalContentType => {
           type="image"
           accept="image/*"
           file={thumbnail.file}
+          fileChangeError={thumbnail.fileError}
+          logError={thumbnail.logFileError}
           previewUrl={thumbnail.previewUrl}
           inputRef={thumbnail.inputRef}
           onChange={thumbnail.handleFileChange}
           onReset={thumbnail.resetFile}
-          handleError={setError}
           onFileDrop = {thumbnail.handleFileDrop}
           previewBoxRef={thumbnail.previewBoxRef}
           previousThumbnails = {thumbnail.previousThumbnails}

@@ -8,26 +8,42 @@ import {
   cleanupRecording,
   createRecordingBlob,
   calculateRecordingDuration,
-  getCanvasStreams,
   getTrackSetting,
   addTrack,
   streamMonitor,
   killMediaStreams,
+  fileToBase64,
+  generateScreenShotName,
+  getCanvasProcessor,
+  formatTimer,
 } from "@/lib/utils";
-import { ActionResponseType, ActionStateType, BunnyRecordingState, DisplaySurfaceOptions, ExtendedMediaStream, ImagesArrayType, VideoSettingsType } from "@/index";
+import {BunnyRecordingState, CanvasProcessor, DisplaySurfaceOptions, ExtendedMediaStream, ImagesArrayType, StreamSettingsType, VideoSettingsType } from "@/index";
 
 export const useScreenRecording = () => {
+
+  const COUNT_LIMIT = 60;
+  let seconds = 0;
+  let minutes = 0;
+  let hour = 0
+  let countInterval: number | null = null; 
 
   const [state, setState] = useState<BunnyRecordingState>({
     isRecording: false,
     recordedBlob: null,
     recordedVideoUrl: "",
     recordingDuration: 0,
+    recordingStatus: 'inactive',
   });
-  const [screenshots, setScreenshots] = useState<ImagesArrayType[]>([])
-  const [recordingStatus, setRecordingStatus] = useState<'idle' | 'recording' | 'pause'>('idle')
 
-  const [selectedVideoSetting, setSelectedVideoSetting] = useState<VideoSettingsType & {systemAudio: boolean}>({
+  const [recordingTimer, setRecordingTimer] = useState({
+    hour: '', 
+    minutes: '00', 
+    seconds: '00'
+  })
+
+  const [screenShots, setScreenShots] = useState<ImagesArrayType[]>([])
+
+  const [streamSettings, setStreamSettings] = useState<StreamSettingsType>({
     cursor: "always",
     displaySurface: "monitor",
     camera: 'no',
@@ -37,6 +53,8 @@ export const useScreenRecording = () => {
   })
 
   const [isPreviewing, setIsPreviewing] = useState(false);
+
+  const [capture, setCapture] = useState<ImagesArrayType | null>(null);
   
   const [isFlashing, setIsFlashing] = useState(false);
 
@@ -46,8 +64,7 @@ export const useScreenRecording = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const startTimeRef = useRef<number | null>(null);
-  const drawIntervalRef = useRef<() => void>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const canvasProcessorRef = useRef<CanvasProcessor | null>(null)
 
   useEffect(() => {
     return () => {
@@ -61,6 +78,53 @@ export const useScreenRecording = () => {
       audioContextRef.current = null;
     };
   }, [state.recordedVideoUrl]);
+
+  const updateTimer = () => {
+    console.log(seconds, minutes)
+    if (seconds < COUNT_LIMIT) {
+      seconds ++;
+    } 
+    
+    if (seconds === COUNT_LIMIT) {
+      minutes ++;
+      seconds = 0;
+    }
+
+    if(minutes === COUNT_LIMIT) {
+      hour ++;
+      minutes = 0;
+    }
+
+    setRecordingTimer({
+      hour: formatTimer(hour), 
+      minutes: formatTimer(minutes), 
+      seconds: formatTimer(seconds)
+    })
+  };
+
+  const startTimer = () => {
+    countInterval = window.setInterval(updateTimer, 1000);
+
+    clearInterval(countInterval);
+  }
+
+  const resetTimer = () => {
+    clearInterval(countInterval as number);
+    
+    seconds = 0;
+    minutes = 0;
+    hour = 0;
+
+    setRecordingTimer({
+      hour: '', 
+      minutes: '00', 
+      seconds: '00'
+    })
+  }
+
+  const pauseTimer = () => {
+    clearInterval(countInterval as number)
+  }
 
   const handleRecordingStop = () => {
     const { blob, url } = createRecordingBlob(chunksRef.current);
@@ -77,19 +141,21 @@ export const useScreenRecording = () => {
     }));
   };
 
-  let canvasDrawInterval: NodeJS.Timeout | null = null;
-
   const startRecording = async (
     videoSettings: VideoSettingsType, 
-    onBrowserDialogPopUp: () => void
+    onBrowserDialogComplete: () => void,
+    onBrowserDialogCancelled: () => void
   )=> {
-    setSelectedVideoSetting(prev => ({...prev, ...videoSettings}))
+    setStreamSettings(prev => ({...prev, ...videoSettings}))
     console.log(videoSettings)
 
     try {
       stopRecording();
+      setScreenShots([])
 
-      const streams = await getMediaStreams(videoSettings, onBrowserDialogPopUp);
+      const streams = await getMediaStreams(videoSettings);
+
+      onBrowserDialogComplete();
 
       const {
         displayStream, 
@@ -98,6 +164,7 @@ export const useScreenRecording = () => {
       } = streams;
 
       console.log({displayStream, userMediaStream, hasDisplayAudio})
+
 
       if(!displayStream && !userMediaStream) {
         killMediaStreams([streams?.displayStream, streams?.userMediaStream]);
@@ -126,7 +193,7 @@ export const useScreenRecording = () => {
         const displaySurface = setting['displaySurface'] as DisplaySurfaceOptions;
         const systemAudio = displayStream.getAudioTracks().length > 0;
         
-        setSelectedVideoSetting(prev => ({
+        setStreamSettings(prev => ({
           ...prev, 
           displaySurface, 
           systemAudio
@@ -138,21 +205,25 @@ export const useScreenRecording = () => {
 
           const usingMic = userMediaStream.getAudioTracks().length > 0;
 
-          setSelectedVideoSetting(prev => ({
+          setStreamSettings(prev => ({
             ...prev, 
             camera: "with",
             withMic: usingMic ? true : false,
           }))
 
-          const {stream, stopDrawInterval} = await getCanvasStreams(displayStream, userMediaStream);
+          const processor = await getCanvasProcessor(
+            displayStream, 
+            userMediaStream, 
+            videoSettings.camera === 'with'
+          );
 
-          await addTrack(stream, combinedStream, "both");
+          await addTrack(processor.stream, combinedStream, "both");
           
-          drawIntervalRef.current = stopDrawInterval;
+          canvasProcessorRef.current = processor;
 
         }else {
           if(userMediaStream && userMediaStream?.getAudioTracks().length > 0) {
-            setSelectedVideoSetting(prev => ({
+            setStreamSettings(prev => ({
               ...prev, 
               withMic: true,
               camera: "no"
@@ -160,14 +231,18 @@ export const useScreenRecording = () => {
           }
 
           if(!userMediaStream) {
-            setSelectedVideoSetting(prev => ({
+            setStreamSettings(prev => ({
               ...prev, 
               withMic: false, 
               camera: 'no'
             }))
           }
 
-          await addTrack(displayStream, combinedStream, "video")
+          const processor = await getCanvasProcessor(displayStream);
+
+          canvasProcessorRef.current = processor;
+
+          await addTrack(processor.stream, combinedStream, "video")
         }
 
         console.log("just added video to combined: ", combinedStream.getVideoTracks().length);
@@ -201,7 +276,7 @@ export const useScreenRecording = () => {
           videoRef.current.srcObject = userMediaStream;
           setIsPreviewing(true);
 
-          setSelectedVideoSetting(prev => ({
+          setStreamSettings(prev => ({
             ...prev, 
             camera: "only", 
             displaySurface: 'camera only', 
@@ -245,27 +320,36 @@ export const useScreenRecording = () => {
 
       if(recorderStream.getVideoTracks().some(track => track.readyState === "live")){
         mediaRecorderRef.current.start(1000);
+        setState((prev) => ({
+          ...prev, 
+          isRecording: true, 
+          recordingStatus: 'recording'
+        }));
+  
+        startTimer();
       }
 
-      setState((prev) => ({ ...prev, isRecording: true }));
       return true;
 
     } catch (error) {
       stopRecording();
       console.error("Recording error:", error);
+      onBrowserDialogCancelled();
       throw error;
     }
   };
 
   const stopRecording = () => {
     try {
+      pauseTimer();
       cleanupRecording(
         mediaRecorderRef.current,
         streamRef.current,
         streamRef.current?._originalStreams,
-        drawIntervalRef?.current as () => void
+        canvasProcessorRef.current?.end!
       );
       streamRef.current = null;
+      canvasProcessorRef.current = null;
       setState((prev) => ({ ...prev, isRecording: false }));
     } catch (error) {
       throw error;
@@ -275,11 +359,13 @@ export const useScreenRecording = () => {
   const resetRecording = () => {
     stopRecording();
     if (state.recordedVideoUrl) URL.revokeObjectURL(state.recordedVideoUrl);
+    resetTimer()
     setState({
       isRecording: false,
       recordedBlob: null,
       recordedVideoUrl: "",
       recordingDuration: 0,
+      recordingStatus: 'inactive',
     });
     startTimeRef.current = null;
   };
@@ -287,46 +373,99 @@ export const useScreenRecording = () => {
   const handlePauseResume = () => {
     if(!mediaRecorderRef.current) return;
 
-    if(recordingStatus === "recording") {
+    if(state.recordingStatus === "recording") {
       mediaRecorderRef.current.pause();
+      canvasProcessorRef.current?.pause();
+      pauseTimer();
       
-      if(drawIntervalRef.current) drawIntervalRef.current();
-      
-      setRecordingStatus('pause')
-    } else if (recordingStatus === 'pause') {
+      setState(prev => ({...prev, recordingStatus: 'paused'}))
+    } else if (state.recordingStatus === 'paused') {
       mediaRecorderRef.current.resume();
+      canvasProcessorRef.current?.resume();
+      startTimer();
 
-      //start canvas loop
-
-      setRecordingStatus('recording');
+      setState(prev => ({...prev, recordingStatus: 'recording'}))
     }
   }
 
-  const handleTakeScreenShot = () => {
-    //trigger flash
-    const triggerFlash = () => {
+  const handleTakeScreenShot = async () => {
+    try {
+
+      if(!canvasProcessorRef.current) return;
+  
+      const imageFile = await canvasProcessorRef.current?.takeScreenShot();
+  
+      const url = await fileToBase64(imageFile);
+  
+      const name = generateScreenShotName(imageFile.name);
+  
+      const newScreenShot = {
+        url, 
+        name, 
+        type: imageFile.type
+      }
+  
+      setCapture(newScreenShot)
       setIsFlashing(true);
-      const flashTimer = setTimeout(() => setIsFlashing(false), 150)
+      setTimeout(() => setIsFlashing(false), 150)
+  
+      setScreenShots(prev =>([newScreenShot, ...prev]))
+
+    } catch (error) {
+      throw error;
     }
-    triggerFlash();
-     //construct filename
- 
-    // 
-     //push screen
-     throw new Error('This feature would be available in the future')
-     //screenshot functionality
   }
 
+  const onCloseFullView = () => {
+    setCapture(null)
+  };
+
+  const onScreenShotClick = () => {
+    setCapture(screenShots[0]);
+  }
+
+  const onScreenShotRemove = (id: string) => {
+    setScreenShots(shots => {
+      return shots.filter(shot => shot.name !== id)
+    })
+  }
+
+  //work-in-progress
+  const onScreenShotSave = (id: string) => {
+    const shotToSave = screenShots.find(shot => shot.name === id);
+    
+    //add selected shot into a database for screenshot collection in profile;
+  }
+
+  const onScreenShotSelect = (id: string) => {
+    setScreenShots(shots => {
+      return shots.map(shot => {
+        if(shot.name === id) {
+          shot = {...shot, selected: !shot.selected}
+        }else {
+          shot = {...shot, selected: false}
+        };
+        return shot;
+      })
+    })
+  }
 
   return {
     ...state,
     startRecording,
     stopRecording,
     resetRecording,
-    selectedVideoSetting,
+    streamSettings,
+    recordingTimer,
     handleTakeScreenShot,
     handlePauseResume,
-    recordingStatus,
+    capture,
+    onCloseFullView,
+    screenShots,
+    onScreenShotRemove,
+    onScreenShotSave,
+    onScreenShotSelect,
+    onScreenShotClick,
     isFlashing
   };
 };
