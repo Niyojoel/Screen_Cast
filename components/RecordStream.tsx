@@ -13,14 +13,11 @@ import { authClient } from '@/lib/authClient'
 import {ActionButton, DialogListItem, DropdownList, ImagesConsole} from './'
 import {dummySession} from "@/constants"
 import {
-    CheckCircleIcon,
     CircleIcon,
     CirclePauseIcon,
     CirclePlayIcon,
-    Download,
     HomeIcon,
     Image,
-    LoaderCircle,
     Upload,
     X,
 } from 'lucide-react'
@@ -41,7 +38,7 @@ import {
 } from '..'
 import toast from 'react-hot-toast';
 import { CheckBody, LoadBody, RecordGuideBody, RedirectBody, SaveBody, exitContent} from '@/constants/lists'
-import useRecordingFeatures, { RecordingTimerType } from '@/lib/hooks/useRecordingFeatures'
+import useRecordingFeatures, { RecordingTimerType } from '@/lib/hooks/useRecord/useRecordingFeatures'
 import { 
     getActionStateButtons, 
     getActionStateContent,

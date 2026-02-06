@@ -19,6 +19,7 @@ const FileInput = memo(({
   file,
   fileChangeError,
   logError,
+  onFileChange,
   previewUrl,
   inputRef,
   previewBoxRef,
@@ -30,6 +31,7 @@ const FileInput = memo(({
   removeThumbnail,
   onOpenModal
 }: FileInputProps & {
+  onFileChange?: () => void, 
   onOpenModal?: () => void, 
   fileChangeError: string,
   logError: (log: string) => void
@@ -60,6 +62,7 @@ const FileInput = memo(({
       endDrag();
       if(!e.dataTransfer?.files[0].type.startsWith(`${type}/`)) return logError(`Incompatible file type`);
       catchError(onFileDrop(e))
+      if(onFileChange) onFileChange();
     } catch (error) {
       console.log(error);
       error instanceof Error && logError(error.message);

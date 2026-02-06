@@ -27,11 +27,11 @@ const VideoDetailHeader = ({
     thumbnailUrl
 }: VideoDetailHeaderProps & {videoUrl?: string}) => {
   const router = useRouter()
-  const 
 
   const {
     modalOpen,
     exit,
+    cancelExit,
     openModal, 
     closeModal, 
     modalAction,
@@ -177,8 +177,8 @@ const VideoDetailHeader = ({
   }, [getActionStateContent, getModalButton, handleDownload])
 
   const exitModalContent = useCallback((action: boolean): ModalContentType | null => {
-    return action ? exitContent(resetModal, action) : null
-  },[resetModal, exitContent])
+    return action ? exitContent(resetModal, cancelExit, action) : null
+  },[resetModal, exitContent, cancelExit])
   
   useEffect(()=> {
     let content: ModalContentType | null = null;

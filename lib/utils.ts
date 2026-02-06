@@ -9,7 +9,6 @@ import {
   DEFAULT_MIC_SETTINGS 
 } from "@/constants";
 import { 
-  ActionResponseType,
   BrowserDialogOptionsType, 
   CameraFacingMode, 
   CameraOptions, 
@@ -27,7 +26,7 @@ import {
   VideoDisplay, 
   VideoSettingsType 
 } from "..";
-import { SyncCameraKeys } from "./hooks/useRecordingFeatures";
+import { SyncCameraKeys } from "./hooks/useRecord/useRecordingFeatures";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -773,7 +772,7 @@ export const generateThumbnail = (captureTime: number = 2, videoFile: File): Pro
     }
 
     video.onseeked = async () => {
-      const {canvas} = await getCanvasDisplay({video: videoDisplay.video, });
+      const {canvas} = await getCanvasDisplay(videoDisplay);
 
       try {
         const imageFile = await canvasToBlob(canvas);

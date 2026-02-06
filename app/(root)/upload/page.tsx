@@ -34,7 +34,7 @@ import {
   UploadAction, 
   VideoFormValues
 } from "@/index";
-import { DIALOG_ICONS, exitContent, successfulRedirectContent } from "@/constants/lists";
+import { exitContent, successfulRedirectContent } from "@/constants/lists";
 import { NoNameModalActionType, useGlobalContext } from "@/lib/hooks/useGlobalContext";
 import {getActionStateContent, getModalButton} from "@/lib/modalContentUtil";
 import Image from "next/image";
@@ -75,16 +75,18 @@ const page = () => {
     visibility: "public"
   });
 
+  
   const video = useFileInput(MAX_VIDEO_SIZE);
   const thumbnail = useFileInput(MAX_THUMBNAIL_SIZE);
   
   const [captureTime, setCaptureTime] = useState(1)
-  const [generatedThumbnail, setGeneratedThumbnail] = useState<ImagesArrayType | null>({
-    url: '',
-    name: '',
-    type: ''
-  })
+  const [generatedThumbnail, setGeneratedThumbnail] = useState<ImagesArrayType | null>(null)
   const [failedText, setFailedText] = useState<string>('')
+  const [fileChanged, setFileChanged] = useState(false);
+
+  const onVideoChanged = () => {
+    setFileChanged(true);
+  } 
 
   const onErrorHandle = (action: UploadAction, error: Error) => {
     const message = error instanceof Error ? error.message : `Failed to ${action} thumbnail`;
@@ -119,12 +121,13 @@ const page = () => {
   //check how it works
   const onOpenModal = useCallback(() => {
     console.log('opening modal')
-    if(modalOpen.type === 'upload' && modalAction.name) {
+    if(modalOpen.type === 'upload' && modalAction.name && !fileChanged) {
       openModal();
     } else {
       openModal({type: 'upload'})
       changeContentParent('thumbnail');
       beforeAction('generate');
+      if(fileChanged) setFileChanged(false);
     }
   },[beforeAction, changeContentParent, openModal, modalOpen, modalAction])
 
@@ -202,15 +205,14 @@ const page = () => {
         <DialogContentBody
           subNode={
             //add styles later
-            imageUrl && <div className="w-full h-30 ">
-              <Image src ={imageUrl} alt= "generated_thumbnail" fill className="object-contain"/>
-            </div>}
+            imageUrl && <Image src ={imageUrl} alt= "generated_thumbnail" fill className="w-full object-contain"/>}
+            className='relative'
         />
       ),
       buttons: [
-        getModalButton('Generate Again', handleGenerateAgain, 'btn-white'),
+        getModalButton('Generate', handleGenerateAgain, 'btn-white'),
         getModalButton('Save', handleSaveThumbnail),
-        getModalButton('Add to Upload', handleAddThumbnail)
+        getModalButton('Upload', handleAddThumbnail)
       ]
     },
     {
@@ -337,7 +339,6 @@ const page = () => {
       content = editContent(modalAction?.edit, failedText)
     } 
     
-    console.log(content)
     if(content) syncModalContent('upload', content);
 
   }, [modalAction, exit, generatedThumbnail, failedText, captureTime, modalOpen])
@@ -376,8 +377,8 @@ const page = () => {
         if(!storedVideo) return;
 
         successfulAction('redirect')
-        setTimeout(closeModal, 2000);
-
+        setTimeout(resetModal, 2000);
+        
         try {
           const {url, name, type, duration} = JSON.parse(storedVideo);
           const blob = await fetch(url).then(res=> res.blob());
@@ -393,7 +394,6 @@ const page = () => {
         } catch {
           throw new Error('Error loading recorded video')
         }
-
 
         //check for selected screenshot intended to be used as thumbnail
         const selectedShot = sessionStorage.getItem('selectedShot');
@@ -563,6 +563,7 @@ const page = () => {
           onFileDrop = {video.handleFileDrop}
           previewBoxRef={video.previewBoxRef}
           onOpenModal={onOpenModal}
+          onFileChange={onVideoChanged}
         /> 
         <FileInput
           id="thumbnail"

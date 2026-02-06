@@ -30,8 +30,8 @@ import {
   downloadVideo, 
   parseVideoSettings, 
   syncCameraOnly 
-} from "../utils";
-import {useGlobalContext } from "./useGlobalContext";
+} from "../../utils";
+import {useGlobalContext } from "../useGlobalContext";
 
 export type SyncCameraKeys = Pick<VideoSettingsType, "displaySurface" | "camera">;
 
