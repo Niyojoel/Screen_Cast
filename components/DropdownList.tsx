@@ -3,7 +3,7 @@ import {memo, useState} from 'react';
 import { Img } from './ActionButton';
 import {cn } from '@/lib/utils';
 import { DropdownListProps, OptionsTriggerProps } from '..';
-import {ChevronDown} from "lucide-react";
+import {ChevronDown, ChevronUp} from "lucide-react";
 
 const DropdownList = memo(({
     options,
@@ -34,18 +34,20 @@ const DropdownList = memo(({
                 <OptionsTrigger
                     activeOption={activeOption}
                     triggerIcon={triggerIcon}
+                    isOpen={isOpen}
                     className={triggerClass ? triggerClass : ""}
                 />
             ): (
                 <OptionsTrigger
                     activeOption={activeOption}
+                    isOpen={isOpen}
                     className={triggerClass ? triggerClass : ""}
                     disabled = {disabled}
                 />
             )}
         </div>
         <ul 
-            className={cn('dropdown', {"expand": isOpen})}
+            className={cn('dropdown', className || '', {"expand": isOpen})}
         >
             {options.map((option) => {
 
@@ -90,6 +92,7 @@ const OptionsTrigger = ({
     activeOption,
     triggerIcon,
     className,
+    isOpen,
     disabled
 }: OptionsTriggerProps) => {
     const {label, icon, inactive, placeholder, value} = activeOption;
@@ -120,15 +123,9 @@ const OptionsTrigger = ({
         </figure>
 
         
-        {disabled 
-        ? <ChevronDown size={20} stroke={disabled ? "#888" : '#212121'}/>
-        : (<Img
-            src="/assets/icons/arrow-down.svg"
-            alt="arrow-down" 
-            size={20}
-        />)
-        }
-    
+        {!isOpen 
+            ? <ChevronDown size={20} stroke={disabled ? "#888" : '#212121'}/>
+            : <ChevronUp size={20} stroke='#212121'/>}
     </div>
 )};
 

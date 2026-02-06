@@ -52,7 +52,7 @@ const Pagination = ({
           src="/assets/icons/arrow-left.svg"
           alt="previous"
         />
-        Pevious
+        Previous
       </button>
 
       <div className="">
@@ -61,7 +61,7 @@ const Pagination = ({
             <span key={`ellipsis-${index}`}>...</span>
           ) : (
             <button 
-              key={`page-${pages}`}
+              key={`page-${pages}-${index}`}
               onClick={()=> navigateToPage(page as number)}
               className={cn({'bg-pink-100 text-white': currentPage === page})}
             >

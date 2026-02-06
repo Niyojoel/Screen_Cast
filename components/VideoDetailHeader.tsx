@@ -1,16 +1,18 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import {ActionButton, CopyBtn, Img, DropdownList, Modal, DialogContentBody, FailedActionDialog} from "."
+import {ActionButton, CopyBtn, Img, DropdownList, WarningActionDialog} from "."
 import { cn, daysAgo, downloadVideo } from "@/lib/utils"
 import {Dot} from "lucide-react"
-import React, { useState } from "react"
+import React, {useCallback, useEffect, useMemo, useState } from "react"
 import { authClient } from "@/lib/authClient"
 import { deleteVideo, updateVideoVisibility } from "@/lib/actions/video"
 import toast from "react-hot-toast"
 import { dummySession, visibilities } from "@/constants"
-import {ActionStatusType, DropdownOptionsType, ModalStateType, VideoDetailHeaderProps, Visibility } from ".."
-import { DIALOG_ICONS } from "@/constants/lists"
+import {DropdownOptionsType, ModalContentType, VideoDetailHeaderProps, Visibility } from ".."
+import { exitContent } from "@/constants/lists"
+import {NoNameModalActionType, useGlobalContext } from "@/lib/hooks/useGlobalContext"
+import { getActionStateContent, getModalButton} from "@/lib/modalContentUtil"
 
 const VideoDetailHeader = ({
     id,
@@ -27,13 +29,25 @@ const VideoDetailHeader = ({
   const router = useRouter()
   const 
 
-  const [isDeleting, setIsDeleting] = useState<Omit<ActionStatusType, 'before'> | null>(null);
-  const [actionResponse, setActionResponse] = useState<Record<string, 'failed' | 'successful' | null>>({'updated': null, 'deleted': null});
+  const {
+    modalOpen,
+    exit,
+    openModal, 
+    closeModal, 
+    modalAction,
+    changeAction,
+    successfulAction,
+    changeState,
+    failedAction,
+    beforeAction,
+    ongoingAction,
+    syncModalContent,
+    actionTrue,
+    resetModal,
+  } = useGlobalContext()
+
   const [visibilityState, setVisibilityState] = useState<DropdownOptionsType>({label: visibility as Visibility});
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [downloading, setDownloading] = useState<ActionStatusType | null>(null);
-  const [modalError, setModalError] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState<ModalStateType>({state: false, content: null, buttons: null});
+  const [isUpdating, setIsUpdating] = useState(false)
 
   // const { data: session } = authClient.useSession();
   const session = dummySession;
@@ -45,23 +59,24 @@ const VideoDetailHeader = ({
       isOwner = userId === ownerId;
   }
 
-  
+  const showDeleteModal = () => {
+    beforeAction('delete');
+    openModal({type: 'post'})
+  }
 
   const handleDelete = async () => {
     try {
-      setIsDeleting('ongoing');
+      changeState('ongoing', 'delete');
       await deleteVideo(videoId, thumbnailUrl);
-      router.push(`/profile/${userId}`)
-      toast("video deleted successfully")
-      setActionResponse(prev => ({...prev, deleted: 'successful'}));
+      toast.success("video deleted successfully")
+      successfulAction('delete');
+      setTimeout(redirectToProfile, 2000)
     } catch (error) {
       console.error("Error deleting video:", error);
-      toast("Error deleting video");
-      setActionResponse('failed');
-    } finally {
-      setIsDeleting(false);
+      toast.error("Error deleting video");
+      failedAction('delete');
     }
-  };
+  }
 
   const handleVisibilityChange = async(option: DropdownOptionsType) => {
     if(option !== visibilityState) {
@@ -81,156 +96,178 @@ const VideoDetailHeader = ({
 
   const handleDownload = async () => {
     try {
-      setIsModalOpen({state: true, content: downloadContent(), buttons: downloadBtns})
-      setDownloading(true);
+      ongoingAction('download')
+      openModal({type: 'post'});
       downloadVideo(videoUrl as string);
-      setActionResponse('successful')
+      successfulAction('download');
+      setTimeout(closeModal, 2000)
     } catch (error) {
       console.error(error);
-      setModalError("Download failed")
-      setActionResponse('failed')
-    } finally {
-      setDownloading(false);
+      !modalAction.download.state && toast.error("Download failed")
+      failedAction('download');
     }
   }
 
   const redirectToProfile = () => router.push(`/profile/${ownerId}`)
 
-  const downloadContent = () => (
-    downloading ? (
-      <DialogContentBody
-        icon = {DIALOG_ICONS.loader}
-        subNode = "Downloading video.."
-      />
-    ) : !downloading && actionResponse === "successful" ? 
-    (
-      <DialogContentBody
-        icon = {DIALOG_ICONS.checked} 
-        subNode = "Video successfully downloaded"
-      />
-    ) :  (
-      <FailedActionDialog/>
-    )
-  )
+  const afterDeleteRedirect = () => { 
+    router.push(`/profile/${ownerId}`)
+    ongoingAction('to_profile')
+  }
 
-  const downloadBtns = actionResponse === "failed" ? [
-    {
-      className: "btn-theme",
-      action: handleDownload,
-      text: 'Try again'
-    },
-  ] : null
+  const deleteContent = useCallback((action: NoNameModalActionType): ModalContentType | null => {
+    return action ? getActionStateContent (
+      action.state,
+      action.response,
+      {
+        node: "Failed to delete video",
+        buttons: [getModalButton('Retry', handleDelete, 'btn-destructive')]
+      },
+      {
+        node: "Deleting video.."
+      },
+      {
+        node: 'Video successfully deleted'
+      },
+      {
+        node: (
+          <WarningActionDialog
+            header = 'This action cannot be undone'
+            text = "Click continue to delete this video completely"
+          />
+        ),
+        buttons: [
+          getModalButton('Cancel', closeModal, 'btn-white'),
+          getModalButton('Continue', handleDelete, 'btn-destructive'),
+        ]
+      },
+    ) : null
+  }, [getActionStateContent, getModalButton, handleDelete, closeModal])
   
-  const deleteContentBody = () => (
-    actionResponse === null ? (
-      <DialogContentBody
-        icon = {DIALOG_ICONS.alert}
-        headerNode = 'This action cannot be undone'
-        subNode = "Click continue to delete this video completely"
-      />
-    ): actionResponse === "failed" ? (
-      <FailedActionDialog/>
-    ): (
-      <DialogContentBody
-        icon = {DIALOG_ICONS.checked}
-        subNode = 'Video successfully deleted'
-      />
-    )
-  )
+  const downloadContent = useCallback((action: NoNameModalActionType): ModalContentType | null => {
+    return action ? getActionStateContent(
+      action.state,
+      action.response,
+      {
+        node: "Failed to download video",
+        buttons: [getModalButton('Retry', handleDownload)]
+      },
+      {
+        node: "Downloading video.."
+      },
+      {
+        node: 'Video successfully downloaded'
+      },
+    ): null
+  }, [getActionStateContent, getModalButton, handleDownload])
 
-  const deleteBtns = [
-    {
-      className: "btn-white",
-      action: () => setIsModalOpen({state: false, content: null}),
-      text: 'Cancel'
-    },
-    {
-      className: "btn-destructive",
-      action: handleDelete,
-      text: !isDeleting ? 'Continue' : 'Deleting...'
+  const redirectContent = useCallback((action: NoNameModalActionType): ModalContentType | null => {
+    return action ? getActionStateContent(
+      action.state,
+      action.response,
+      {
+        node: "Failed to redirect to profile",
+        buttons: [getModalButton('Retry', afterDeleteRedirect)]
+      },
+      {
+        node: "Redirecting to profile..."
+      },
+      null
+    ): null
+  }, [getActionStateContent, getModalButton, handleDownload])
+
+  const exitModalContent = useCallback((action: boolean): ModalContentType | null => {
+    return action ? exitContent(resetModal, action) : null
+  },[resetModal, exitContent])
+  
+  useEffect(()=> {
+    let content: ModalContentType | null = null;
+    
+    if(exit) {
+      content = exitModalContent(exit)
     }
-  ]
+
+    if(modalAction.name === 'download') {
+      content = downloadContent(modalAction?.download)
+    } 
+    
+    if(modalAction.name === 'delete') {
+      content = deleteContent(modalAction?.delete)
+    } 
+
+    if(modalAction.name === 'to_profile') {
+      content = redirectContent(modalAction?.to_profile)
+    } 
+    
+    if(content) syncModalContent('post', content);
+  }, [modalAction, exit])
 
   return (
     <header className='detail-header'>
-        <aside className='user-info'>
-            <h1>{title}</h1>
-            <figure>
-              <ActionButton 
-                  src={userImg ?? "/assets/images/dummy.jpg"}
-                  size={24} 
-                  alt={username ?? "user"}
-                  className="cursor-pointer"
-                  action={redirectToProfile}
-              >
-                  <h2>{username ?? "Guest"}</h2>
-              </ActionButton>
-              <figcaption>
-                  <span className="mt-1"><Dot/></span>
-                  <p>{daysAgo(createdAt)}</p>
-              </figcaption>
-            </figure>
-        </aside>
-        <aside className="cta">
-          <CopyBtn id={id} size={22} className='relative hover:bg-gray-20 p-2'/>
-          {user && visibility.toLowerCase() === "public" && (
-            <button
-              className={cn("round-btn", "hover:bg-gray-20 p-2")}
-              onClick = {handleDownload}
+      <aside className='user-info'>
+          <h1>{title}</h1>
+          <figure>
+            <ActionButton 
+                src={userImg ?? "/assets/images/dummy.jpg"}
+                size={24} 
+                alt={username ?? "user"}
+                className="cursor-pointer"
+                action={redirectToProfile}
             >
-              <Img
-                src= "/assets/icons/download.svg"
-                alt= "download"
-                size = {22}
-              />
-            </button>
-          )}
-          {isOwner && (
-            <div className="user-btn">
-              <button
-                className="delete-btn"
-                onClick={() => setIsModalOpen({
-                  state: true, 
-                  content: deleteContentBody(), 
-                  buttons: deleteBtns
-                })}
-                disabled={isDeleting}
-              >
-                Delete Video
-              </button>
-              <div className="bar"/>
-              {isUpdating ? (
-                <div className="update-stats">
-                  <p>Updating...</p>
-                </div>
-              ) : (
-                <DropdownList
-                  options={visibilities}
-                  activeOption = {visibilityState}
-                  onSelectAction = {handleVisibilityChange}
-                  triggerIcon={
-                    <Img
-                      src= "/assets/icons/eye.svg"
-                      alt="eye.svg"
-                      className="mt-0.5"
-                    />
-                  }
-                />
-              )}
-            </div>
-          )}
-        </aside>
-        {isModalOpen.state && (
-          <Modal
-            closeIcon={DIALOG_ICONS.close}
-            closeModal={()=> setIsModalOpen({state: false, content: null})}
-            error={modalError}
-            setError={setModalError}              
-            contentBody={isModalOpen.content}
-            footerButtons={isModalOpen.buttons}
-          />
+                <h2>{username ?? "Guest"}</h2>
+            </ActionButton>
+            <figcaption>
+                <span className="mt-1"><Dot/></span>
+                <p>{daysAgo(createdAt)}</p>
+            </figcaption>
+          </figure>
+      </aside>
+      <aside className="cta">
+        <CopyBtn id={id} size={22} className='relative hover:bg-gray-20 p-2'/>
+        {user && visibility.toLowerCase() === "public" && (
+          <button
+            className={cn("round-btn", "hover:bg-gray-20 p-2")}
+            onClick = {handleDownload}
+          >
+            <Img
+              src= "/assets/icons/download.svg"
+              alt= "download"
+              size = {22}
+            />
+          </button>
         )}
-        </header>
+        {isOwner && (
+          <div className="user-btn">
+            <button
+              className="delete-btn"
+              onClick={showDeleteModal}
+              disabled={modalAction.delete?.state === 'ongoing'}
+            >
+              Delete
+            </button>
+            <div className="bar"/>
+            {isUpdating ? (
+              <div className="update-stats">
+                <p>Updating...</p>
+              </div>
+            ) : (
+              <DropdownList
+                options={visibilities}
+                activeOption = {visibilityState}
+                onSelectAction = {handleVisibilityChange}
+                triggerIcon={
+                  <Img
+                    src= "/assets/icons/eye.svg"
+                    alt="eye.svg"
+                    className="mt-0.5"
+                  />
+                }
+              />
+            )}
+          </div>
+        )}
+      </aside>
+    </header>
   )
 }
 

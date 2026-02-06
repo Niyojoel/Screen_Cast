@@ -1,21 +1,19 @@
+'use client'
+import { useGlobalContext } from '@/lib/hooks/useGlobalContext';
+import {ActionButton, Alert, FullView, Logo} from '.';
 
-import {ActionButton, Alert, Logo} from '.';
-import { ModalProps } from '..';
+const Modal = () => {
+  const {modalOpen, modalContent, exitModal, closeModal} = useGlobalContext();
 
-const Modal = ({
-  closeIcon,
-  closeModal,
-  error,
-  setError,
-  footerButtons,
-  contentBody
-}: ModalProps) => {
+  const {closeIcon, isOpen} = modalOpen
 
-  return (
+  if(!isOpen) return null;
+
+  return modalContent.body && (
     <>
     <main className="modal">
-    <div className="modal-overlay" onClick={closeModal}/>
-    <Alert error={error} setError={setError} className='modal-error-alert'/>
+      <FullView/>
+      <div className="modal-overlay" onClick={closeModal}/>
       <section className='modal-content'>
         <div className="dialog-box">
           <div className="header-constraint">
@@ -23,24 +21,24 @@ const Modal = ({
           </div>
           <figure className='dialog-header'>
               <Logo inactive />
-              <button className='modal-home-btn' onClick={closeModal}>
+              <button className='modal-home-btn' onClick={exitModal}>
                 {closeIcon}
               </button>
           </figure>
           <article className='dialog-content'>
             <section>
-                {contentBody}
+                {modalContent?.body}
             </section>
-            {footerButtons && (<div className="dialog-btns">
-              {footerButtons.map(btn => (
+            {modalContent?.buttons && modalContent?.buttons.length > 0 && (<div className="dialog-btns">
+              {modalContent?.buttons.map(btn => (
                 <ActionButton
                   key={btn.text}
                   action={btn.action}
                   className= {btn.className}
-                  src= {btn?.src}
-                  alt= {btn?.alt}
                   text = {btn.text}
-                />
+                >
+                  {btn?.icon && btn.icon}
+                </ActionButton>
               )
               )}
             </div>)}

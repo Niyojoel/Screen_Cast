@@ -1,5 +1,5 @@
 import React from 'react'
-import { DialogBodyContentProps, dialogContentListFeatureProps } from '..'
+import { DialogBodyContentProps, DialogContentListFeatureProps } from '..'
 import { cn } from '@/lib/utils'
 
 const DialogContentBody = ({
@@ -38,7 +38,7 @@ export const DialogContentListFeature = ({
     featureName, 
     featureStatus,
     className = ""
- }: dialogContentListFeatureProps) => (
+ }: DialogContentListFeatureProps) => (
     <li className={cn('feature', className)}>
         <span className=''>
             {featureName}

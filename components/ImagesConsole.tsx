@@ -1,41 +1,66 @@
-import React from 'react'
-import { ImagesConsoleProps} from '..'
+'use client'
+import {ImagesConsoleProps} from '..'
 import { cn } from '@/lib/utils'
 import { Img } from './ActionButton'
 import Image from 'next/image'
+import { Save, X } from 'lucide-react'
 
 const ImagesConsole =  ({
   imagesArr,
   className,
+  cardClass,
+  onClick,
   onSelect,
-  removeFn,
+  onRemove,
+  onSave,
 }: ImagesConsoleProps) => {
 
   let active = imagesArr?.length > 0
 
   return (
     active && <ul className={cn("images-console", className)}>
-        {imagesArr?.map(({base64, fileName}) => (
+        {imagesArr?.map((file, index) => {
+          const {url, name} = file; 
+
+          const selected: boolean | undefined = 'selected' in file ? file.selected: undefined;
+
+          return (
             <div 
-              key={fileName}
-              onClick={()=> onSelect(fileName)}
+              key={index}
+              onClick={()=> onClick(name)}
+              className={cn('image-class', cardClass)}
             >
-              <button 
-                className={cn('round-btn', "remove-image")}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  removeFn(fileName)
-                }}
-              >
-                <Img
-                  src="/assets/icons/close.svg"
-                  alt="remove"
-                  size={16}
+              <span className="btns">
+                 <button
+                  type='button'
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onRemove(name)
+                  }}
+                >
+                  <X stroke='white' size={16}/>
+                </button>
+                {onSave && <button type='button' onClick={(e) => {
+                  e.stopPropagation();
+                  onSave(name)
+                }}>
+                  <i>
+                    <Save size={16} stroke='#212121' strokeWidth={1.2}/>
+                  </i>
+                </button>}
+              </span>
+
+              {onSelect && selected && (
+                <input 
+                  type='checkbox' 
+                  onChange={(e) => onSelect(name)} 
+                  checked={selected} 
+                  className=''
                 />
-              </button>
-              <Image src={base64 as string} alt="image" fill/>
+              )}
+              <Image src={url as string} alt="image" fill/>
             </div>
-          ))
+          )})
         }
     </ul>
   )

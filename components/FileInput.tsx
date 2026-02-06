@@ -8,7 +8,7 @@ import {cn } from '@/lib/utils';
 import { Img } from './ActionButton';
 import {ImagesConsole} from '.';
 import { FileInputProps, ThumbnailSuggestionsProps } from '..';
-import { ImagePlus} from 'lucide-react';
+import {ImagePlus} from 'lucide-react';
 
 
 const FileInput = memo(({
@@ -17,40 +17,34 @@ const FileInput = memo(({
   type,
   accept,
   file,
+  fileChangeError,
+  logError,
   previewUrl,
   inputRef,
   previewBoxRef,
   onChange,
-  onFileDrop: fileDrop,
+  onFileDrop,
   onReset,
-  handleError,
   previousThumbnails,
   handleUsePreviousThumbnail,
   removeThumbnail,
   onOpenModal
-}: FileInputProps & {onOpenModal? :() => void}) => {
+}: FileInputProps & {
+  onOpenModal?: () => void, 
+  fileChangeError: string,
+  logError: (log: string) => void
+}) => {
   
   const [isDraggedOver, setIsDraggedOver] = useState(false);
-  const [fileDropError, setFileDropError] = useState('');
 
   //File change
-  const handleFileChange = (fn: void)=> {
+  const catchError = (changeFn: void)=> {
     try {
-      fn;
+      changeFn;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : error;
-      handleError(errorMessage as string)
       console.log(error);
+      error instanceof Error && logError(error.message);
     }
-  }
-
-  const onFileDrop = (e: DragEvent<HTMLElement>) => {
-    const files = e.dataTransfer.files
-    if(!files[0].type.startsWith(`${type}/`)) {
-      setFileDropError(`???Error: ${type === "image" ? "An" : 'A'} ${type} file is expected...`);
-      return;
-    }
-    fileDrop(e);
   }
 
   const endDrag = () => setIsDraggedOver(false);
@@ -61,19 +55,20 @@ const FileInput = memo(({
   }
 
   const handleDrop = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault();
-    endDrag();
-    handleFileChange(onFileDrop(e))
+    try {
+      e.preventDefault();
+      endDrag();
+      if(!e.dataTransfer?.files[0].type.startsWith(`${type}/`)) return logError(`Incompatible file type`);
+      catchError(onFileDrop(e))
+    } catch (error) {
+      console.log(error);
+      error instanceof Error && logError(error.message);
+    }
   }
 
-  let uploadTriggerClass = previewUrl ? "no-show" : "show"
+  let uploadTriggerClass = previewUrl ? "no-show" : "show";
 
-  useEffect(() => {
-    if(fileDropError) {
-      const errorTimer = setTimeout(() => setFileDropError(''), 3000);
-      return ()=> clearTimeout(errorTimer);
-    }
-  },[fileDropError])
+  let changeFile = (isDraggedOver || fileChangeError);
 
   const uploadTrigger = ({
     text, 
@@ -97,13 +92,13 @@ const FileInput = memo(({
         alt="upload" 
         width={22} 
         height={22} 
-        hidden={isDraggedOver || !!fileDropError}
+        hidden={isDraggedOver || !!fileChangeError}
       />
-      <p className={cn({"text-red-500 text-[14.8px]": !!fileDropError})}>
+      <p className={cn({"text-red-500 text-[14.8px]": !!fileChangeError})}>
         {isDraggedOver 
         ? "Release file..." 
-        : fileDropError 
-          ? fileDropError 
+        : fileChangeError 
+          ? fileChangeError 
           : text
         }
       </p>
@@ -113,7 +108,7 @@ const FileInput = memo(({
         type='file'
         ref={inputRef}
         accept={accept}
-        onChange={(e) => handleFileChange(onChange(e))}
+        onChange={(e) => catchError(onChange(e))}
         onReset={onReset}
         hidden
         className='absolute top-[50%] left-[50%] opacity-0'
@@ -131,7 +126,6 @@ const FileInput = memo(({
       {type === "video" 
       ? (uploadTrigger({text: `Upload or Drop a ${label} file`})
       ):(
-        // <article className=''>
           <ThumbnailSuggestions
             uploadTrigger={uploadTrigger({
               text: "Upload or Drop", 
@@ -142,22 +136,49 @@ const FileInput = memo(({
             handleUsePreviousThumbnail ={handleUsePreviousThumbnail!}
             removeThumbnail = {removeThumbnail!}
           />
-        // </article>
       )}
-      <div ref={previewBoxRef} className={cn(previewUrl ? "show" : "no-show")}>
-        {type === "video" ? <video src={previewUrl || undefined} controls/> : <Image src ={previewUrl || "/assets/images/dummy.jpg"} alt={type} fill/>}
-        <div className="video-btns">
-        `<button type='button' onClick={onReset}>
-          <Img
-            src="/assets/icons/close.svg" 
-            alt="close" 
-            size={16} 
-            noClass
+      <div 
+        ref={previewBoxRef} 
+        className={cn(previewUrl ? "show" : "no-show", {'bg-gray-200': changeFile})}
+        onDragOver={onDragOver} 
+        onDragLeave={endDrag}
+        onDrop={handleDrop}  
+      >
+        {type === "video" 
+        ? (
+          <video 
+            src={previewUrl || undefined} 
+            controls 
+            className={cn({'opacity-0': changeFile})}
+          /> 
+        ): (
+          <Image 
+            src ={previewUrl || "/assets/images/dummy.jpg"} 
+            alt={type} 
+            fill 
+            className={cn({'opacity-0': changeFile})}
           />
-        </button>
-        {type === 'video' && <button type='button' onClick={onOpenModal}>
-          <i><ImagePlus size={16} stroke='#212121' strokeWidth={2}/></i>
-        </button>}
+        )}
+        {changeFile && <span className={cn( 'absolute top-30 left-72', {"text-red-500 text-[14.8px]": !!fileChangeError})}>
+          {isDraggedOver 
+          ? "Release file..." 
+          : fileChangeError
+            ? fileChangeError 
+            : null
+          }
+        </span>}
+        <div className="preview-btns">
+          <button type='button' onClick={onReset}>
+            <Img
+              src="/assets/icons/close.svg" 
+              alt="close" 
+              size={16} 
+              noClass
+            />
+          </button>
+          {type === 'video' && <button type='button' onClick={onOpenModal!}>
+            <i><ImagePlus size={16} stroke='#212121' strokeWidth={2}/></i>
+          </button>}
         </div>
         <p>{file?.name}</p>
       </div>
@@ -176,6 +197,8 @@ const ThumbnailSuggestions = ({
 
   let active = previousThumbnails?.length > 0
 
+  useEffect(()=> console.log(previousThumbnails),[previousThumbnails])
+
   return (
     <section className= {
       cn("thumbnail-select", uploadTriggerClass, {
@@ -185,9 +208,9 @@ const ThumbnailSuggestions = ({
       {uploadTrigger}
       <ImagesConsole
         imagesArr={previousThumbnails}
-        onSelect={handleUsePreviousThumbnail}
+        onClick={handleUsePreviousThumbnail}
         className={{'flex-1': active, "h-30": true, "no-show": !active}}
-        removeFn={removeThumbnail}
+        onRemove={removeThumbnail}
       />
     </section>
   )

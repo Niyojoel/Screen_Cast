@@ -9,16 +9,22 @@ import {
   DEFAULT_MIC_SETTINGS 
 } from "@/constants";
 import { 
+  ActionResponseType,
   BrowserDialogOptionsType, 
   CameraFacingMode, 
   CameraOptions, 
+  CanvasDisplay, 
+  CanvasProcessor, 
   CursorOptions, 
+  DeviceStatus, 
   DeviceType, 
   DisplaySurfaceOptions, 
+  ImagesArrayType, 
   MediaStreams, 
   PermissionsType, 
   RecordingHandlers, 
   VideoConfig, 
+  VideoDisplay, 
   VideoSettingsType 
 } from "..";
 import { SyncCameraKeys } from "./hooks/useRecordingFeatures";
@@ -227,19 +233,18 @@ export const parseSelectedCam = (selectedCam: string): CameraOptions => {
   }
 }
 
-export const parseOutputDisplaySetting = (displaySetting: string): string => {
+export const parseOutputDisplaySetting = (displaySetting: DisplaySurfaceOptions): string => {
   switch (displaySetting.toLowerCase()) {
     case "monitor":
-      return "Full Screen";
+      return "Entire Screen";
     case "window":
       return "Window";
     case "browser":
-      return "Current Tab";
+      return "Browser Tab";
     case "camera only":
       return "Camera Only";
     default:
       throw new Error('unknown option provided');
-
   }
 }
 
@@ -253,17 +258,16 @@ export const parseBrowserDialogOptions = (option: DisplaySurfaceOptions): Browse
       return "Browser Tab";
     default:
       throw new Error('unknown option provided');
-
   }
 }
 
 export const parseHintedDisplaySetting = (selectedSetting: string): DisplaySurfaceOptions => {
   switch (selectedSetting.toLowerCase()) {
-    case "full screen":
+    case "entire screen":
       return "monitor";
     case "window":
       return "window";
-    case "current tab":
+    case "browser tab":
       return "browser";
     case "camera only":
       return "camera only";
@@ -282,7 +286,6 @@ export const parseCursorSetting = (cursorSetting: string): CursorOptions => {
       return "motion";
     default:
       throw new Error('unknown option provided');
-      
   }
 }
 
@@ -310,7 +313,7 @@ export const syncCameraOnly = async(
   return syncSetting;
 }
 
-export const checkHardwareSupport = async(device: DeviceType): Promise<boolean> => {
+const checkHardwareSupport = async(device: DeviceType): Promise<boolean> => {
   const devices = await navigator.mediaDevices.enumerateDevices();
 
   const hasDevice = devices.some(d => {
@@ -323,7 +326,7 @@ export const checkHardwareSupport = async(device: DeviceType): Promise<boolean> 
   return true;
 }
 
-export const checkPermission = async (device: DeviceType): Promise<PermissionsType | null> => {
+const checkPermission = async (device: DeviceType): Promise<PermissionsType | null> => {
   try {
     const permissionStatus = await navigator.permissions.query({name: device as any});
     console.log(`${device} state: ${permissionStatus.state}`);
@@ -334,6 +337,24 @@ export const checkPermission = async (device: DeviceType): Promise<PermissionsTy
     console.error('Permissions API not supported for this device in this browser.')
     return null;
   }
+}
+
+export const checkDevice = async (device: DeviceType): Promise<DeviceStatus> => {
+  const supported = await checkHardwareSupport(device);
+
+  console.log({[device]: supported})
+
+  if(!supported) return 'no-support';
+  
+  const permissionStatus = await checkPermission(device);
+  
+  console.log(permissionStatus)
+  
+  if(permissionStatus !== "granted") return 'no-permission';
+
+  console.log(`setting ${device} to pass`)
+
+  return 'passed'
 }
 
 //helper
@@ -395,7 +416,7 @@ export const getMediaStreams = async (
 
   const userMediaConstraints = await getUserMediaSettings(camera, mode, withMic)
 
-
+  
   const displayMediaConstraints = {
     video: {
       ...DEFAULT_VIDEO_CONFIG, 
@@ -404,7 +425,7 @@ export const getMediaStreams = async (
     },
     audio: true,
   }
-
+  
   if(displaySurface !== "camera only") {
     displayStream = await navigator.mediaDevices.getDisplayMedia(displayMediaConstraints);
   }
@@ -422,7 +443,7 @@ export const getMediaStreams = async (
     .getAudioTracks()
     .forEach((track: MediaStreamTrack) => (track.enabled = true))
   };
-  
+    
   return {displayStream, userMediaStream, hasDisplayAudio};
 };
 
@@ -435,66 +456,136 @@ export const killMediaStreams = (streams: (MediaStream | null)[]) => {
   })
 }
 
-export const getCanvasStreams = async (
-  screenStream: MediaStream, 
-  cameraStream?: MediaStream
-): Promise<{stream: MediaStream, stopDrawInterval: () => void}> => {
-  const canvas = document.createElement('canvas');
+const getVideoDisplay = async (src: MediaStream | File): Promise<VideoDisplay>  => {
+
+  const video = document.createElement('video');
+
+  let width: number | undefined = undefined;
+  let height: number | undefined = undefined;
+
+  if(src instanceof MediaStream) {
+    video.srcObject = src;
+    await video.play();
+    const {width: w, height: h} = getTrackSetting(src);
+    width = w, 
+    height = h
+  }else {
+    video.src = URL.createObjectURL(src);
+    video.crossOrigin ="anonymous";
+    // await video.play();
+    video.onloadedmetadata = () => {
+      width = video.videoWidth
+      height = video.videoHeight
+    }
+  }
+
+  return {video, width, height};
+}
+
+const getCanvasDisplay = async ({video, width, height}: VideoDisplay,
+predefined_canvas?: HTMLCanvasElement
+): Promise<CanvasDisplay> => {
+  const canvas = predefined_canvas || document.createElement('canvas');
   const ctx = canvas.getContext('2d'); 
 
-  if(screenStream.getVideoTracks().length < 1){
-    throw new Error ('No video available for display')
+  if(!predefined_canvas && width && height) {
+    canvas.width = width || 3840;
+    canvas.height = height || 2160;
   }
 
-  if(!cameraStream || cameraStream.getVideoTracks().length < 1){
-    throw new Error ('No active video camera')
+  if(!ctx) throw new Error ('Could not get canvas context');
+  
+  ctx?.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+  return {ctx, canvas};
+}
+
+export const getCanvasProcessor = async (
+  screenStream: MediaStream, 
+  cameraStream?: MediaStream,
+  withCamera_?: boolean,
+): Promise<CanvasProcessor> => {
+  const FPS = 30;
+  let intervalId : NodeJS.Timeout | null = null;
+  let isPaused = false;
+  
+  let predefined_canvas = document.createElement('canvas');
+  
+  if(screenStream.getVideoTracks().length < 1) throw new Error ('No video available for display')
+
+  const withCamera = withCamera_ && cameraStream && cameraStream?.getVideoTracks().length > 0;
+
+  const screenDisplay = await getVideoDisplay(screenStream);
+  const cameraDisplay = withCamera && await getVideoDisplay(cameraStream);
+
+  predefined_canvas.width = screenDisplay.width || 3840;
+  predefined_canvas.height = screenDisplay.height || 2160;
+
+  const startLoop = () => {
+    intervalId = setInterval(async ()=> {
+      if(!isPaused && screenDisplay.video.readyState >= 2) {
+
+        const {ctx, canvas} = await getCanvasDisplay({video: screenDisplay.video}, predefined_canvas);
+
+        //might not work right
+        predefined_canvas = canvas;
+
+        if(cameraDisplay) {
+          const camWidth = cameraDisplay.width || 320;
+          const camHeight = cameraDisplay.height || 240;
+          const padding= 20;
+          
+          ctx?.drawImage(
+            cameraDisplay.video,
+            canvas.width - camWidth - padding,
+            canvas.height - camHeight - padding,
+            camWidth,
+            camHeight
+          );
+        }
+      }
+    }, 1000 / FPS);
+    return () => clearInterval(intervalId as NodeJS.Timeout);
   }
 
-  const screenTrack: MediaStreamTrack = screenStream.getVideoTracks()[0];
-  const settings = screenTrack.getSettings();
-  canvas.width = settings.width!;
-  canvas.height = settings.height!;
+  startLoop();
 
-  const screenVideo = document.createElement('video');
-  const cameraVideo = document.createElement('video');
+  //might have to move them all inside startLoop
 
-  screenVideo.srcObject = screenStream;
-  cameraVideo.srcObject = cameraStream;
-
-  await screenVideo.play();
-  await cameraVideo.play();
-
-  const fps = 30;
-  const drawInterval = setInterval(()=> {
-    ctx?.drawImage(screenVideo, 0, 0, canvas.width, canvas.height)
-
-    const camWidth = 320;
-    const camHeight = 240;
-    const padding= 20;
-    
-    ctx?.drawImage(
-      cameraVideo,
-      canvas.width - camWidth - padding,
-      canvas.height - camHeight - padding,
-      camWidth,
-      camHeight
-    );
-  }, 1000 / fps);
-
-  const stopDrawInterval = (): void => {
-    clearInterval(drawInterval)
-    console.log('canvas interval cleared')
+  const stopLoop = (): void => {
+    if(intervalId) {
+      clearInterval(intervalId as NodeJS.Timeout)
+      intervalId = null;
+      console.log('canvas interval cleared')
+    }
   };
 
-  const stream = canvas.captureStream(fps);
+  const stream = predefined_canvas.captureStream(FPS);
 
-  const videoTrack = stream.getVideoTracks()[0];
-
-  if(videoTrack) {
-    videoTrack.enabled = true;
+  const takeScreenShot = async () => {
+    return await canvasToBlob(predefined_canvas, 'image/png');
   }
 
-  return {stream, stopDrawInterval};
+  const clearVideo = (video: HTMLVideoElement) => {
+    video.pause();
+    video.srcObject = null;
+  }
+
+  const end = () => {
+    stopLoop();
+    clearVideo(screenDisplay.video);
+    if(cameraDisplay) clearVideo(cameraDisplay.video);
+    predefined_canvas.remove();
+  }
+
+  return {
+    stream, 
+    pause: () => {isPaused = true}, 
+    resume: () => {isPaused = false}, 
+    takeScreenShot,
+    stopLoop, 
+    end
+  };
 }
 
 export const getTrackSetting = (stream: MediaStream) => {
@@ -632,7 +723,7 @@ export const cleanupRecording = (
   recorder: MediaRecorder | null,
   stream: MediaStream | null,
   originalStreams: MediaStream[] = [],
-  drawInterval: () => void | null
+  endCanvasProcessor: () => void | null
 ) => {
   try {
     if (recorder?.state !== "inactive") {
@@ -642,8 +733,8 @@ export const cleanupRecording = (
     console.log('Failed to stop recorder: ', error);
   }
 
-  if(drawInterval) {
-    drawInterval();
+  if(endCanvasProcessor) {
+    endCanvasProcessor();
   };
 
   console.log('cleaning up tracks')
@@ -668,51 +759,52 @@ export const createRecordingBlob = (
 export const calculateRecordingDuration = (startTime: number | null): number =>
   startTime ? Math.round((Date.now() - startTime) / 1000) : 0;
 
+export const generateThumbnail = (captureTime: number = 2, videoFile: File): Promise<File> => {
+  return new Promise ( async (resolve, reject) => {
 
-export const generateThumbnail = ((captureTime: number = 2, videoFile: File): Promise<File> => {
-  return new Promise ((resolve, reject) => {
-    const video = document.createElement('video');
-    if(!(videoFile instanceof File)) {
-      throw new Error('The video file is invalid')
-    }
-    video.src = URL.createObjectURL(videoFile!);
-    video.crossOrigin ="anonymous";
+    if(!(videoFile instanceof File)) throw new Error('The video file is invalid')
 
+    const videoDisplay = await getVideoDisplay(videoFile)
+
+    const {video} = videoDisplay;
+    
     video.onloadeddata = () => {
       video.currentTime = Math.min(captureTime, video.duration);
     }
 
-    video.onseeked = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+    video.onseeked = async () => {
+      const {canvas} = await getCanvasDisplay({video: videoDisplay.video, });
 
-      const ctx = canvas.getContext('2d');
-
-      if(!ctx) throw new Error ('Could not get canvas context');
-      
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      canvas.toBlob(blob => {
-        if(blob) {
-          const imageUrl = URL.createObjectURL(blob);
-          const imageName = imageUrl.split('/')[0];
-          const imageFile = new File([blob], imageName, {type: blob.type});
-
-          resolve(imageFile);
-
-          URL.revokeObjectURL(video.src);
-        }else {
-          reject (new Error('Failed to create blob'));
-        }
-      }, 'image/jpg', 2);
+      try {
+        const imageFile = await canvasToBlob(canvas);
+        URL.revokeObjectURL(video.src);
+        if(imageFile) resolve(imageFile);
+      } catch (error) {
+        reject(error);
+      }
     };
 
     video.onerror = () => {
       throw new Error('failed to load video');
     }
   })
-})
+}
+
+export const canvasToBlob = (canvas: HTMLCanvasElement, fileType?: string): Promise<File> => {
+  return new Promise ((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if(blob) {
+        const imageUrl = URL.createObjectURL(blob);
+        const imageName = imageUrl.split('/')[0];
+        const imageFile = new File([blob], imageName, {type: blob.type});
+
+        resolve(imageFile);
+      }else {
+        reject (new Error('Failed to create blob'));
+      }
+    }, fileType || 'image/png', 2)
+  })
+}
 
 export const downloadVideo = async (videoUrl: string) : Promise<void> => {
   try {
@@ -811,21 +903,54 @@ export const formValues = (formField: Record<PropertyKey, string>): Record<strin
   return addedValue;
 };
 
-export const base64ToFile = async ({
-  base64, 
-  fileName,
-  fileType,
-}: PreviousThumbnailsType): Promise<File> => {
-  const response = await fetch(base64 as string);
+export const base64ToFile = async ({url, name,type}: ImagesArrayType): Promise<File> => {
+  const response = await fetch(url as string);
 
   if(!response.ok) throw new Error(`Failed to fetch ${response.status} ${response.statusText}`);
 
   const blob = await response.blob();
 
-  return new File([blob], fileName, {type: fileType})
+  return new File([blob], name, {type: type})
 }
 
 export const base64ToUrl = async function (base64: string): Promise<string> { 
   const blob = await fetch(base64).then(res => res.blob());
   return URL.createObjectURL(blob);
 };
+
+export const fileToBase64 = (file: File): Promise<string | ArrayBuffer> => {
+  return new Promise ((resolve, reject) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result;
+        if(base64) {
+          resolve(base64)
+        } else {
+          new Error('failed to turn file to base64');
+        };
+      }
+      reader.readAsDataURL(file);
+    } catch(error) {
+      reject(error);
+    }
+  })
+}
+
+export const generateScreenShotName = (recordingName: string) => {
+
+  const name = recordingName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+
+  const now = new Date();
+  
+  const date = now.toISOString().split('T')[0];
+
+  const withAppend = (time : number) => time.toString().padStart(2, '0')
+  const time = withAppend(now.getHours()) + '-' + withAppend(now.getMinutes()) + '-' + withAppend(now.getSeconds());
+
+  return `${name}_${date}_${time}`
+}
+
+export const formatTimer = (time: number) => {
+  return time < 10 ? `0${time}` : `${time}`;
+} 

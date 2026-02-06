@@ -46,7 +46,7 @@ const VideoCard = ({
                 {title} - {" "} {createdAt.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric'})}
             </h2>
       </article>
-      <CopyBtn id={id} className="float-copy-btn"/>
+      <CopyBtn id={id} className="float-btn"/>
       {duration && (
         <div className="duration">
             {Math.ceil(duration/60)} {duration/60 > 1 ? "mins": "min"} 

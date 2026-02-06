@@ -1,23 +1,26 @@
 "use client"
 import { dummySession, filterOptions } from '@/constants';
-import {ActionButton, Img, DropdownList, RecordStream} from '.'
+import {Img, DropdownList, RecordStream} from '.'
 import { authClient } from '@/lib/authClient'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { updateURLParams } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import { DropdownOptionsType, SharedHeaderProps } from '..';
+import { DropdownOptionsType, ModalContentType, SharedHeaderProps } from '..';
+import { useGlobalContext } from '@/lib/hooks/useGlobalContext';
+import { successfulRedirectContent } from '@/constants/lists';
 
 const SharedHeader = ({subHeader, title, userImg}: SharedHeaderProps) => {
+
+  const {modalAction, successfulAction, resetModal, syncModalContent} = useGlobalContext()
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-const activeFilter = useMemo(()=> filterOptions.find(option => option.label === searchParams.get ("filter")), [filterOptions, searchParams])
+  const activeFilter = useMemo(()=> filterOptions.find(option => option.label === searchParams.get ("filter")), [filterOptions, searchParams])
 
-const defaultFilter = useMemo(()=> filterOptions.filter(option => option?.default)[0], [filterOptions, searchParams])
-
+  const defaultFilter = useMemo(()=> filterOptions.filter(option => option?.default)[0], [filterOptions, searchParams])
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "")
   const [selectedFilter, setSelectedFilter] = useState<DropdownOptionsType>(activeFilter || defaultFilter);
@@ -52,6 +55,21 @@ const defaultFilter = useMemo(()=> filterOptions.filter(option => option?.defaul
   },[searchParams, searchQuery, pathname, router]);
 
 //   const {data: session} = authClient?.useSession();
+  const redirectedContent = useCallback((action: boolean): ModalContentType | null => successfulRedirectContent(resetModal, action),[resetModal, successfulRedirectContent])
+
+  useEffect(() => {
+    if(modalAction?.to_profile) {
+        successfulAction('to_profile');
+        setTimeout(() => resetModal, 2000)
+    }
+    
+    const redirected = modalAction?.redirect?.state === 'after' && modalAction?.redirect?.response === 'successful'
+        
+    if(redirected) {
+        const content = redirectedContent(redirected);
+        if(content) syncModalContent('record', content);
+    }
+  },[modalAction?.to_profile]) 
 
 const session = dummySession;
 
@@ -116,9 +134,10 @@ const handleGoToUpload = () => {
                 triggerIcon={<Img 
                     src="/assets/icons/hamburger.svg"
                     alt="menu"
-                    size="14"
+                    size= {14}
                 />
                 }
+                className='z-50'
             />
         </section>
     </header>

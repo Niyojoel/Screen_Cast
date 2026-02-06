@@ -1,5 +1,6 @@
 import {EmptyState, SharedHeader, Pagination, VideoCard} from '@/components';
 import { dummySession, dummyVideos } from '@/constants';
+import { ParamsWithSearch, VideoWithUserResult } from '@/index';
 import { getAllVideosByUser } from '@/lib/actions/video';
 import { redirect } from 'next/navigation';
 import React from 'react'
@@ -12,10 +13,10 @@ const page = async ({params, searchParams} : ParamsWithSearch) => {
 
   const videos: VideoWithUserResult[] = dummyVideos;
 
-const session = dummySession;
+  const session = dummySession;
 
-const {user} = session;
-const {id: _id, image} = user;
+  const {user} = session;
+  const {id: _id, image} = user;
 
   if(!user) redirect('/404');
     

@@ -1,4 +1,5 @@
 
+import { Modal} from '@/components';
 import Navbar from '@/components/Navbar';
 import {Toaster} from 'react-hot-toast'
 
@@ -7,11 +8,12 @@ export default function Layout({
 }: {children: React.ReactNode}) {
 
   return (
-      <div>
-        <Navbar/>
-        <Toaster/>
-        {children}
-      </div>
+    <div>
+      <Navbar/>
+      <Toaster/>
+      {children}
+      <Modal/>
+    </div>
   );
 }
 
