@@ -4,7 +4,7 @@ import { useLoad } from "./useRecordActions/useLoad"
 import useRedirect from "./useRecordActions/useRedirect"
 import useSave from "./useRecordActions/useSave"
 import useStartRecording from "./useRecordActions/useStartRecord"
-import { MappedAction, useGlobalContext } from "../../useGlobalContext"
+import { MappedAction} from "../../useGlobalContext"
 import { ImagesArrayType, RecordSettingsType, StreamSettingsType, VideoSettingsType } from "@/index"
 import { RecordingTimerType } from "../useRecordActions"
 

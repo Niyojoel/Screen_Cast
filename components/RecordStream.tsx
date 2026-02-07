@@ -223,6 +223,11 @@ export const SuccessfulStartRecordingBody = memo(({
         onScreenShotSave
     } = useScreenRecording();
 
+
+    useEffect(() => {
+        console.log(recordingStatus);
+    })
+
     const ongoingRecordingNote = useCallback((streamSettings: StreamSettingsType) => (
         <Note
             settings={streamSettings}

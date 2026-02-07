@@ -44,6 +44,10 @@ const useRecordActions = () => {
     recordingStatus,
     streamSettings,
     recordingTimer,
+    onScreenShotClick, 
+    onScreenShotRemove, 
+    onScreenShotSave,
+    onScreenShotSelect
   } = useScreenRecording()
 
   const {
@@ -262,6 +266,13 @@ const useRecordActions = () => {
   useEffect(() => {
     if(isRecording) successfulAction('record');
   },[isRecording])
+
+  useEffect(() => {
+    console.log(streamSettings)
+    console.log(recordingStatus)
+    console.log(recordedVideoUrl)
+    console.log(recordingTimer)
+  },[ streamSettings, recordingStatus, recordedVideoUrl, recordingTimer])
 
   return {
     videoRef,

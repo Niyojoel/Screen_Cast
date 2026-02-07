@@ -333,15 +333,15 @@ export const useScreenRecording = () => {
 
       if(recorderStream.getVideoTracks().some(track => track.readyState === "live")){
         mediaRecorderRef.current.start(1000);
+        setState((prev) => ({
+          ...prev, 
+          isRecording: true, 
+          recordingStatus: 'recording'
+        }));
+  
+        startTimer();
       }
       
-      setState((prev) => ({
-        ...prev, 
-        isRecording: true, 
-        recordingStatus: 'recording'
-      }));
-
-      startTimer();
 
       return true;
 
