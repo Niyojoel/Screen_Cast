@@ -105,7 +105,6 @@ export const useScreenRecording = () => {
 
   const startTimer = () => {
     countInterval = window.setInterval(updateTimer, 1000);
-
     clearInterval(countInterval);
   }
 
@@ -239,11 +238,11 @@ export const useScreenRecording = () => {
             }))
           }
 
-          const processor = await getCanvasProcessor(displayStream);
+          // const processor = await getCanvasProcessor(displayStream);
 
-          canvasProcessorRef.current = processor;
+          // canvasProcessorRef.current = processor;
 
-          await addTrack(processor.stream, combinedStream, "video")
+          await addTrack(displayStream, combinedStream, "video")
         }
 
         console.log("just added video to combined: ", combinedStream.getVideoTracks().length);
@@ -376,13 +375,13 @@ export const useScreenRecording = () => {
 
     if(state.recordingStatus === "recording") {
       mediaRecorderRef.current.pause();
-      canvasProcessorRef.current?.pause();
+      if(canvasProcessorRef.current) canvasProcessorRef.current?.pause();
       pauseTimer();
       
       setState(prev => ({...prev, recordingStatus: 'paused'}))
     } else if (state.recordingStatus === 'paused') {
       mediaRecorderRef.current.resume();
-      canvasProcessorRef.current?.resume();
+      if(canvasProcessorRef.current) canvasProcessorRef.current?.resume();
       startTimer();
 
       setState(prev => ({...prev, recordingStatus: 'recording'}))
