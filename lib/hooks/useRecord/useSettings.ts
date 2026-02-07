@@ -1,6 +1,6 @@
 import { CameraOptions, DisplaySurfaceOptions, RecordSettingsType, VideoSettingsType } from '@/index';
-import { useCallback, useMemo, useState } from 'react'
-import { SyncCameraKeys } from './useRecordingFeatures';
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { SyncCameraKeys } from './useRecordActions';
 import { parseVideoSettings, syncCameraOnly } from '@/lib/utils';
 import { cameraMode, cameraSettingsOptions, cursorDisplayOptions, cursorDisplayOptionsIcon, micSettingsOptions, micSettingsOptionsIcon, screenSettingsOptions } from '@/constants/lists';
 
@@ -98,6 +98,8 @@ const useSettings = () => {
     videoSettings, 
     micSettingsOptions
   ])
+
+  useEffect(() => console.log(videoSettings), [videoSettings])
 
   return {videoSettings, recordSettings}
 }

@@ -1,37 +1,23 @@
 import { 
   useCallback, 
   useEffect, 
-  useMemo,
   useRef, 
   useState 
 } from "react";
 import { useScreenRecording } from "./useScreenRecording";
 import { 
   DeviceStatus, 
-  DeviceType,
-  CameraOptions, 
-  DisplaySurfaceOptions, 
-  RecordSettingsType, 
+  DeviceType, 
   VideoSettingsType,
   OpenModalArgs,
 } from "@/index";
 import { 
-  cameraMode, 
-  cameraSettingsOptions, 
-  cursorDisplayOptions, 
-  cursorDisplayOptionsIcon, 
-  micSettingsOptions, 
-  micSettingsOptionsIcon, 
-  screenSettingsOptions 
-} from "@/constants/lists";
-import { 
   base64ToFile,
   checkDevice, 
   downloadVideo, 
-  parseVideoSettings, 
-  syncCameraOnly 
 } from "../../utils";
 import {useGlobalContext } from "../useGlobalContext";
+import useSettings from "./useSettings";
 
 export type SyncCameraKeys = Pick<VideoSettingsType, "displaySurface" | "camera">;
 
@@ -42,7 +28,8 @@ export type RecordingTimerType = {
 }
 
 
-const useRecordingFeatures = () => {
+const useRecordActions = () => {
+
   const {
     recordedVideoUrl,
     isRecording,
@@ -51,17 +38,12 @@ const useRecordingFeatures = () => {
     startRecording,
     stopRecording,
     resetRecording,
-    streamSettings,
     handleTakeScreenShot,
     handlePauseResume,
     screenShots,
-    onScreenShotRemove,
-    onScreenShotSave,
-    onScreenShotSelect,
-    onScreenShotClick,
     recordingStatus,
+    streamSettings,
     recordingTimer,
-    isFlashing
   } = useScreenRecording()
 
   const {
@@ -81,99 +63,7 @@ const useRecordingFeatures = () => {
 
   const [videoPlaying, setVideoPlaying] = useState(false);
   
-  //Settings
-  const [videoSettings, setVideoSettings] = useState<VideoSettingsType>({
-    cursor: "always",
-    displaySurface: "monitor",
-    camera: 'no',
-    cameraFacingMode: 'user',
-    withMic: true,
-  });
-  
   const [failedCheck, setFailedCheck] = useState('');
-
-  //Settings ------------
-  const helpVideoSettings = useCallback((
-    key: keyof VideoSettingsType, 
-    value: VideoSettingsType[keyof VideoSettingsType]
-  ) => {
-    setVideoSettings(prev => ({...prev, [key]: value}));
-  },[])
-
-  const syncCamera = useCallback(async(
-    key: keyof SyncCameraKeys, 
-    value: DisplaySurfaceOptions | CameraOptions
-  ) => {
-    const syncSetting = await syncCameraOnly(
-      key, 
-      value,
-      {
-        displaySurface: videoSettings.displaySurface,
-        camera: videoSettings.camera
-      }
-    )
-    if(syncSetting) helpVideoSettings(syncSetting[0], syncSetting[1]);
-
-  },[videoSettings])
-  
-  const updateSettings = useCallback((key: keyof VideoSettingsType, option: string) => {
-    const value: VideoSettingsType[keyof VideoSettingsType] = parseVideoSettings(key, option);
-
-    helpVideoSettings(key, value);
-
-    if(key === "displaySurface" || "camera") {
-      syncCamera(
-        key as keyof SyncCameraKeys, 
-        value as DisplaySurfaceOptions | CameraOptions
-      )
-    }
-  },[syncCamera]);
-
-  const recordSettings = useMemo((): RecordSettingsType[] => [
-    {
-      title: "Screen Settings",
-      options: screenSettingsOptions,
-      updateSetting: (option) => updateSettings('displaySurface', option),
-      settingValue: ['displaySurface', videoSettings.displaySurface],
-      className:'col-span-5',
-    },
-    {
-      idIcon: cursorDisplayOptionsIcon(videoSettings.cursor === "never"),
-      options: cursorDisplayOptions,
-      updateSetting: (option) => updateSettings('cursor', option),
-      settingValue: ['cursor', videoSettings.cursor],
-      className:'col-span-5',
-    },
-    {
-      title: "Camera Settings",
-      options: cameraSettingsOptions,
-      updateSetting: (option) => updateSettings('camera', option),
-      settingValue: ['camera', videoSettings.camera],
-      className:'col-span-3',
-    },
-    {
-      options: cameraMode,
-      updateSetting: (option) => updateSettings('cameraFacingMode', option),
-      settingValue: ['cameraFacingMode', videoSettings.cameraFacingMode],
-      className:'col-span-2 place-self-end',
-      disabled: videoSettings.camera === "no",
-    },
-    {
-      idIcon: micSettingsOptionsIcon(videoSettings.withMic),
-      options: micSettingsOptions,
-      updateSetting: (option) => updateSettings('withMic', option),
-      settingValue: ['withMic', videoSettings.withMic],
-      className:'col-span-5',
-    },
-  ],[
-    updateSettings,
-    screenSettingsOptions, 
-    cursorDisplayOptions, 
-    cameraSettingsOptions, 
-    cameraMode, 
-    videoSettings, 
-    micSettingsOptions
-  ])
 
   //modal-buttons and routing----------------------
 
@@ -202,7 +92,7 @@ const useRecordingFeatures = () => {
 
   //recording buttons ------------
    //Device check function
-  const helpSettingsGuide = (device: DeviceType, checkResult: DeviceStatus ) => {
+  const helpFailedCheck = (device: DeviceType, checkResult: DeviceStatus ) => {
     const capitalizedDevice = device.replace(device.charAt(0), device.charAt(0).toUpperCase())
     if(checkResult === "no-permission"){
       setFailedCheck(`Please allow ${device} permission to proceed`);
@@ -218,7 +108,7 @@ const useRecordingFeatures = () => {
     if(condition) {
       const checkResult = await checkDevice(device);
       if(checkResult === 'no-permission' || 'no-support') {
-        helpSettingsGuide(device, checkResult);
+        helpFailedCheck(device, checkResult);
       }
       return checkResult;
     } else {
@@ -227,11 +117,12 @@ const useRecordingFeatures = () => {
   }
 
   //refactoring may not work well but needs refactoring
-  const handleCheckDevices = useCallback(async () => {
+  const handleCheckDevices = useCallback(async (videoSettings: VideoSettingsType) => {
     if(videoSettings.camera !== "no" || videoSettings.withMic) {
       
       changeState('ongoing', 'check')
   
+      console.log(videoSettings);
       console.log('checking devices')
   
       const camCheckResponse = await deviceCheckCondition(videoSettings.camera !== 'no', 'camera')
@@ -259,13 +150,13 @@ const useRecordingFeatures = () => {
     } else {
       beforeAction('record');
     };
-  }, [videoSettings])
+  }, [])
 
   const handleGoBack = useCallback(() => {
     beforeAction('check')
   },[])
 
-  const handleStartRecording = useCallback(async ()=> {
+  const handleStartRecording = useCallback(async (videoSettings: VideoSettingsType)=> {
     try {
       await startRecording(
         videoSettings, 
@@ -276,7 +167,7 @@ const useRecordingFeatures = () => {
       const message = error instanceof Error ? error.message : error;
       setFailedCheck(message as string);
     }
-  },[videoSettings])
+  },[])
 
   const handleRecordAgain = useCallback(async ()=> {
     try {
@@ -290,7 +181,7 @@ const useRecordingFeatures = () => {
     if(recordedVideoUrl && videoRef.current) {
         videoRef.current.src = recordedVideoUrl;
     }
-  },[videoSettings])
+  },[])
 
   const handleStopRecording = useCallback(() => {
     try {
@@ -367,6 +258,7 @@ const useRecordingFeatures = () => {
   const handleGoToRecordedVideo = () => successfulAction('load', 'before')
   //------------------------------
   
+  
   useEffect(() => {
     if(isRecording) successfulAction('record');
   },[isRecording])
@@ -385,23 +277,16 @@ const useRecordingFeatures = () => {
     handleRecordAgain,
     handleGoToUpload,
     handleSaveRecording,
-    onScreenShotSelect,
-    onScreenShotRemove,
-    onScreenShotSave,
-    onScreenShotClick,
     recordedVideoUrl,
-    streamSettings,
     failedCheck,
-    videoSettings,
-    recordSettings,
     changeVideoPlaying,
     handleTakeScreenShot,
     handlePauseResume,
     recordingStatus,
+    screenShots,
+    streamSettings,
     recordingTimer,
-    isFlashing,
-    screenShots
   }
 }
 
-export default useRecordingFeatures
+export default useRecordActions

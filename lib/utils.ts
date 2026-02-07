@@ -26,7 +26,7 @@ import {
   VideoDisplay, 
   VideoSettingsType 
 } from "..";
-import { SyncCameraKeys } from "./hooks/useRecord/useRecordingFeatures";
+import { SyncCameraKeys } from "./hooks/useRecord/useRecordActions";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -498,6 +498,11 @@ predefined_canvas?: HTMLCanvasElement
 
   return {ctx, canvas};
 }
+
+export const getStreamShot = (recorder: MediaRecorder) => {
+  //looking to implement something that takes in stream and the current stream time to feed in generateThumbnail to get a screenshot of stream
+  console.log({recorder})
+} 
 
 export const getCanvasProcessor = async (
   screenStream: MediaStream, 

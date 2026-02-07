@@ -1,6 +1,10 @@
 'use client'
 
-import { useState, useRef, useEffect} from "react";
+import { 
+  useState, 
+  useRef, 
+  useEffect
+} from "react";
 import {
   getMediaStreams,
   createAudioMixer,
@@ -16,8 +20,17 @@ import {
   generateScreenShotName,
   getCanvasProcessor,
   formatTimer,
+  getStreamShot,
 } from "@/lib/utils";
-import {BunnyRecordingState, CanvasProcessor, DisplaySurfaceOptions, ExtendedMediaStream, ImagesArrayType, StreamSettingsType, VideoSettingsType } from "@/index";
+import {
+  BunnyRecordingState, 
+  CanvasProcessor, 
+  DisplaySurfaceOptions, 
+  ExtendedMediaStream, 
+  ImagesArrayType, 
+  StreamSettingsType, 
+  VideoSettingsType 
+} from "@/index";
 
 export const useScreenRecording = () => {
 
@@ -238,12 +251,11 @@ export const useScreenRecording = () => {
               camera: 'no'
             }))
           }
+          // const processor = await getCanvasProcessor(displayStream);
 
-          const processor = await getCanvasProcessor(displayStream);
+          // canvasProcessorRef.current = processor;
 
-          canvasProcessorRef.current = processor;
-
-          await addTrack(processor.stream, combinedStream, "video")
+          await addTrack(displayStream, combinedStream, "video")
         }
 
         console.log("just added video to combined: ", combinedStream.getVideoTracks().length);
@@ -321,14 +333,15 @@ export const useScreenRecording = () => {
 
       if(recorderStream.getVideoTracks().some(track => track.readyState === "live")){
         mediaRecorderRef.current.start(1000);
-        setState((prev) => ({
-          ...prev, 
-          isRecording: true, 
-          recordingStatus: 'recording'
-        }));
-  
-        startTimer();
       }
+      
+      setState((prev) => ({
+        ...prev, 
+        isRecording: true, 
+        recordingStatus: 'recording'
+      }));
+
+      startTimer();
 
       return true;
 
@@ -376,13 +389,13 @@ export const useScreenRecording = () => {
 
     if(state.recordingStatus === "recording") {
       mediaRecorderRef.current.pause();
-      canvasProcessorRef.current?.pause();
+      if(canvasProcessorRef.current) canvasProcessorRef.current?.pause();
       pauseTimer();
       
       setState(prev => ({...prev, recordingStatus: 'paused'}))
     } else if (state.recordingStatus === 'paused') {
       mediaRecorderRef.current.resume();
-      canvasProcessorRef.current?.resume();
+      if(canvasProcessorRef.current) canvasProcessorRef.current?.resume();
       startTimer();
 
       setState(prev => ({...prev, recordingStatus: 'recording'}))
@@ -393,6 +406,10 @@ export const useScreenRecording = () => {
     try {
 
       if(!canvasProcessorRef.current) return;
+
+      const screenShot = mediaRecorderRef.current && getStreamShot(mediaRecorderRef.current)
+
+      //how to know the current time of the mediaReorderRef.current
   
       const imageFile = await canvasProcessorRef.current?.takeScreenShot();
   
@@ -450,6 +467,10 @@ export const useScreenRecording = () => {
       })
     })
   }
+
+  useEffect(() => {
+    console.log(recordingStatus);
+  },[recordingStatus])
 
   return {
     ...state,

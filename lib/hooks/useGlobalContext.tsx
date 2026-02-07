@@ -26,6 +26,7 @@ import {
   useEffect
 } from "react";
 import { getModalButton } from "../modalContentUtil";
+import { exitContent } from "@/constants/lists";
 
 type GlobalContextType = {
   modalOpen: ModalOpenType;
@@ -39,6 +40,7 @@ type GlobalContextType = {
   actionError: string;
   logActionError: (log: string) => void;
   syncModalContent: (modalType: ModalType, content: ModalContentType) => void;
+  exitModalContent: (action: boolean) => ModalContentType;
   modalContentParent: ParentContentType | null;
   changeContentParent: (parent: ParentContentType) => void;
   changeAction: (action: ChangeActionArgs) => void;
@@ -304,6 +306,10 @@ const GlobalProvider = ({children} : {children: React.ReactNode}) => {
     }
   }, [modalOpen.type])
 
+  //generic modal content
+  const exitModalContent = useCallback((action: boolean): ModalContentType => exitContent(resetModal, cancelExit, action)
+  ,[resetModal, cancelExit, exitContent])
+
   useEffect(()=> console.log(modalOpen), [modalOpen])
 
   return <GlobalContext.Provider value={{
@@ -314,6 +320,7 @@ const GlobalProvider = ({children} : {children: React.ReactNode}) => {
     actionError,
     logActionError,
     syncModalContent,
+    exitModalContent,
     changeContentParent,
     closeModal,
     cancelExit,
