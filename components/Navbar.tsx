@@ -1,10 +1,15 @@
 "use client"
 
-import { ActionButton, Img, Logo } from '.'
+import { 
+    ActionButton, 
+    Logo 
+} from '.'
 import { authClient } from '@/lib/authClient'
-import { useRouter, redirect} from 'next/navigation'
+import { 
+    useRouter, 
+    redirect
+} from 'next/navigation'
 import { dummySession } from '@/constants'
-import Link from 'next/link'
 
 const Navbar = () => {
   const router = useRouter();
@@ -14,7 +19,7 @@ const Navbar = () => {
 //   const user = session?.user;
 //   const {id, image} = user;
 
-const handleLogOut = () => authClient.signOut({
+const onLogOut = () => authClient.signOut({
     fetchOptions: {
         onSuccess: () => {
             redirect('/')
@@ -48,7 +53,7 @@ const {id, image} = user;
                         size={24} 
                         alt="logout"
                         imgClassName="rotate-180"
-                        action={handleLogOut}
+                        action={onLogOut}
                     >
                     </ActionButton>
                 </figure>

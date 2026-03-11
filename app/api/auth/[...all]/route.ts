@@ -57,7 +57,7 @@ const protectedAuth = async (req: NextRequest): Promise<ArcjetDecision> => {
   return shieldValidation.protect(req);
 };
 
-const authHandlers = toNextJsHandler(auth.handler);
+const authHandlers = toNextJsHandler(auth.onr);
 
 export const { GET } = authHandlers;
 

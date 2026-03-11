@@ -1,8 +1,28 @@
-import { CameraOptions, DisplaySurfaceOptions, RecordSettingsType, VideoSettingsType } from '@/index';
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { SyncCameraKeys } from './useRecordActions';
-import { parseVideoSettings, syncCameraOnly } from '@/lib/utils';
-import { cameraMode, cameraSettingsOptions, cursorDisplayOptions, cursorDisplayOptionsIcon, micSettingsOptions, micSettingsOptionsIcon, screenSettingsOptions } from '@/constants/lists';
+import { 
+  CameraOptions, 
+  DisplaySurfaceOptions, 
+  RecordSettingsType, 
+  VideoSettingsType 
+} from '@/index';
+import { 
+  useCallback, 
+  useMemo, 
+  useState 
+} from 'react'
+import { SyncCameraKeys } from './useModalActions';
+import { 
+  parseVideoSettings, 
+  syncCameraOnly 
+} from '@/lib/utils';
+import { 
+  cameraMode, 
+  cameraSettingsOptions, 
+  cursorDisplayOptions, 
+  cursorDisplayOptionsIcon, 
+  micSettingsOptions, 
+  micSettingsOptionsIcon, 
+  screenSettingsOptions 
+} from '@/constants/lists';
 
 const useSettings = () => {
 
@@ -14,7 +34,6 @@ const useSettings = () => {
     cameraFacingMode: 'user',
     withMic: true,
   });
-  
 
   //Settings ------------
   const helpVideoSettings = useCallback((
@@ -55,7 +74,7 @@ const useSettings = () => {
 
   const recordSettings = useMemo((): RecordSettingsType[] => [
     {
-      title: "Screen Settings",
+      title: "Display Settings",
       options: screenSettingsOptions,
       updateSetting: (option) => updateSettings('displaySurface', option),
       settingValue: ['displaySurface', videoSettings.displaySurface],
@@ -69,7 +88,7 @@ const useSettings = () => {
       className:'col-span-5',
     },
     {
-      title: "Camera Settings",
+      title: "Device Settings",
       options: cameraSettingsOptions,
       updateSetting: (option) => updateSettings('camera', option),
       settingValue: ['camera', videoSettings.camera],
@@ -98,8 +117,6 @@ const useSettings = () => {
     videoSettings, 
     micSettingsOptions
   ])
-
-  useEffect(() => console.log(videoSettings), [videoSettings])
 
   return {videoSettings, recordSettings}
 }

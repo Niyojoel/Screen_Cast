@@ -10,7 +10,7 @@ import arcjet, {
 } from "@arcjet/next";
 import { getEnv } from "./utils";
 
-// Re-export the rules to simplify imports inside handlers
+// Re-export the rules to simplify imports inside onrs
 export {
   detectBot,
   fixedWindow,
@@ -22,7 +22,7 @@ export {
   ArcjetDecision,
 };
 
-// Create a base Arcjet instance for use by each handler
+// Create a base Arcjet instance for use by each onr
 const aj = arcjet({
   key: getEnv("ARCJET_API_KEY"),
   rules: [],

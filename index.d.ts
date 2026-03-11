@@ -1,6 +1,7 @@
 import { ClassValue } from "clsx";
 import { ReactNode } from "react";
 import { RecordingTimerType } from "./lib/hooks/useRecordingFeatures";
+import { ActionType, NoNameModalActionType, VoidAction, VoidActionParamsOptional } from "./lib/hooks/useModalContext";
 
 declare interface User {
   name: string;
@@ -24,7 +25,7 @@ declare interface ActionButtonProps extends Omit<React.BaseHTMLAttributes, 'onCl
   src?: string;
   alt?: string;
   size?: number;
-  action: () => void;
+  action: VoidActon;
   imgClassName?: string;
   noImgClass?: boolean
 } 
@@ -46,25 +47,30 @@ declare interface FileInputProps {
   id: string;
   label: string;
   accept: string;
+  type: "video" | "image";
   file: File | null;
   previewUrl: string | null;
   inputRef: React.RefObject<HTMLInputElement | null>;
   previewBoxRef: React.RefObject<HTMLDivElement | null>;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  onFileDrop: (e: DragEvent<HTMLElement>)=> void;
-  onReset: () => void;
-  type: "video" | "image";
-  handleUsePreviousThumbnail?: (filename: string) => void; 
+  onChange: (file: File) => void;
+  onReset: VoidActon;
+  onOpenModal?: (action: 'generate' | 'edit', parent?: 'thumbnail') => void;
+  fileChangeError: string;
+  logError: (log: string) => void;
   previousThumbnails?: ImagesArrayType[],
-  handleOnGenerate?: (captureTime: number, videoFile: File) => void;
   removeThumbnail?: (filename: string) => void;
+}
+
+declare type UploadTriggerProps = {
+  text: string;
+  className?: Record<string, boolean>
 }
 
 declare interface ThumbnailSuggestionsProps {
   uploadTrigger: React.ReactNode;
   previousThumbnails: ImagesArrayType[];
   uploadTriggerClass: string;
-  handleUsePreviousThumbnail: (filename: string) => void;
+  onChange: (file: File) => void;
   removeThumbnail: (filename: string) => void;
 }
 
@@ -72,14 +78,14 @@ declare interface ImagesConsoleProps {
   imagesArr: ImagesArrayType[];
   className?: ClassValue;
   cardClass?: ClassValue;
-  onSelect?: (id: string) => void;
-  onRemove: (id: string) => void;
+  btnsClass?: string;
+  buttonSize?: number;
+  onRemove?: (id: string) => void;
   onClick: (id: string) => void;
-  onSave?: (id: string) => void;
 }
 
 declare interface ImagesArrayType {
-  url: string | ArrayBuffer,
+  url: string | ArrayBuffer;
   name: string; 
   type: string;
   selected?: boolean;
@@ -87,11 +93,11 @@ declare interface ImagesArrayType {
 
 declare interface CanvasProcessor {
   stream: MediaStream; 
-  stopLoop: () => void; 
-  pause: () => void;
-  resume: () => void;
+  stopLoop: VoidActon; 
+  pause: VoidActon;
+  resume: VoidActon;
   takeScreenShot: () => Promise<File>;
-  end: () => void
+  end: VoidActon
 }
 
 declare interface VideoDisplay {
@@ -337,7 +343,7 @@ declare type ModalContentType = {
 }
 
 declare interface ModalProps {
-  closeModal: () => void,
+  closeModal: VoidActon,
   closeIcon: React.ReactNode,
   error: string,
   setError: (message: string) => void,
@@ -345,7 +351,7 @@ declare interface ModalProps {
   contentBody: React.ReactNode
 }
 
-declare interface DialogBodyContentProps {
+declare interface ModalBodyProps {
   icon?: React.ReactNode, 
   headerNode?: string | React.ReactElement, 
   subNode?: string | React.ReactElement, 
@@ -353,15 +359,21 @@ declare interface DialogBodyContentProps {
   actionPopup?: boolean
 }
 
-declare interface DialogContentListFeatureProps {
-  featureName: string, 
-  featureStatus: string,
-  className?: string
+declare type CustomActionModalProps = {
+  text?: string; 
+  header?: string; 
+  className?: string;
+}
+
+declare type CustomActionModalProps2 = {
+  text: string; 
+  header?: string; 
+  className?: string;
 }
 
 declare type ModalButton = {
   className: string;
-  action: () => void;
+  action: VoidActon;
   text: string;
   icon?: React.ReactNode;
 }
@@ -428,15 +440,15 @@ type PermissionsType = "denied" | "granted" | "prompt"
 type DeviceStatus = "passed" | "no-permission" | 'no-support' | "unchecked" | 'unused'
 
 
-type ModalType = 'record' | 'upload' | 'post';
+type ModalType = 'record' | 'upload' | 'video';
 
 type ParentContentType = 'record' | 'thumbnail' | 'delete'
 
-type RecordAction = 'check' | 'record' | 'load' | 'redirect' | 'save_record'
+type RecordAction = 'check' | 'record' | 'load' | 'redirect' | 'save'
 
 type UploadAction = ThumbnailAction | 'edit'
 
-type ThumbnailAction =  'generate' | 'add' | 'save_thumbnail'
+type ThumbnailAction =  'generate' | 'add'
 
 type DeleteAction = 'delete' | 'to_profile'
 
@@ -462,10 +474,21 @@ declare type OngoingModalActionType = {
   response: ActionResponseType | null;
 }
 
-declare type OpenModalArgs = {
+declare type OnOpenArgs = {
   type: ModalType;
   closeIcon?: React.ReactNode
 }
+
+type ModalInitialActions = 'check' | 'generate' | 'edit' | 'delete' | 'download'
+
+declare type OpenModalArgs = {
+  action: ModalInitialActions | VoidAction,
+  type: ModalType,
+  parent?: ParentContentType | null,
+  closeIcon?: React.ReactElement | null;
+  addedCondition?: boolean,
+} 
+
 
 declare type VideoSettingsType = {
   cursor: CursorOptions;
@@ -473,6 +496,12 @@ declare type VideoSettingsType = {
   camera: CameraOptions;
   cameraFacingMode: CameraFacingMode;
   withMic: boolean;
+}
+
+declare type RecordingTimerType = {
+  seconds: string,
+  minutes: string,
+  hour: string
 }
 
 declare type StreamSettingsType = VideoSettingsType & {
@@ -492,6 +521,58 @@ declare type RecordingDialogContentBodyProps = {
   actionResponse: "failed" | "successful" | null;
 }
 
+declare type NoteProps = {
+    settings: VideoSettingsType | StreamSettingsType,
+    falseConditionRender: string | React.ReactElement,
+    additionalFeature?: React.ReactElement | null,
+    featureHeaderText?: string,
+    className?: string,
+}
+
+declare type OngoingRecordingContentProps = {
+  recordingStatus: RecordingState, 
+  recordingTimer: RecordingTimerType,
+  streamSettings: StreamSettingsType,
+  screenShots: ImagesArrayType[],
+  onPauseResume: VoidAction,
+  onTakeScreenShot: VoidActon, 
+  onScreenShotClick: (id: string) => void, 
+}
+
+declare type SuccessfulLoadBodyProps = {
+  saveAction: NoNameModalActionType;
+  onSaveRecording: VoidAction;
+  recordedVideoUrl: string;
+  screenShots: ImagesArrayType[];
+  videoRef: Ref<HTMLVideoElement>;
+  changeVideoPlaying: (state: boolean) => void;
+  onScreenShotClick: (id: string) => void; 
+}
+
+declare type LoadBodyProps = {
+  action: NoNameModalActionType;
+  saveAction: NoNameModalActionType;
+  onSaveRecording: VoidAction;
+  recordedVideoUrl: string;
+  screenShots: ImagesArrayType[];
+  videoRef: Ref<HTMLVideoElement>;
+  changeVideoPlaying: (state: boolean) => void;
+  onScreenShotClick: (id: string) => void;
+}
+
+declare type StartRecordingBodyProps = {
+  action: NoNameModalActionType;
+  settings: VideoSettingsType;
+  recordingStatus: RecordingState;
+  recordingTimer: RecordingTimerType;
+  streamSettings: StreamSettingsType;
+  screenShots: ImagesArrayType[];
+  failedNote: string;
+  onPauseResume: VoidAction;
+  onTakeScreenShot: VoidAction; 
+  onScreenShotClick: (id: string) => void; 
+}
+
 declare interface RecordSettingsType {
   options: DropdownOptionsType[];
   title?: string,
@@ -503,6 +584,12 @@ declare interface RecordSettingsType {
   ],
   idIcon?: React.ReactNode,
   disabled?: boolean,
+}
+
+declare type CheckBodyProps = {
+  action: NoNameModalActionType;
+  checkResponse: string;
+  settings: RecordSettingsType[];
 }
 
 declare interface BunnyRecordingState {
@@ -539,7 +626,7 @@ interface PaginationResult<T> {
 
 declare interface RecordingHandlers {
   onDataAvailable: (e: BlobEvent) => void;
-  onStop: () => void;
+  onStop: VoidActon;
 }
 
 type size = {ideal: number};

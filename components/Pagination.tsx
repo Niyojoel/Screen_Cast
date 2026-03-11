@@ -1,7 +1,14 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
-import { cn, generatePagination, updateURLParams } from '@/lib/utils';
+import { 
+  useRouter, 
+  useSearchParams 
+} from 'next/navigation'
+import { 
+  cn, 
+  generatePagination, 
+  updateURLParams 
+} from '@/lib/utils';
 import { Img } from './ActionButton';
 
 type PaginationProps = {

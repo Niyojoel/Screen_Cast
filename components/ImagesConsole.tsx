@@ -1,18 +1,22 @@
 'use client'
 import {ImagesConsoleProps} from '..'
 import { cn } from '@/lib/utils'
-import { Img } from './ActionButton'
 import Image from 'next/image'
-import { Save, X } from 'lucide-react'
+import { 
+  Check, 
+  CircleCheckBig, 
+  Save, 
+  X 
+} from 'lucide-react'
 
 const ImagesConsole =  ({
   imagesArr,
   className,
   cardClass,
+  btnsClass,
+  buttonSize,
   onClick,
-  onSelect,
   onRemove,
-  onSave,
 }: ImagesConsoleProps) => {
 
   let active = imagesArr?.length > 0
@@ -30,34 +34,18 @@ const ImagesConsole =  ({
               onClick={()=> onClick(name)}
               className={cn('image-class', cardClass)}
             >
-              <span className="btns">
-                 <button
+              {onRemove && <span className={cn("btns", btnsClass)}>
+                  <button
                   type='button'
                   onClick={(e) => {
                     e.stopPropagation()
                     onRemove(name)
                   }}
                 >
-                  <X stroke='white' size={16}/>
+                  <X stroke='white' size={buttonSize || 16}/>
                 </button>
-                {onSave && <button type='button' onClick={(e) => {
-                  e.stopPropagation();
-                  onSave(name)
-                }}>
-                  <i>
-                    <Save size={16} stroke='#212121' strokeWidth={1.2}/>
-                  </i>
-                </button>}
-              </span>
-
-              {onSelect && selected && (
-                <input 
-                  type='checkbox' 
-                  onChange={(e) => onSelect(name)} 
-                  checked={selected} 
-                  className=''
-                />
-              )}
+              </span>}
+              {selected && <CircleCheckBig size={18} stroke='white' fill='#ff4393' strokeWidth={3} className='absolute top-1 right-1 z-[5] shadow-md'/>}
               <Image src={url as string} alt="image" fill/>
             </div>
           )})

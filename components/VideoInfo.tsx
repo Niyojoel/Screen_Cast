@@ -1,8 +1,15 @@
 "use client"
-import { cn, parseTranscript } from '@/lib/utils';
-import React, { memo, useState } from 'react'
+import { 
+  cn, 
+  parseTranscript 
+} from '@/lib/utils';
+import React, { 
+  memo, 
+  useState 
+} from 'react'
 import EmptyState from './EmptyState';
 import { infos } from '@/constants';
+import { VideoInfoProps } from '..';
 
 const VideoInfo = memo(({
   transcript,

@@ -5,6 +5,7 @@ import { getVideoProcessingStatus, incrementVideoViews } from '@/lib/actions/vid
 import { cn, createIframeLink } from '@/lib/utils'
 import { LoaderPinwheelIcon } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
+import { VideoPlayerProps } from '..';
 
 const VideoPlayer = memo(({id, videoId, videoUrl, className}: VideoPlayerProps & {videoUrl: string}) => {
 

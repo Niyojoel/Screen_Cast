@@ -2,7 +2,10 @@
 
 import Image from "next/image"
 import { memo } from "react"
-import { ActionButtonProps, ImgProps } from "..";
+import { 
+  ActionButtonProps, 
+  ImgProps 
+} from "..";
 import { cn } from "@/lib/utils";
 
 const ActionButton = memo(({

@@ -1,62 +1,87 @@
 "use client"
-import { dummySession, filterOptions } from '@/constants';
-import {Img, DropdownList, RecordStream} from '.'
+
+import { 
+    dummySession, 
+    filterOptions 
+} from '@/constants';
+import {
+    Img, 
+    DropdownList, 
+    RecordStream
+} from '.'
 import { authClient } from '@/lib/authClient'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { updateURLParams } from '@/lib/utils';
+import { 
+    usePathname, 
+    useRouter, 
+    useSearchParams
+} from 'next/navigation';
+import { 
+    useEffect, 
+    useMemo 
+} from 'react';
 import toast from 'react-hot-toast';
-import { DropdownOptionsType, ModalContentType, SharedHeaderProps } from '..';
-import { useGlobalContext } from '@/lib/hooks/useGlobalContext';
-import { successfulRedirectContent } from '@/constants/lists';
+import { 
+    DropdownOptionsType, 
+    SharedHeaderProps 
+} from '..';
+import { useModalContext } from '@/lib/hooks/useModalContext';
+import useSharedHeader from '@/lib/hooks/useSharedHeader';
 
-const SharedHeader = ({subHeader, title, userImg}: SharedHeaderProps) => {
+const SharedHeader = ({
+  subHeader, 
+  title, 
+  userImg
+}: SharedHeaderProps) => {
 
-  const {modalAction, successfulAction, resetModal, syncModalContent} = useGlobalContext()
+  const {
+    modalAction, 
+    successfulAction, 
+    resetModal, 
+    syncModalContent, 
+    redirectedContent
+  } = useModalContext()
+
+  const {
+    searchQuery,
+    selectedFilter,
+    onFilterChange: filterChange,
+    onSearchChange,
+    searchDebounce,
+    search_FilterSync
+} = useSharedHeader()
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const activeFilter = useMemo(()=> filterOptions.find(option => option.label === searchParams.get ("filter")), [filterOptions, searchParams])
+  const activeFilter = useMemo(()=> filterOptions.find(option => option.label === searchParams.get ("filter")),[searchParams])
 
-  const defaultFilter = useMemo(()=> filterOptions.filter(option => option?.default)[0], [filterOptions, searchParams])
+  //const {data: session} = authClient?.useSession();
 
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "")
-  const [selectedFilter, setSelectedFilter] = useState<DropdownOptionsType>(activeFilter || defaultFilter);
+  const session = dummySession;
 
-  const handleFilterChange = (option: DropdownOptionsType) => {
-    setSelectedFilter(option);
-    const url = updateURLParams(
-        searchParams,
-        {filter: option.label || null},
-        pathname
-    );
-    router.push(url);
-  };
+  const {user} = dummySession;
 
-  useEffect(() => {
-    setSearchQuery(searchParams.get("query") || "");
-    setSelectedFilter(activeFilter || defaultFilter)
-  }, [searchParams]);
+  const onGoToUpload = () => {
+    if(user) {
+      router.push('/upload')
+    }else {
+      router.push("/sign-in");
+      toast('You need to sign in to access Upload page')
+    }
+  }
 
-  useEffect(() => {
-    const debounceTimer = setTimeout(()=> {
-        if(searchQuery !== searchParams.get('query')) {
-            const url = updateURLParams(
-                searchParams,
-                {query: searchQuery || null},
-                pathname
-            )
-            router.push(url);
-        }
-    }, 500)
-    return () => clearTimeout (debounceTimer)
-  },[searchParams, searchQuery, pathname, router]);
+  const redirect = (url: string) => router.push(url);
 
-//   const {data: session} = authClient?.useSession();
-  const redirectedContent = useCallback((action: boolean): ModalContentType | null => successfulRedirectContent(resetModal, action),[resetModal, successfulRedirectContent])
-
+  const onFilterChange = (option: DropdownOptionsType) => {
+    filterChange(
+      option, 
+      pathname, 
+      searchParams, 
+      redirect
+    )
+  }
+  
   useEffect(() => {
     if(modalAction?.to_profile) {
         successfulAction('to_profile');
@@ -71,18 +96,18 @@ const SharedHeader = ({subHeader, title, userImg}: SharedHeaderProps) => {
     }
   },[modalAction?.to_profile]) 
 
-const session = dummySession;
+  useEffect(() => {
+    searchDebounce(
+      searchQuery, 
+      pathname, 
+      searchParams, 
+      redirect
+    );
+  },[searchQuery, pathname, searchParams]);
 
-const {user} = dummySession;
-
-const handleGoToUpload = () => {
-    if(user) {
-        router.push('/upload')
-    }else {
-        router.push("/sign-in");
-        toast('You need to sign in to access Upload page')
-    }
-}
+  useEffect(() => {
+    search_FilterSync(searchParams.get('query')!, activeFilter)
+  }, [searchParams, activeFilter]);
 
   return (
     <header className='header'>
@@ -102,7 +127,7 @@ const handleGoToUpload = () => {
             </div>
             <aside>
                 <button
-                    onClick={handleGoToUpload}
+                    onClick={onGoToUpload}
                 >
                     <Img
                         src="/assets/icons/upload.svg"
@@ -119,7 +144,7 @@ const handleGoToUpload = () => {
                 <input 
                     type="text" 
                     placeholder='Search for videos, tags, folders...'
-                    onChange={(e)=> setSearchQuery(e.target.value)}
+                    onChange={onSearchChange}
                     />
                 <Img 
                     src="/assets/icons/search.svg" 
@@ -130,7 +155,7 @@ const handleGoToUpload = () => {
             <DropdownList
                 options={filterOptions}
                 activeOption={selectedFilter}
-                onSelectAction={handleFilterChange}
+                onSelectAction={onFilterChange}
                 triggerIcon={<Img 
                     src="/assets/icons/hamburger.svg"
                     alt="menu"

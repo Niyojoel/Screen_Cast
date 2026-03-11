@@ -1,29 +1,29 @@
 'use client'
-import { ChangeEvent, DragEvent, useCallback, useEffect, useRef, useState } from "react";
-import { base64ToFile, fileToBase64, getVideoDuration } from "../../utils";
+import { 
+  ChangeEvent, 
+  useCallback, 
+  useEffect, 
+  useRef, 
+  useState 
+} from "react";
+import {fileToBase64, getVideoDuration } from "../../utils";
 import { ImagesArrayType } from "@/index";
-import { useGlobalContext } from "../useGlobalContext";
 
 export const useFileInput = (maxSize: number) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
   const [fileError, setFileError] = useState('');
+  const [fileChanged, setFileChanged] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const previewBoxRef = useRef<HTMLDivElement>(null);
 
-
-  //for only thumbnail input functionality
+    //for only thumbnail input functionality
   const [previousThumbnails, setPreviousThumbnails] = useState<ImagesArrayType[]>([])
-
-
-  const removeThumbnail = (filename: string) => { 
-    setPreviousThumbnails(prev => (prev.filter(thumb => thumb.name !== filename)));
-  }
 
   const fileChange = useCallback(async (selectedFile: File) => {
     try {
-      if (selectedFile.size > maxSize) return setFileError("Media file size exceed the size limit");
+      if (selectedFile.size > maxSize) return setFileError(`${selectedFile.type.startsWith("image/") ? 'Thumbnail' : 'Video'} file size exceed the size limit`);
   
       if (previewUrl) URL.revokeObjectURL(previewUrl);
   
@@ -52,57 +52,25 @@ export const useFileInput = (maxSize: number) => {
           setDuration(videoDuration);
         })();
       }
+
+      setFileChanged(true);
     } catch (error) {
       console.log(error);
       throw error;
     }
   },[file, previousThumbnails, duration, previewUrl])
 
-  const handleUseGenerated = useCallback((file: File) => {
+  const onFileChange = useCallback(async (file_?: File, e?: ChangeEvent<HTMLInputElement>) => {
     try {
-      fileChange(file);
+      let file = file_
+      if(e) file === e.target.files?.[0];
+      if(file) fileChange(file);
     } catch (error) {
       throw error;
     }
   },[fileChange]);
   
-  const handleUsePreviousThumbnail = useCallback((filename: string) => {
-    try {
-      const selectedThumbnail = previousThumbnails?.find(tn => tn.name === filename)
-      
-      const handleFile = async () => {
-        const file = await base64ToFile(selectedThumbnail!)
-        fileChange(file);
-      };
-
-      handleFile();
-    } catch (error) {
-      throw error;
-    }
-  },[previousThumbnails, , fileChange, base64ToFile])
-
-  const handleFileChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    try {
-      if (e.target.files?.[0]){
-        fileChange(e.target.files[0]);
-      }
-    } catch (error) {
-      throw error;
-    }
-  },[fileChange]);
-
-  const handleFileDrop = useCallback((e: DragEvent<HTMLElement>) => {
-    try {
-      if (e.dataTransfer.files?.[0]){
-        fileChange(e.dataTransfer.files[0]);
-      }
-    } catch (error) {
-      console.log(error)
-      throw error;
-    }
-  },[fileChange]);
-  
-  const resetFile = useCallback(() => {
+  const onResetFile = useCallback(() => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setFile(null);
     setPreviewUrl(null);
@@ -114,29 +82,66 @@ export const useFileInput = (maxSize: number) => {
     setFileError(log)
   }
 
-  useEffect(()=> {
-    if(previousThumbnails.length > 5) {
-      previousThumbnails.pop();
-    };
+  //actions relevant to video only 
+  //to track when a file is changed, so as to reset thumbnail modal
+  const onFileChanged = (state: boolean) => {
+    setFileChanged(state);
+  } 
 
-    if(previousThumbnails.length > 0) {
-     localStorage.setItem("recentThumbnails", JSON.stringify(previousThumbnails));
-    };
+  //thumbnail only actions
+   const removeThumbnail = (filename: string) => { 
+    setPreviousThumbnails(prev => (prev.filter(thumb => thumb.name !== filename)));
+  }
+
+  //store previous thumbnail to local storage
+  useEffect(()=> {
+    const storePreviousThumbnails = () => {
+      const thumbnailsLength = previousThumbnails.length;
+      if(thumbnailsLength > 0) {
+        if(thumbnailsLength > 5) previousThumbnails.pop();
+
+        localStorage.setItem("recentThumbnails", JSON.stringify(previousThumbnails));
+      };
+    }
+
+    storePreviousThumbnails()
   }, [previousThumbnails])
 
   useEffect(()=> {
-    const parsedData = JSON.parse(localStorage.getItem("recentThumbnails")!);
-    if(parsedData !== null && parsedData.length > 0) {
-      setPreviousThumbnails(parsedData);
+    const syncPreviousThumbnails = () => {
+      const parsedData = JSON.parse(localStorage.getItem("recentThumbnails")!);
+      if(parsedData !== null && parsedData.length > 0) {
+        setPreviousThumbnails(parsedData);
+      }
     }
+
+    syncPreviousThumbnails();
   }, [])
 
   useEffect(() => {
-    if(fileError) {
-      const errorTimer = setTimeout(() => setFileError(''), 3000);
-      return ()=> clearTimeout(errorTimer);
+    const onFileError = () => {
+      if(fileError) {
+        const errorTimer = setTimeout(() => setFileError(''), 3000);
+        return ()=> clearTimeout(errorTimer);
+      }
     }
-  },[fileError])
 
-  return { file, previousThumbnails, previewUrl, duration, inputRef, previewBoxRef, handleFileChange, handleFileDrop, handleUsePreviousThumbnail, handleUseGenerated, resetFile, removeThumbnail, fileError, logFileError};
+    onFileError();
+  }, [fileError])
+
+  return { 
+    file, 
+    previousThumbnails, 
+    previewUrl, 
+    duration, 
+    inputRef, 
+    previewBoxRef, 
+    onFileChange, 
+    onFileChanged, 
+    onResetFile, 
+    removeThumbnail, 
+    fileError, 
+    logFileError, 
+    fileChanged
+  };
 };
