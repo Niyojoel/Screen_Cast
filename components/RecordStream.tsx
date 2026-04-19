@@ -72,7 +72,8 @@ const RecordStream = () => {
 
   const session = dummySession;
 
-  const onGoToRecording = useCallback(() => {
+  //using useCallback causes a loss of last modal action state on opening  
+  const onGoToRecording = /*useCallback(*/() => {
     if(!session?.user) {
       router.push('/sign-in')
       toast('You need to sign in to access recording features');
@@ -85,7 +86,7 @@ const RecordStream = () => {
       parent: 'record',
       closeIcon: <HomeIcon size={22}/>
     })
-  },[session, router])
+  }/*,[session, router])*/
 
   //recording modal content
   useEffect(() => {
