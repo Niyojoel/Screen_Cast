@@ -278,7 +278,7 @@
         @apply flex items-center gap-2 capitalize;
       }
 
-      img {
+      .check {
         @apply absolute right-3 top-1/2 -translate-y-1/2;
       }
     }
@@ -328,7 +328,7 @@
   }
 
   .images-console {
-    @apply relative flex flex-row items-center gap-3;
+    @apply w-fit relative flex flex-row items-center gap-3;
 
     .image-class {
       @apply relative h-full rounded-xl bg-gray-50 w-[170px] hover:scale-[101%] cursor-pointer transition-all overflow-hidden;
@@ -383,7 +383,6 @@
       }
     }
     
-
     ::-webkit-scrollbar {
       appearance: none;
       background: transparent;
@@ -395,7 +394,7 @@
       @apply w-full h-64 rounded-18 overflow-hidden;
 
       video {
-        @apply  w-full h-full object-contain;
+        @apply  w-full h-[230px] object-contain;
       }
 
       img {
@@ -403,10 +402,10 @@
       }
 
       .preview-btns {
-        @apply absolute top-2 right-5 h-fit w-fit flex items-center gap-2;
+        @apply absolute top-5 right-5 h-fit w-fit flex items-center gap-2;
 
         button {
-          @apply bg-gray-20 text-white p-2 rounded-full opacity-90 hover:opacity-100 cursor-pointer;
+          @apply bg-gray-200 p-1.5 rounded-full opacity-90 hover:opacity-100 cursor-pointer;
         }
       }
 
@@ -414,6 +413,23 @@
         @apply absolute bottom-0 left-0 right-0 bg-dark-100 text-white px-3 py-1 text-sm truncate;
       }
     }
+  }
+
+  .full_view-btns {
+    @apply absolute top-5 right-2 z-[5] inline-flex items-center gap-2;
+
+    button {
+      @apply size-8.5 flex items-center justify-center rounded-full shadow-md hover:shadow-lg hover:bg-gray-200 transition duration-200 bg-[#e5e7eb] text-[#616161] hover:text-[#818181];
+    }
+  }
+
+  input[type='checkbox'] {
+    background: rgb(255, 255, 255);
+  }
+
+  input[type='checkbox']:checked {
+    background: rgb(255, 255, 255);
+    color: #3d3d3d;
   }
 
   /* form field */
@@ -495,9 +511,8 @@
       @apply h-full w-full flex items-center justify-center;
     }
 
-
     .dialog-box {
-      @apply relative bg-white rounded-20 flex flex-col gap-2 shadow-lg p-6 sm:w-[380px] w-[90%] max-w-[380px] z-20;
+      @apply relative bg-white rounded-20 flex flex-col gap-2.5 shadow-lg p-6 sm:w-[370px] w-[90%] max-w-[370px] z-20;
 
       .header-constraint {
         @apply absolute inset-0 bg-transparent select-none rounded-20 -z-10 overflow-hidden;
@@ -516,16 +531,16 @@
       }
 
       .dialog-content {
-        @apply min-h-60 flex flex-col gap-2;
+        @apply min-h-60 flex flex-col gap-1.5 transition duration-300 ease-in-out;
 
         section {
           @apply w-full flex-1 rounded-18 flex justify-center items-center;
 
           .content-body {
-            @apply flex flex-col gap-3 justify-center;
+            @apply w-full flex flex-col gap-3 justify-center;
 
             .header {
-              @apply flex items-center gap-2 text-center;
+              @apply w-full flex items-center gap-2 text-center;
             }
           }
         }
@@ -546,11 +561,11 @@
           }
 
           .btn-destructive {
-            @apply bg-red-500 text-white h-9.5 overflow-hidden rounded-4xl flex items-center justify-center gap-2;
+            @apply hover:bg-red-500 bg-white border-[1px] border-red-500 text-red-500 hover:text-white h-9.5 overflow-hidden rounded-4xl flex items-center justify-center gap-2;
           }
 
           .btn-white {
-            @apply bg-white border-[1px] border-gray-20 text-pink-100 gap-0 h-9.5 overflow-hidden rounded-4xl flex items-center justify-center text-nowrap hover:border-pink-100;
+            @apply bg-white border-[1px] border-pink-100 text-pink-100 hover:bg-pink-100 hover:text-white gap-0 h-9.5 overflow-hidden rounded-4xl flex items-center justify-center text-nowrap;
           }
         }
       }
@@ -567,14 +582,6 @@
   .recording-body {
     @apply w-full flex-col;
 
-    .video-wrapper {
-      @apply relative;
-
-      video {
-        @apply w-full h-full object-contain;
-      }
-    }
-
     .settings-box {
       @apply flex flex-col;
 
@@ -587,11 +594,6 @@
 
         p {
           @apply flex-1 font-normal text-[0.909rem] tracking-[0.02rem] flex items-center text-wrap;
-
-
-          /* span{
-              @apply text-base text-[#888];
-            } */
         }
 
       }
@@ -601,7 +603,7 @@
   .recording-settings {
 
     .settings-col-grid {
-      @apply w-full grid grid-cols-5 gap-x-1.5 gap-y-2;
+      @apply w-full grid grid-cols-5 gap-x-1.5 gap-y-1.5;
       
       .setting {
         @apply w-full list-none;

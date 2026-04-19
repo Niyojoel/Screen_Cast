@@ -1,7 +1,15 @@
 'use client'
 import { useEffect, useRef } from 'react'
 
-const Alert = ({error, setError, className}: {error?: string, setError?: (message: string) => void, className?: string}) => {
+const Alert = ({
+  error, 
+  setError, 
+  className
+}: {
+  error?: string, 
+  setError?: (message: string) => void, 
+  className?: string
+}) => {
   const errorAlertInViewRef = useRef<HTMLSpanElement>(null)
   
   useEffect(() => {

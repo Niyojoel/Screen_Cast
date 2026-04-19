@@ -1,4 +1,5 @@
 'use client'
+
 import { 
   ActionStateType, 
   Action, 
@@ -15,6 +16,8 @@ import {
   ThumbnailAction,
   ParentContentType,
   DeleteAction,
+  OnOpenArgs,
+  ImagesArrayType,
 } from "@/index";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -25,31 +28,52 @@ import {
   useCallback,
   useEffect
 } from "react";
-import { getModalButton } from "../modalContentUtil";
+import { 
+  exitContent, 
+  redirectedContent as redirectedContent_
+} from "@/components/modalContent";
 
-type GlobalContextType = {
+export type VoidAction = () => void;
+
+export type VoidActionParam<T> = (args: T) => void;
+
+export type VoidActionParams<T, K> = (arg1: T, arg2: K) => void;
+
+export type VoidActionParamsOptional<T, K> = (arg1: T, arg2?: K) => void;
+
+export type ActionNoParams<U> = () => U;
+
+export type ActionParam<T, U> = (args: T) => U;
+
+export type ActionParams<T, K, U> = (args: T, arg2?: K) => U;
+
+type ModalContextType = {
   modalOpen: ModalOpenType;
   exit: boolean;
   modalContent: NullableModalContentType;
-  openModal: (content?: OpenModalArgs) => void;
-  closeModal: () => void;
-  cancelExit: () => void;
-  exitModal: () => void;
-  resetModal: () => void;
+  openModal: VoidActionParam<OpenModalArgs>;
+  closeModal: VoidAction;
+  cancelExit: VoidAction;
+  exitModal: VoidAction;
+  resetModal: VoidAction;
   actionError: string;
-  logActionError: (log: string) => void;
-  syncModalContent: (modalType: ModalType, content: ModalContentType) => void;
+  logActionError: VoidActionParam<string>;
+  syncModalContent: VoidActionParams<ModalType, ModalContentType>;
+  exitModalContent: ActionParam<VoidAction, ModalContentType>;
+  redirectedContent: ActionNoParams<ModalContentType>;
   modalContentParent: ParentContentType | null;
-  changeContentParent: (parent: ParentContentType) => void;
-  changeAction: (action: ChangeActionArgs) => void;
-  successfulAction: (name?: Action, type?: ActionType) => void,
-  failedAction: (name?: Action, type?: ActionType) => void,
-  beforeAction : (name: Action) => void;
-  ongoingAction : (name: Action) => void;
-  changeState : (state: ActionStateType, name?: Action) => void;
-  resetAction: () => void;
+  changeContentParent: VoidActionParam<ParentContentType>;
+  successfulAction: VoidActionParamsOptional<Action, ActionType>;
+  failedAction: VoidActionParamsOptional<Action, ActionType>;
+  beforeAction : VoidActionParam<Action>;
+  ongoingAction : VoidActionParam<Action>;
+  changeState : VoidActionParamsOptional<ActionStateType, Action>;
+  resetAction: VoidAction;
   modalAction: MappedAction;
-  actionTrue: (action: Action | null) => boolean;
+  imageFS: ImagesArrayType | null;
+  changeImageFS: VoidActionParam<ImagesArrayType | null>;
+  imageFSActions: ImageFSActionsType | null;
+  changeImageFSActions: VoidActionParam<ImageFSActionsType | null>;
 }
 
 type NullableModalContentType = {
@@ -67,15 +91,26 @@ export type ActionType = 'before' | 'ongoing'
 
 export type NoNameModalActionType = Omit<ModalActionType, 'name'>
 
-type ActionNameType = Action | ''
+type ActionNameType = Action | ''  
 
 export type MappedAction = {name: ActionNameType} & {
   [P in ActionNameType]: NoNameModalActionType
 }
 
-const GlobalContext = createContext<GlobalContextType | null>(null);
+export type ImageFSActionsType = {
+  flash?: boolean;
+  onClose?: VoidAction;
+  onChecked?: VoidActionParam<string>;
+  onSave?: VoidActionParam<string>;
+  onDelete?: VoidActionParam<string>;
+  imagesEnd?: boolean; 
+  onNext?: VoidAction;
+  onPrevious?: VoidAction;
+}
 
-const GlobalProvider = ({children} : {children: React.ReactNode}) => {
+const ModalContext = createContext<ModalContextType | null>(null);
+
+const ModalProvider = ({children} : {children: React.ReactNode}) => {
   
   const router = useRouter();
 
@@ -87,7 +122,7 @@ const GlobalProvider = ({children} : {children: React.ReactNode}) => {
   const [modalOpen, setModalOpen] = useState<ModalOpenType>({
     isOpen: false, 
     type: null,
-    closeIcon: <X size={22}/>
+    closeIcon: <X size={20} stroke='#212121'/>
   });
 
   const getAction = useCallback((action: ModalActionType) => {
@@ -113,6 +148,19 @@ const GlobalProvider = ({children} : {children: React.ReactNode}) => {
   //To store an action type whether it is a before or ongoing action
   const [actionType, setActionType] = useState<ActionType | null>(null)
 
+  //image display in full screen 
+  const [imageFS, setImageFS] = useState<ImagesArrayType | null>(null);
+
+  const [imageFSActions, setImageFSActions] = useState<ImageFSActionsType | null>(null);
+
+  const changeImageFS = (image: ImagesArrayType | null) => {
+    setImageFS(image);
+  };
+
+  const changeImageFSActions = (actions: ImageFSActionsType | null) => {
+    setImageFSActions(actions)
+  };   
+
   const resetAction = useCallback(() => {
     setModalAction(getAction({
       name: '',
@@ -131,11 +179,13 @@ const GlobalProvider = ({children} : {children: React.ReactNode}) => {
 
   //to be looked over for amendment
   const closeModal = useCallback(()=> {
+    console.log({modalOpen, modalAction})
     setModalOpen(prev => ({
       ...prev,
       isOpen: false,
     }));
-  }, [])
+  }, [modalOpen, modalAction])
+
 
   const resetModal = useCallback(()=> {
     setModalContent({body: null, buttons: null});
@@ -172,17 +222,51 @@ const GlobalProvider = ({children} : {children: React.ReactNode}) => {
     resetModal();
   },[modalAction, modalContentParent, resetModal])
 
-  //working issue with display modal
-  const openModal = useCallback((modal?: OpenModalArgs) => {
+  const onOpen = useCallback((modal?: OnOpenArgs) => {
     setModalOpen(prev => {
       const props = modal && {
         type: modal.type,
         closeIcon: modal?.closeIcon || prev.closeIcon
       }
-      console.log(prev);
       return props ? {isOpen: true, ...props} : {...prev, isOpen: true}
     });
   },[])
+
+  const openModal = useCallback(({
+    action, 
+    type, 
+    parent, 
+    closeIcon,
+    addedCondition
+  } : OpenModalArgs) => {
+
+    const matchedParent_Action = parent ? modalContentParent === parent : modalAction.name === action;
+
+    const isModalType = modalOpen.type === type
+
+    const withCondition = addedCondition ? addedCondition : true
+
+    console.log({modalContentParent, modalAction, modalOpen})
+
+    if(isModalType && matchedParent_Action && withCondition) {
+      console.log('opening modal')
+      onOpen();
+    } else {
+      console.log('resetting modal')
+
+      setModalContentParent(parent || null);
+
+      if(typeof action === 'function' ) {
+        action();
+      } else if (action === 'download' || action === 'edit') {
+        ongoingAction(action)
+      } else beforeAction(action);     
+
+      const content = closeIcon ? {type, closeIcon} : {type}
+      setTimeout(() => onOpen(content), 100);
+
+    }
+  },[modalOpen, modalContentParent, modalAction])
 
   const logActionError = (log: string) => {
     setActionError(log);
@@ -285,6 +369,7 @@ const GlobalProvider = ({children} : {children: React.ReactNode}) => {
     }
 
     changeAction(action);
+    logActionError('');
   },[changeAction])
 
   //for initialize a before type action
@@ -292,8 +377,6 @@ const GlobalProvider = ({children} : {children: React.ReactNode}) => {
 
   //for initializing an ongoing type action
   const ongoingAction = useCallback((name: Action) => initializeAction('ongoing', name),[initializeAction]);
-
-  const actionTrue = useCallback((action: Action | null): boolean => modalAction.name === action,[modalAction.name]);
 
   const syncModalContent = useCallback((
     modalType: ModalType, 
@@ -304,41 +387,60 @@ const GlobalProvider = ({children} : {children: React.ReactNode}) => {
     }
   }, [modalOpen.type])
 
-  useEffect(()=> console.log(modalOpen), [modalOpen])
+  //generic modal content
+  const exitModalContent = useCallback((resetFn?: VoidAction): ModalContentType => {
+    let modalReset = resetModal;
 
-  return <GlobalContext.Provider value={{
+    if(resetFn) {
+      modalReset = () => {
+        resetModal();
+        resetFn();
+      }
+    }
+    return exitContent(modalReset, cancelExit)}
+  ,[resetModal, cancelExit, exitContent])
+
+  const redirectedContent = useCallback((): ModalContentType => redirectedContent_(resetModal),[resetModal, redirectedContent_])
+
+  useEffect(()=> console.log({modalOpen, modalAction}), [modalOpen, modalAction])
+
+  return <ModalContext.Provider value={{
     modalOpen,
+    modalAction,
     modalContent,
     exit,
     modalContentParent,
     actionError,
     logActionError,
     syncModalContent,
+    exitModalContent,
+    redirectedContent,
     changeContentParent,
     closeModal,
     cancelExit,
     exitModal,
     resetModal,
     openModal,
-    changeAction,
     resetAction,
-    modalAction,
     successfulAction,
     failedAction,
     beforeAction,
     ongoingAction,
     changeState,
-    actionTrue,
+    imageFS,
+    imageFSActions,
+    changeImageFS,
+    changeImageFSActions,
   }}>
     {children}
-  </GlobalContext.Provider>
+  </ModalContext.Provider>
 }
 
-export const useGlobalContext = ()=> {
-  const value = useContext(GlobalContext);
-  if(value == null) throw Error ("Cannot use outside of GlobalContext");
+export const useModalContext = ()=> {
+  const value = useContext(ModalContext);
+  if(value == null) throw Error ("Cannot use outside of ModalContext");
 
   return value;
 }
 
-export default GlobalProvider
+export default ModalProvider

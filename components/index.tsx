@@ -17,6 +17,12 @@ export {default as Modal} from "./Modal";
 export {default as Logo} from "./Logo";
 export {default as Alert} from "./Alert";
 export {default as FullView} from "./FullView";
-export {default as DialogContentBody} from "./DialogContentBody";
+export {
+    default as ModalBody,
+    FailedActionModalBody, 
+    SuccessfulActionModalBody, 
+    OngoingActionModalBody, 
+    WarningActionModalBody, 
+    ModalListItem
+} from "./ModalBodyContent";
 export {default as ImagesConsole} from "./ImagesConsole";
-export {FailedActionDialog, SuccessActionDialog, OngoingActionDialog, WarningActionDialog, DialogListItem} from "./ActionDialog";

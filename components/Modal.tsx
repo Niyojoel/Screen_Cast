@@ -1,17 +1,28 @@
 'use client'
-import { useGlobalContext } from '@/lib/hooks/useGlobalContext';
-import {ActionButton, Alert, FullView, Logo} from '.';
+import { useModalContext } from '@/lib/hooks/useModalContext';
+import {
+  ActionButton, 
+  FullView, 
+  Logo
+} from '.';
+import { cn } from '@/lib/utils';
 
 const Modal = () => {
-  const {modalOpen, modalContent, exitModal, closeModal} = useGlobalContext();
+    
+  const {
+    modalOpen, 
+    modalContent, 
+    exitModal, 
+    closeModal
+  } = useModalContext();
 
-  const {closeIcon, isOpen} = modalOpen
+  const {
+    closeIcon, 
+    isOpen
+  } = modalOpen
 
-  if(!isOpen) return null;
-
-  return modalContent.body && (
-    <>
-    <main className="modal">
+  return (
+    <main className={cn("modal", isOpen && modalContent.body ? 'visible z-40 opacity-100 pointer-events-auto' : 'z-0 invisible opacity-0 pointer-events-none select-none')}>
       <FullView/>
       <div className="modal-overlay" onClick={closeModal}/>
       <section className='modal-content'>
@@ -46,7 +57,6 @@ const Modal = () => {
         </div>
       </section>
     </main>
-    </>
   )
 }
 

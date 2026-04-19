@@ -1,4 +1,3 @@
-'use client'
 import { 
     AlertTriangle,
     CameraIcon, 
@@ -14,16 +13,15 @@ import {
     Navigation, 
     NavigationOff, 
     SwitchCameraIcon, 
+    Upload, 
     UserIcon, 
     X, 
     XCircle
 } from "lucide-react"
-import {DropdownOptionsType} from ".."
-import React, { JSX, useEffect} from "react"
-import { DialogContentBody, FailedActionDialog, OngoingActionDialog, SuccessActionDialog, WarningActionDialog } from "@/components"
-import { NoNameModalActionType } from "@/lib/hooks/useGlobalContext"
-import { contentClassNameByState, getModalButton} from "@/lib/modalContentUtil"
-
+import { DropdownOptionsType } from ".."
+import { JSX } from "react"
+import { NoNameModalActionType, VoidAction} from "@/lib/hooks/useModalContext"
+import { getActionStateButtons, getModalButton } from "@/lib/modalContentUtil"
 
 export const cursorDisplayOptions: DropdownOptionsType[] = [
     {
@@ -31,7 +29,7 @@ export const cursorDisplayOptions: DropdownOptionsType[] = [
         default: true
     },
     {
-        label: "Hide cursor",
+        label: "Hide away",
         inactive: true
     },
     {
@@ -51,16 +49,16 @@ export const micSettingsOptions:DropdownOptionsType[] = [
     },
     {
         icon: <MicIcon size={18}/>,
-        label: "Default - MacBook Air Microphone",
+        label: "Default - MacBook Air Mic.",
         default: true
     },
     {
         icon: <MicIcon size={18}/>,
-        label: "Logitech StreamCam Microphone"
+        label: "Logitech StreamCam Mic."
     },
     {
         icon: <MicIcon size={18}/>,
-        label: "Rhode NT-USB Microphone"
+        label: "Rhode NT-USB Mic."
     },
 ]
 
@@ -110,7 +108,7 @@ export const cameraMode: DropdownOptionsType[] = [
     {label: 'back', icon: <SwitchCameraIcon size={20}/>}
 ]
 
-export const DIALOG_ICONS = {
+export const MODAL_ICONS = {
     alert: <AlertTriangle size={18} stroke="#ff4393"/>,
     checked: <CheckCircleIcon size={30} fill='#ff4393' stroke="#ffffff"/>,
     failed: <XCircle size={18} stroke="red"/>,
@@ -119,132 +117,171 @@ export const DIALOG_ICONS = {
     info: <InfoIcon size={18} stroke='#ff4393'/>
 }
 
-type ActionBodyProps = {
-    action: NoNameModalActionType;
-    beforeRender?: React.ReactElement;
-    failedNote?: string;
-}
+//Record modal contents
+const goBackButton = (onGoBack: VoidAction, text?: string) => getModalButton(text || 'Go back', onGoBack, 'btn-white')
 
-export const CheckBody = ({
+const uploadButton = (onGoToUpload: VoidAction, text?: string) => getModalButton(text || 'Upload', onGoToUpload, 'btn-theme', <Upload size={16}/>)
+
+export const checkButtons = (
+  action: NoNameModalActionType,
+  onGoBack: VoidAction,
+  onCheckDevices: VoidAction,
+) => {
+  return getActionStateButtons (
     action,
-    checkResponse,
-    beforeRender
-}: ActionBodyProps & {checkResponse: string}) => {
-    if(action) {
-        const state = action?.state
-        const response = action?.response
+    [
+      goBackButton(onGoBack, 'Adjust setting'), 
+      getModalButton('Retry Check', onCheckDevices)
+    ],
+    [
+      getModalButton("Continue", onCheckDevices)
+    ]
+)}
 
-        return state && (
-            <>
-                <DialogContentBody subNode= {beforeRender} className={contentClassNameByState(state === 'before')}/>
-                <OngoingActionDialog text = 'Checking user devices...' className={contentClassNameByState(state === 'ongoing')}/>
-                <FailedActionDialog header ='Check failed' text={checkResponse} className={contentClassNameByState(state === 'after' &&  response === 'failed')}/>
-                <SuccessActionDialog text = 'Check passed' className={contentClassNameByState(state === 'after' && response === 'successful')}/>
-            </>
-        )
-    } else return null
-}
+export const loadButtons = (
+  action: NoNameModalActionType,
+  onRecordAgain: VoidAction,
+  onStopRecording: VoidAction,
+  onContinueRecording: VoidAction,
+  onGoToUpload: VoidAction,
+) => {
+  const recordAgain = getModalButton('Record again', onRecordAgain, 'btn-white')
 
-export const RecordGuideBody = ({
+  return getActionStateButtons(
     action,
-    beforeRender,
-    successRender,
-    failedNote
-}: ActionBodyProps & {successRender: React.ReactElement}) => {
-    if(action) {
-        const state = action?.state
-        const response = action?.response
-
-        return state && (
-            <>
-                <DialogContentBody
-                    icon={DIALOG_ICONS.info}
-                    headerNode = 'Guide'
-                    subNode = {beforeRender}
-                    actionPopup = {false}
-                    className={`${contentClassNameByState(state === 'before')} mt-1`}
-                />
-                <OngoingActionDialog text = 'Starting recording session...' className={contentClassNameByState(state === 'ongoing')}/>
-                <FailedActionDialog text={failedNote} className={contentClassNameByState(state === 'after' &&  response === 'failed')}/> 
-                <DialogContentBody
-                    subNode = {successRender}
-                    className={contentClassNameByState(state === 'after' && response === 'successful')}
-                />
-            </>
-        )
-    } else return null
+    [
+      recordAgain,
+      getModalButton('Recover', onStopRecording)
+    ],
+    [
+      getModalButton('Continue', onContinueRecording),
+      getModalButton('End', onStopRecording, 'btn-destructive'),
+    ],
+    [
+      recordAgain, 
+      uploadButton(onGoToUpload)
+    ],
+  )
 }
 
-export const RedirectBody = ({
+export const recordRedirectButtons = (
+  action: NoNameModalActionType,
+  onSaveRecording: VoidAction,
+  onGoToUpload: VoidAction,
+) => {
+  return getActionStateButtons (
     action,
-}: ActionBodyProps) => {
-    if(action) {
-        const state = action?.state
-        const response = action?.response
-
-        return state && (
-            <>
-                <OngoingActionDialog text='Accessing recording blob...' className={contentClassNameByState(state === 'before')}/>
-                <OngoingActionDialog text='Redirecting to Upload page...' className={contentClassNameByState(state === 'ongoing')}/>
-                <FailedActionDialog text='You can try again or save video and self upload' className={contentClassNameByState(state === 'after' &&  response === 'failed')}/>
-            </>
-        )
-    } else return null
+    [
+      getModalButton('Save Recording', onSaveRecording),
+      uploadButton(onGoToUpload, 'Retry')
+    ]
+  )
 }
 
-export const LoadBody = ({
+export const startRecordingButtons = (
+  action: NoNameModalActionType,
+  onGoBack: VoidAction,
+  onStartRecording: VoidAction,
+  onStopWarning: VoidAction
+) => {
+  const recordButtons = [
+    goBackButton(onGoBack), 
+    getModalButton('Record', onStartRecording)
+  ]
+  return getActionStateButtons(
     action,
-    successRender
-}: ActionBodyProps & {successRender: React.ReactElement}) => {
-    if(action) {
-        const state = action?.state
-        const response = action?.response
-
-        return state && (
-            <>
-                <WarningActionDialog header="About to stop recording" text='Click End button' className={contentClassNameByState(state === 'before')} />
-                <OngoingActionDialog text='Loading recorded video...' className={contentClassNameByState(state === 'ongoing')}/>
-                <FailedActionDialog text='Sorry, recorded blob seem lost or not loading' className={contentClassNameByState(state === 'after' &&  response === 'failed')}/>
-                <DialogContentBody subNode={successRender} className={contentClassNameByState(state === 'after' && response === 'successful')}/>
-            </>
-        )
-    } else return null
+    recordButtons,
+    recordButtons,
+    [getModalButton('Stop recording', onStopWarning)],
+  )
 }
 
-export const SaveBody = ({
+export const saveButtons = (
+  action: NoNameModalActionType,
+  onExit: VoidAction,
+  onSaveRecording: VoidAction,
+) => {
+  return getActionStateButtons(
     action,
-    failedNote
-}: ActionBodyProps) => {
-    if(action) {
-        const state = action?.state
-        const response = action?.response
-
-        return state && (
-            <>
-                <OngoingActionDialog text='"Downloading recorded video...' className={contentClassNameByState(state === 'ongoing')}/>
-                <FailedActionDialog text={failedNote} className={contentClassNameByState(state === 'after' &&  response === 'failed')}/>
-                <SuccessActionDialog text={'Video downloaded'} className={contentClassNameByState(state === 'after' && response === 'successful')}/>
-            </>
-        )
-    } else return null
+    [getModalButton('Retry', onSaveRecording)],
+    null,
+    [getModalButton('Exit', onExit)],
+  )
 }
 
 
-export const exitContent = (resetModal: () => void, cancelExit: () => void, exit: boolean) => {
-    return exit ? {
-        body: <WarningActionDialog header="About to exit modal" text=''/>,
-        buttons: [
-            getModalButton('Cancel', cancelExit, 'btn-white'),
-            getModalButton('Exit', resetModal)
-        ]
-    } : null
+export const editButtons = (
+  action: NoNameModalActionType,
+  onGoToEdit: VoidAction
+) => {
+  return getActionStateButtons(
+    action,
+    [getModalButton('Retry', onGoToEdit)],
+  )
 }
 
-export const successfulRedirectContent = (resetModal: () => void, successfulRedirect: boolean) => {
-    return successfulRedirect ? {
-        body: <SuccessActionDialog header='Redirected Successfully' text=''/>,
-        buttons: [
-          getModalButton('Ok', resetModal)
-        ]
-    } : null
+export const addThumbnailButtons = (
+  action: NoNameModalActionType,
+  onAddThumbnail: VoidAction,
+  resetModal: VoidAction,
+) => {
+return getActionStateButtons(
+    action,
+    [getModalButton('Retry', onAddThumbnail)],
+    null,
+    [getModalButton('Exit', resetModal)]
+  )
+}
+
+export const generateButtons = (
+  action: NoNameModalActionType,
+  onStartGenerate: VoidAction,
+  onGenerateAgain: VoidAction,
+  onAddThumbnail: VoidAction,
+) => {
+  return getActionStateButtons(
+    action,
+    [getModalButton('Try again', onStartGenerate)],
+    [getModalButton('Generate', onStartGenerate)],
+    [
+      getModalButton('Generate', onGenerateAgain, 'btn-white'),
+      getModalButton('Upload', onAddThumbnail)
+    ]
+  )
+}
+
+
+export const deleteButtons = (
+  action: NoNameModalActionType,
+  onDelete: VoidAction,
+  closeModal: VoidAction,
+) => {
+  return getActionStateButtons(
+    action,
+    [getModalButton('Retry', onDelete, 'btn-destructive')],
+    [
+      getModalButton('Cancel', closeModal, 'btn-white'),
+      getModalButton('Continue', onDelete, 'btn-destructive'),
+    ]
+  )
+}
+
+export const videoRedirectButtons = (
+  action: NoNameModalActionType,
+  afterDeleteRedirect: VoidAction
+) => {
+  return getActionStateButtons(
+    action,
+    [getModalButton('Retry', afterDeleteRedirect)]
+  )
+}
+
+export const downloadButtons = (
+  action: NoNameModalActionType,
+  onDownload: VoidAction
+) => {
+  return getActionStateButtons(
+    action,
+    [getModalButton('Retry', onDownload)]
+  )
 }

@@ -26,7 +26,8 @@ import {
   VideoDisplay, 
   VideoSettingsType 
 } from "..";
-import { SyncCameraKeys } from "./hooks/useRecord/useRecordingFeatures";
+import { SyncCameraKeys } from "./hooks/useRecord/useModalActions";
+import { ChangeEvent, Ref, RefObject } from "react";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -115,7 +116,7 @@ export const apiFetch = async <T = Record<string, unknown>>(
 
   return await response.json();
 };
-// Higher order function to handle errors
+// Higher order function to on errors
 export const withErrorHandling = <T, A extends unknown[]>(
   fn: (...args: A) => Promise<T>
 ) => {
@@ -499,6 +500,31 @@ predefined_canvas?: HTMLCanvasElement
   return {ctx, canvas};
 }
 
+export const getVideoProcessor = async (screenStream: MediaStream): Promise<Omit<CanvasProcessor, 'stopLoop' | 'stream'>> => {
+
+  if(screenStream.getVideoTracks().length < 1) throw new Error ('No video available for display')
+
+  const screenDisplay = await getVideoDisplay(screenStream);
+
+  const takeScreenShot = async () => {
+    const {ctx, canvas} = await getCanvasDisplay({video: screenDisplay.video});
+    return await canvasToBlob(canvas, 'image/png')
+  }
+
+  const end = () => {
+    screenDisplay.video.pause();
+    screenDisplay.video.srcObject = null;
+    screenDisplay.video.remove();
+  }
+
+  return {
+    pause: () => {screenDisplay.video.pause()}, 
+    resume: () => {screenDisplay.video.play()}, 
+    takeScreenShot,
+    end
+  }; 
+} 
+
 export const getCanvasProcessor = async (
   screenStream: MediaStream, 
   cameraStream?: MediaStream,
@@ -710,11 +736,11 @@ const getRecorderConfig = (stream: MediaStream) => {
   
 export const setupRecording = (
   stream: MediaStream,
-  handlers: RecordingHandlers
+  onrs: RecordingHandlers
 ): MediaRecorder => {
   const recorder = new MediaRecorder(stream, getRecorderConfig(stream));
-  recorder.ondataavailable = handlers.onDataAvailable;
-  recorder.onstop = handlers.onStop;
+  recorder.ondataavailable = onrs.onDataAvailable;
+  recorder.onstop = onrs.onStop;
   return recorder;
 };
 
@@ -801,11 +827,11 @@ export const canvasToBlob = (canvas: HTMLCanvasElement, fileType?: string): Prom
       }else {
         reject (new Error('Failed to create blob'));
       }
-    }, fileType || 'image/png', 2)
+    }, fileType || 'image/png', 1)
   })
 }
 
-export const downloadVideo = async (videoUrl: string) : Promise<void> => {
+export const downloadVideo = async (videoUrl: string) : Promise<boolean> => {
   try {
     const response = await fetch(videoUrl);
     const blob = await response.blob();
@@ -819,6 +845,7 @@ export const downloadVideo = async (videoUrl: string) : Promise<void> => {
   
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+    return true;
   }catch (error) {
     console.error(error)
     throw error
@@ -936,9 +963,9 @@ export const fileToBase64 = (file: File): Promise<string | ArrayBuffer> => {
   })
 }
 
-export const generateScreenShotName = (recordingName: string) => {
+export const generateScreenShotName = () => {
 
-  const name = recordingName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  const name = 'screenshot';
 
   const now = new Date();
   
@@ -953,3 +980,51 @@ export const generateScreenShotName = (recordingName: string) => {
 export const formatTimer = (time: number) => {
   return time < 10 ? `0${time}` : `${time}`;
 } 
+
+type inputChangeArgs = {
+  inputRef: RefObject<HTMLInputElement | null>;
+  onFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
+}
+
+export const fileLoad = (
+  onFileChange: (file: File) => void,
+  file: File
+): Promise<boolean> => {
+  return new Promise((resolve) => {
+    try {
+      onFileChange(file);
+      resolve(true);
+    } catch (error) {
+      console.error(error);
+      resolve(false);
+    }
+  })
+}
+
+export const inputChange = <T extends inputChangeArgs> (
+  type: T,
+  file: File
+): Promise<boolean> => {
+  return new Promise((resolve) => {
+    try {
+      if(type.inputRef.current) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        type.inputRef.current.files = dataTransfer.files;
+    
+        const event = new Event('change', {bubbles: true});
+    
+        type.inputRef.current.dispatchEvent(event);
+        type.onFileChange({
+          target: {files: dataTransfer.files}
+        } as ChangeEvent<HTMLInputElement>)
+  
+        resolve(true);
+      }
+    } catch (error) {
+      console.error(error);
+      resolve(false);
+    }
+
+  })
+}

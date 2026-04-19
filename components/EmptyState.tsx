@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { memo } from 'react'
+import { EmptyStateProps } from '..';
 
 const EmptyState = memo(({icon, title, description}: EmptyStateProps) => {
   return (

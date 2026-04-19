@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 // import { Karla } from "next/font/google";
 import "./globals.css";
 import { satoshi } from "../fonts/font";
-import GlobalProvider from "@/lib/hooks/useGlobalContext";
+import GlobalProvider from "@/lib/hooks/useModalContext";
 
 //cannot be pulled without internet
 // const geistKarla = Karla({

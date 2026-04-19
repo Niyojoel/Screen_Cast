@@ -1,9 +1,15 @@
 "use client"
-import {memo, useState} from 'react';
-import { Img } from './ActionButton';
-import {cn } from '@/lib/utils';
-import { DropdownListProps, OptionsTriggerProps } from '..';
-import {ChevronDown, ChevronUp} from "lucide-react";
+import { memo, useState } from 'react';
+import { cn } from '@/lib/utils';
+import { 
+    DropdownListProps, 
+    OptionsTriggerProps 
+} from '..';
+import {
+    Check, 
+    ChevronDown, 
+    ChevronUp, 
+} from "lucide-react";
 
 const DropdownList = memo(({
     options,
@@ -19,12 +25,12 @@ const DropdownList = memo(({
 
   const toggleOpen = () => setIsOpen((prev) => !prev);
 
-  const handleLeaveUl = () => isOpen && setIsOpen(false);
+  const onLeaveUl = () => isOpen && setIsOpen(false);
 
   return (
     <div 
         className="dropdown-select" 
-        onMouseLeave={handleLeaveUl}
+        onMouseLeave={onLeaveUl}
     >
         <div 
             className="dropdown-trigger-wrapper" 
@@ -62,7 +68,7 @@ const DropdownList = memo(({
                 return (
                     <li
                         key={text}
-                        className={cn('list-item', {"bg-pink-100 text-white": activeCondition})}
+                        className={cn('list-item', {"bg-pink-50 text-pink-100  hover:text-white hover:bg-pink-100": activeCondition})}
                         onClick={()=> {
                             setIsOpen(false);
                             onSelectAction(option);
@@ -75,12 +81,7 @@ const DropdownList = memo(({
                         </figure>
                         ) : text}
                         
-                        {activeCondition && (
-                            <Img
-                                src="/assets/icons/check.svg"
-                                alt="check"
-                            />
-                        )}
+                        {activeCondition && <Check size={16} strokeWidth={2.5} className='check'/>}
                     </li>
             )})}
         </ul>

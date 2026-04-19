@@ -1,15 +1,23 @@
 "use client"
 
-import Image from 'next/image'
-import React, {useState, MouseEvent, SyntheticEvent, memo } from 'react'
-import ActionButton, { Img } from './ActionButton';
+import React, {
+  useState, 
+  MouseEvent, 
+  SyntheticEvent, 
+  memo 
+} from 'react'
+import { Img } from './ActionButton';
 import { cn } from '@/lib/utils';
 import { CopyBtnProps } from '..';
 
-const CopyBtn = memo(({id, size = 18, className}: CopyBtnProps) => {
+const CopyBtn = memo(({
+  id, 
+  size = 18, 
+  className
+}: CopyBtnProps) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = (e: MouseEvent | SyntheticEvent) => {
+  const onCopy = (e: MouseEvent | SyntheticEvent) => {
     e.stopPropagation();
     e.preventDefault();
     if(typeof window !== undefined || null) {
@@ -26,7 +34,7 @@ const CopyBtn = memo(({id, size = 18, className}: CopyBtnProps) => {
     <button 
       className={cn("round-btn", className)} 
       disabled={copied} 
-      onClick={handleCopy}
+      onClick={onCopy}
     >
       <Img 
         src={`/assets/icons/${!copied ? 'link.svg' : 'checkmark.svg'}`} 

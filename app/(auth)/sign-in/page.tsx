@@ -6,7 +6,7 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 
 const page = () => {
-const handleSignIn = async () => {
+const onSignIn = async () => {
   try {
     await authClient.signIn.social({provider: "google", callbackURL: "/"})
   }catch (error) {
@@ -48,7 +48,7 @@ const handleSignIn = async () => {
           <p>
             Create and share your very first <span>ScreenCast video</span> in no time!
           </p>
-          <button onClick={handleSignIn}>
+          <button onClick={onSignIn}>
           <Image src="/assets/icons/google.svg" alt="google" width={22} height={22}/>
           <span>Sign in with Google</span>
           </button>

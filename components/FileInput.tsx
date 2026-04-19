@@ -1,14 +1,29 @@
 'use client'
 
 import Image from 'next/image'
-import {DragEvent, memo, useEffect, useState } from 'react'
+import {
+  ChangeEvent, 
+  DragEvent, 
+  memo, 
+  useState 
+} from 'react'
 
-//for thumbnail suggestion cards component
-import {cn } from '@/lib/utils';
+import {
+  base64ToFile, 
+  cn 
+} from '@/lib/utils';
 import { Img } from './ActionButton';
 import {ImagesConsole} from '.';
-import { FileInputProps, ThumbnailSuggestionsProps } from '..';
-import {ImagePlus} from 'lucide-react';
+import { 
+  FileInputProps, 
+  ThumbnailSuggestionsProps, 
+  UploadTriggerProps
+} from '..';
+import {
+  EditIcon, 
+  ImagePlus, 
+  ImagePlusIcon
+} from 'lucide-react';
 
 
 const FileInput = memo(({
@@ -19,28 +34,20 @@ const FileInput = memo(({
   file,
   fileChangeError,
   logError,
-  onFileChange,
   previewUrl,
   inputRef,
   previewBoxRef,
   onChange,
-  onFileDrop,
   onReset,
   previousThumbnails,
-  handleUsePreviousThumbnail,
   removeThumbnail,
   onOpenModal
-}: FileInputProps & {
-  onFileChange?: () => void, 
-  onOpenModal?: () => void, 
-  fileChangeError: string,
-  logError: (log: string) => void
-}) => {
+}: FileInputProps) => {
   
   const [isDraggedOver, setIsDraggedOver] = useState(false);
 
   //File change
-  const catchError = (changeFn: void)=> {
+  const catchChangeError = (changeFn: void)=> {
     try {
       changeFn;
     } catch (error) {
@@ -56,13 +63,24 @@ const FileInput = memo(({
     setIsDraggedOver(true);
   }
 
-  const handleDrop = (e: DragEvent<HTMLElement>) => {
+  const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target?.files?.[0];
+    if(!file) return;
+    catchChangeError(onChange(file));
+  }
+
+  const onFileDrop = (e: DragEvent<HTMLElement>) => {
     try {
       e.preventDefault();
       endDrag();
-      if(!e.dataTransfer?.files[0].type.startsWith(`${type}/`)) return logError(`Incompatible file type`);
-      catchError(onFileDrop(e))
-      if(onFileChange) onFileChange();
+
+      const file = e.dataTransfer?.files[0];
+
+      if(!file) return;
+
+      if(!file.type.startsWith(`${type}/`)) return logError(`Incompatible file type`);
+
+      catchChangeError(onChange(file))
     } catch (error) {
       console.log(error);
       error instanceof Error && logError(error.message);
@@ -73,22 +91,21 @@ const FileInput = memo(({
 
   let changeFile = (isDraggedOver || fileChangeError);
 
-  const uploadTrigger = ({
-    text, 
-    className
-  }: {
-    text: string, 
-    className?: Record<string, boolean>
-  })=> (
+  const openModal = {
+    generate: () => onOpenModal && onOpenModal('generate', 'thumbnail'),
+    edit: () => onOpenModal && onOpenModal('edit')
+  }
+
+  const uploadTrigger = ({text, className}: UploadTriggerProps)=> (
     <figure 
       className={cn('figure', uploadTriggerClass, {
-        'bg-gray-200': isDraggedOver,
+        'bg-[#f3f3f3]': isDraggedOver,
         ...className
       })} 
       onClick={()=> inputRef.current?.click()}
       onDragOver={onDragOver} 
       onDragLeave={endDrag}
-      onDrop={handleDrop}
+      onDrop={onFileDrop}
     >
       <Image 
         src="/assets/icons/upload.svg" 
@@ -111,7 +128,7 @@ const FileInput = memo(({
         type='file'
         ref={inputRef}
         accept={accept}
-        onChange={(e) => catchError(onChange(e))}
+        onChange={onFileChange}
         onReset={onReset}
         hidden
         className='absolute top-[50%] left-[50%] opacity-0'
@@ -136,16 +153,16 @@ const FileInput = memo(({
             })}
             uploadTriggerClass={uploadTriggerClass}
             previousThumbnails={previousThumbnails!}
-            handleUsePreviousThumbnail ={handleUsePreviousThumbnail!}
+            onChange ={onChange}
             removeThumbnail = {removeThumbnail!}
           />
       )}
       <div 
         ref={previewBoxRef} 
-        className={cn(previewUrl ? "show" : "no-show", {'bg-gray-200': changeFile})}
+        className={cn(previewUrl ? "show" : "no-show", {'bg-[#f3f3f3]': changeFile})}
         onDragOver={onDragOver} 
         onDragLeave={endDrag}
-        onDrop={handleDrop}  
+        onDrop={onFileDrop}  
       >
         {type === "video" 
         ? (
@@ -162,7 +179,7 @@ const FileInput = memo(({
             className={cn({'opacity-0': changeFile})}
           />
         )}
-        {changeFile && <span className={cn( 'absolute top-30 left-72', {"text-red-500 text-[14.8px]": !!fileChangeError})}>
+        {changeFile && <span className={cn('absolute top-[50%] left-[50%] translate-[-50%]', {"text-red-500 text-[14.8px]": !!fileChangeError})}>
           {isDraggedOver 
           ? "Release file..." 
           : fileChangeError
@@ -179,9 +196,17 @@ const FileInput = memo(({
               noClass
             />
           </button>
-          {type === 'video' && <button type='button' onClick={onOpenModal!}>
-            <i><ImagePlus size={16} stroke='#212121' strokeWidth={2}/></i>
-          </button>}
+          {type === 'video' && (
+            <>
+              <button type='button' onClick={() => openModal.generate()}>
+                <i><ImagePlus size={16} stroke='#212121' strokeWidth={1.5}/></i>
+              </button>
+              <button type='button' onClick={() => openModal.edit()}>
+                <i><EditIcon size={16} stroke='#212121' strokeWidth={1.5}/></i>
+              </button>
+            </>
+          )
+        }
         </div>
         <p>{file?.name}</p>
       </div>
@@ -189,18 +214,23 @@ const FileInput = memo(({
   )
 });
 
-
 const ThumbnailSuggestions = ({
   uploadTrigger, 
   previousThumbnails,
   uploadTriggerClass,
-  handleUsePreviousThumbnail,
+  onChange,
   removeThumbnail
 }: ThumbnailSuggestionsProps) => {
 
   let active = previousThumbnails?.length > 0
 
-  useEffect(()=> console.log(previousThumbnails),[previousThumbnails])
+  const onUsePreviousThumbnail = async(filename: string) => {
+    const selectedThumbnail = previousThumbnails.find(tn => tn.name === filename) 
+
+    const file = selectedThumbnail && await base64ToFile(selectedThumbnail)
+
+    if(file) onChange(file)
+  }
 
   return (
     <section className= {
@@ -211,7 +241,7 @@ const ThumbnailSuggestions = ({
       {uploadTrigger}
       <ImagesConsole
         imagesArr={previousThumbnails}
-        onClick={handleUsePreviousThumbnail}
+        onClick={onUsePreviousThumbnail}
         className={{'flex-1': active, "h-30": true, "no-show": !active}}
         onRemove={removeThumbnail}
       />

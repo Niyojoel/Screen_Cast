@@ -145,30 +145,30 @@ export const dummyVideoCardProps: Array<VideoCardProps> = [
 
 
 export const dummySession = {
-    user:{
-        id: "6523jilmkjy48jbsn",
-        name: "Jose Ayomide Folarin",
-        image: "/assets/images/dummy.jpg",
-        email: "company@co.email.com"
-    },
+  user:{
+    id: "6523jilmkjy48jbsn",
+    name: "Jose Ayomide Folarin",
+    image: "/assets/images/dummy.jpg",
+    email: "company@co.email.com"
+  },
 }
 
 export const dummyVideo: UserWithVideos = {
-    videos: [
-      {
-        id: "tyw4j35ugj",
-        videoId: "6725hbkbbn",
-        title: "Trial Video for Content Management",
-        description: 'First video to be shown for offline video page testing and user interface adjustment',
-        thumbnailUrl: "/assets/thumbnails/img1.jpg",
-        videoUrl: '/assets/trial_video.mp4',
-        userId: dummySession.user.id,
-        views: dummyVideoCardProps[0].views,
-        tags: ["trial", "first", "ui/ux"],
-        visibility: "public",
-        duration: 131,
-        createdAt: new Date(Date.now()),
-        updatedAt: new Date(Date.now())
+  videos: [
+    {
+      id: "tyw4j35ugj",
+      videoId: "6725hbkbbn",
+      title: "Trial Video for Content Management",
+      description: 'First video to be shown for offline video page testing and user interface adjustment',
+      thumbnailUrl: "/assets/thumbnails/img1.jpg",
+      videoUrl: '/assets/trial_video.mp4',
+      userId: dummySession.user.id,
+      views: dummyVideoCardProps[0].views,
+      tags: ["trial", "first", "ui/ux"],
+      visibility: "public",
+      duration: 131,
+      createdAt: new Date(Date.now()),
+      updatedAt: new Date(Date.now())
     }
   ],
   user: dummySession.user,
