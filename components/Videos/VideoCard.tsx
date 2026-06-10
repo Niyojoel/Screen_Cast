@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import {Img, CopyBtn} from '.'
-import { VideoCardProps } from '..'
+import {Img, CopyBtn} from '..'
+import { VideoCardProps } from '../..'
 
 const VideoCard = ({
   id,

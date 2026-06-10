@@ -44,6 +44,8 @@ RecordingTimer not functioning right. Can get a better implementation.
 Broken video duration show on successful load action
 */
 
+const COUNT_LIMIT = 60;
+
 const useScreenRecording = () => {
 
   const {
@@ -53,12 +55,6 @@ const useScreenRecording = () => {
     changeImageFS,  
     changeImageFSActions, 
   } = useModalContext()
-  
-  const COUNT_LIMIT = 60;
-  let seconds = 0;
-  let minutes = 0;
-  let hour = 0
-  let countInterval: NodeJS.Timeout | null = null; 
 
   const [state, setState] = useState<BunnyRecordingState>({
     isRecording: false,
@@ -68,6 +64,11 @@ const useScreenRecording = () => {
     recordingStatus: 'inactive',
   });
 
+
+  let hour = 0;
+  let minute = 0;
+  let second = 0;
+  
   const [recordingTimer, setRecordingTimer] = useState<RecordingTimerType>({
     hour: '', 
     minutes: '00', 
@@ -108,56 +109,51 @@ const useScreenRecording = () => {
     };
   }, [/*state.recordedVideoUrl*/]);
 
-  //Recording timer implementation
-  const updateTimer = () => {
-    // console.log(seconds, minutes)
+  useEffect(() => {
+    let countInterval: NodeJS.Timeout | null = null;
 
-    if (seconds < COUNT_LIMIT) {
-      seconds ++;
-    } 
-    
-    if (seconds === COUNT_LIMIT) {
-      minutes ++;
-      seconds = 0;
+    if (state.recordingStatus == "recording") {
+      countInterval = setInterval(() => {
+        if (second < COUNT_LIMIT) {
+          second++;
+        } 
+        
+        if (second === COUNT_LIMIT) {
+          minute++;
+          second = 0;
+        }
+
+        if(minute === COUNT_LIMIT) {
+          hour++;
+          minute = 0;
+        }
+
+        // console.log(second, minute, hour);
+        
+        setRecordingTimer({
+          hour: formatTimer(hour), 
+          minutes: formatTimer(minute), 
+          seconds: formatTimer(second)
+        })
+      }, 1000);
+    } else if (state.recordingStatus == "paused") {
+      clearInterval(countInterval!);
+    } else if (state.recordingStatus == "inactive" && state.recordedBlob) {
+      clearInterval(countInterval!);
+      
+      second = 0;
+      minute = 0;
+      hour = 0;
+
+      setRecordingTimer({
+        hour: '', 
+        minutes: '00', 
+        seconds: '00'
+      })
     }
 
-    if(minutes === COUNT_LIMIT) {
-      hour ++;
-      minutes = 0;
-    }
-
-    setRecordingTimer({
-      hour: formatTimer(hour), 
-      minutes: formatTimer(minutes), 
-      seconds: formatTimer(seconds)
-    })
-  };
-
-  const startTimer = () => { 
-    countInterval = setInterval(() => {
-      updateTimer();
-      return () => clearInterval(countInterval as NodeJS.Timeout)
-    }, 1000);
-
-  }
-
-  const pauseTimer = () => clearInterval(countInterval as NodeJS.Timeout);
-
-  const resetTimer = () => {
-
-    pauseTimer()
-    
-    seconds = 0;
-    minutes = 0;
-    hour = 0;
-
-    setRecordingTimer({
-      hour: '', 
-      minutes: '00', 
-      seconds: '00'
-    })
-  }
-  //------------------
+    return () => clearInterval(countInterval!)
+  },[state.recordingStatus, second, minute, hour])
 
   const onRecordingStop = () => {
     const { blob, url } = createRecordingBlob(chunksRef.current);
@@ -359,8 +355,6 @@ const useScreenRecording = () => {
           isRecording: true, 
           recordingStatus: 'recording'
         }));
-  
-        startTimer();
       }
       
 
@@ -386,7 +380,6 @@ const useScreenRecording = () => {
       // videoProcessorRef.current?.end();
       streamRef.current = null;
       canvasProcessorRef.current = null;
-      pauseTimer();
       setState((prev) => ({ 
         ...prev, 
         isRecording: false, 
@@ -400,7 +393,6 @@ const useScreenRecording = () => {
   const resetRecording = () => {
     stopRecording();
     if (state.recordedVideoUrl) URL.revokeObjectURL(state.recordedVideoUrl);
-    resetTimer()
     setState({
       isRecording: false,
       recordedBlob: null,
@@ -418,14 +410,12 @@ const useScreenRecording = () => {
       mediaRecorderRef.current.pause();
       // if(canvasProcessorRef.current) canvasProcessorRef.current?.pause();
       if(videoProcessorRef.current) videoProcessorRef.current?.pause();
-      pauseTimer();
       
       setState(prev => ({...prev, recordingStatus: 'paused'}))
     } else if (state.recordingStatus === 'paused') {
       mediaRecorderRef.current.resume();
       // if(canvasProcessorRef.current) canvasProcessorRef.current?.resume();
       if(videoProcessorRef.current) videoProcessorRef.current?.resume();
-      startTimer();
 
       setState(prev => ({...prev, recordingStatus: 'recording'}))
     }

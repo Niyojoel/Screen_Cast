@@ -14,11 +14,11 @@ declare interface User {
 }
 
 declare interface ImgProps {
-    src: string;
-    alt?: string;
-    size?: number;
-    className?: string;
-    noClass?: boolean
+  src: string;
+  alt?: string;
+  size?: number;
+  className?: string;
+  noClass?: boolean
 }
 
 declare interface ActionButtonProps extends Omit<React.BaseHTMLAttributes, 'onClick'> {

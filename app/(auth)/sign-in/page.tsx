@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 
-const page = () => {
+const page = async () => {
 const onSignIn = async () => {
   try {
     await authClient.signIn.social({provider: "google", callbackURL: "/"})
