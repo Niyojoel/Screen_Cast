@@ -1,7 +1,9 @@
+import { SearchParams } from '@/index';
 import { ClassValue } from "clsx";
 import { ReactNode } from "react";
 import { RecordingTimerType } from "./lib/hooks/useRecordingFeatures";
 import { ActionType, NoNameModalActionType, VoidAction, VoidActionParamsOptional } from "./lib/hooks/useModalContext";
+import { string } from "better-auth";
 
 declare interface User {
   name: string;
@@ -20,15 +22,6 @@ declare interface ImgProps {
   className?: string;
   noClass?: boolean
 }
-
-declare interface ActionButtonProps extends Omit<React.BaseHTMLAttributes, 'onClick'> {
-  src?: string;
-  alt?: string;
-  size?: number;
-  action: VoidActon;
-  imgClassName?: string;
-  noImgClass?: boolean
-} 
 
 declare interface FormFieldProps {
   id: string;
@@ -139,6 +132,23 @@ declare interface SearchResult {
     image: string | null;
   } | null;
 }
+
+declare type SessionUserType = {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  email: string;
+  emailVerified: boolean;
+  name: string;
+  image?: string | null | undefined;
+}
+
+declare type DBUserType = {
+  id: string;
+  name: string;
+  image: string | null;
+  email: string;
+};
 
 declare interface VideoCardProps {
   id: string;
@@ -262,7 +272,7 @@ declare interface VideoWithUserResult {
     videoUrl: string;
     userId: string;
     views: number;
-    tags: string[];
+    tags: string | null;
     duration: number;
     visibility: Visibility;
     createdAt: Date;
@@ -270,9 +280,9 @@ declare interface VideoWithUserResult {
   };
   user: {
     id: string;
-    name: string | null;
+    name: string;
     image: string | null;
-  };
+  } | null;
 }
 
 declare interface VideoObject {
@@ -285,21 +295,16 @@ declare interface VideoObject {
   userId: string;
   views: number;
   duration: number;
-  tags: string[];
+  tags: string | null;
   visibility: Visibility;
   createdAt: Date;
   updatedAt: Date;
 }
 
-declare interface UserWithVideos {
-  user: {
-    id: string;
-    name: string | null;
-    image: string | null;
-    email: string | null;
-  };
-  videos: VideoObject[];
+declare interface VideosWithPagination {
+  videos: VideoWithUserResult[];
   count: number;
+  pagination: PaginationValuesType
 }
 
 declare interface ExtendedMediaStream extends MediaStream {
@@ -322,13 +327,25 @@ declare interface Params {
   params: Promise<Record<string, string>>;
 }
 
+declare type SearchParamsObj = {
+  filter: string,
+  search: string | undefined,
+  pageNumber?: number,
+  pageSize?: number
+}
+
 declare interface SearchParams {
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<SearchParamsObj>
 }
 
 declare interface ParamsWithSearch {
   params: Promise<Record<string, string>>;
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<{
+    filter: string,
+    search: string | undefined,
+    pageNumber?: number,
+    pageSize?: number
+  }>;
 }
 
 declare type ModalOpenType = {
@@ -350,7 +367,6 @@ declare interface ModalProps {
   footerButtons?: ModalButton[] | null, 
   contentBody: React.ReactNode
 }
-
 declare interface ModalBodyProps {
   icon?: React.ReactNode, 
   headerNode?: string | React.ReactElement, 
@@ -412,7 +428,8 @@ declare interface DropdownListProps {
 };
 
 declare interface EmptyStateProps {
-  icon: string;
+  icon?: string;
+  icon_svg?: React.ReactElement,
   title: string;
   description: string;
 }
@@ -614,14 +631,11 @@ interface VideoQueryResult {
   };
 }
 
-interface PaginationResult<T> {
-  data: T[];
-  pagination: {
-    currentPage: number;
-    totalPages: number;
-    totalItems: number;
-    pageSize: number | unknown;
-  };
+declare type PaginationValuesType = {
+  currentPage: number;
+  totalPages: number;
+  totalVideos: number;
+  pageSize: number | unknown;
 }
 
 declare interface RecordingHandlers {
@@ -637,3 +651,5 @@ declare type VideoConfig = {
   frameRate?: size,
   facingMode?: string
 }  
+
+export type UserType = SessionUserType | DummyUserType

@@ -1,38 +1,10 @@
-"use client"
+import { getUser } from '@/lib/actions/getByIfOnline'
+import { Img, Logo, LogoutBtn } from '.'
+import Link from 'next/link'
+import { UserType } from '..'
 
-import { 
-    ActionButton, 
-    Logo 
-} from '.'
-import { authClient } from '@/lib/authClient'
-import { 
-    useRouter, 
-    redirect
-} from 'next/navigation'
-import { dummySession } from '@/constants'
-
-const Navbar = () => {
-  const router = useRouter();
-
-//   const {data: session} = authClient.useSession()
-
-//   const user = session?.user;
-//   const {id, image} = user;
-
-const onLogOut = () => authClient.signOut({
-    fetchOptions: {
-        onSuccess: () => {
-            redirect('/')
-        }
-    }
-})
-
-const session = dummySession;
-
-const {user} = session;
-const {id, image} = user;
-
-  const goToProfile = () => router.push(`/profile/${id}`)
+const Navbar = async () => {
+  const user: UserType | null = await getUser()
 
   return (
     <header className='navbar'>
@@ -40,27 +12,18 @@ const {id, image} = user;
             <Logo/>
             {user ? (
                 <figure>
-                    <ActionButton
-                        src={image || "/assets/images/dummy.jpg"}
-                        size={36} 
-                        alt="user"
-                        imgClassName="aspect-square"
-                        action={goToProfile}
-                    >
-                    </ActionButton>
-                    <ActionButton
-                        src="/assets/icons/logout.svg"
-                        size={24} 
-                        alt="logout"
-                        imgClassName="rotate-180"
-                        action={onLogOut}
-                    >
-                    </ActionButton>
+                    <Link href={`/profile/${user?.id}`}>
+                        <Img
+                            src={user?.image || "/assets/images/dummy.jpg"} 
+                            alt="user"
+                            size={36}
+                            className="aspect-square"
+                        />    
+                    </Link>
+                    <LogoutBtn/>
                 </figure>
             ) : (
-                <button onClick={()=> router.push('/sign-in')}>
-                    <span>Sign In</span>
-                </button>
+                <Link href="/auth" className="sign-in_btn"><span>Sign In</span></Link>
             )}
         </nav>
     </header>

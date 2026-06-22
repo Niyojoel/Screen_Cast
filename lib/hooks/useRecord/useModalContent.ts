@@ -10,7 +10,8 @@ import {
     NoNameModalActionType, 
     VoidAction, 
     VoidActionParam, 
-    VoidActionParamsOptional, 
+    VoidActionParamsOptional,
+    VoidActionParamsOptionals, 
 } from "../useModalContext.tsx"
 import useRecordActions from "./useModalActions.ts"
 import { 
@@ -60,7 +61,7 @@ const useModalContent = () => {
     screenShots: ImagesArrayType[],
     resetScreenShots: VoidAction,
     changeScreenShots: VoidActionParam<ImagesArrayType>,
-    onScreenShotClick: VoidActionParamsOptional<string, string>,
+    onScreenShotClick: VoidActionParamsOptionals<string, boolean, string>,
   ) => {
 
     const onTakeScreenShot = async () => {
@@ -106,7 +107,7 @@ const useModalContent = () => {
     }
 
     const checkableFSImage = (id: string) => {
-        onScreenShotClick(id, "checkable")
+        onScreenShotClick(id, true, "checkable")
     }
 
     if(modalContentParent === 'record') {

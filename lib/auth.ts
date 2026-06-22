@@ -1,3 +1,4 @@
+import { getEnv } from '@/lib/utils';
 import { db } from "@/drizzle/db";
 import { schema } from "@/drizzle/schema";
 import { betterAuth } from "better-auth";
@@ -9,12 +10,24 @@ export const auth = betterAuth({
     provider: "pg",
     schema: schema,
   }),
+  emailAndPassword: {
+    enabled: true,
+
+  },
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 60 * 5,
+    }
+  },
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: getEnv("GOOGLE_CLIENT_ID"),
+      clientSecret: getEnv("GOOGLE_CLIENT_SECRET"),
     },
   },
   plugins: [nextCookies()],
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL,
+  baseURL: getEnv("NEXT_PUBLIC_BASE_URL"),
 });
+
+

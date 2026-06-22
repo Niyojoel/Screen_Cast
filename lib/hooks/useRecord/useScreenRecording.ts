@@ -37,14 +37,8 @@ import { VoidAction, useModalContext } from "../useModalContext";
 //IMPROVEMENTS
 
 /*
-Poor screenshot quality and implementation (getVideoProcessor)
-
-RecordingTimer not functioning right. Can get a better implementation.
-
 Broken video duration show on successful load action
 */
-
-const COUNT_LIMIT = 60;
 
 const useScreenRecording = () => {
 
@@ -64,10 +58,10 @@ const useScreenRecording = () => {
     recordingStatus: 'inactive',
   });
 
-
-  let hour = 0;
-  let minute = 0;
-  let second = 0;
+  const[second, setSecond] = useState(0)
+  const[minute, setMinute] = useState(0)
+  const[hour, setHour] = useState(0)
+  const[isRunning, setIsRunning] = useState(false)
   
   const [recordingTimer, setRecordingTimer] = useState<RecordingTimerType>({
     hour: '', 
@@ -96,6 +90,56 @@ const useScreenRecording = () => {
   const canvasProcessorRef = useRef<CanvasProcessor | null>(null)
   const videoProcessorRef = useRef<Omit<CanvasProcessor, 'stopLoop' | 'stream'> | null>(null)
 
+  useEffect(()=> {
+    let timer = null;
+    if (isRunning) {
+      timer = setInterval(() => {
+        setSecond((prev) => {
+          if(prev < 60) return prev + 1
+          return 0
+        })
+      }, 1000)
+    }
+
+    return () => {if (timer) clearInterval(timer)}
+  }, [isRunning])
+
+  useEffect(() => {
+    if (second == 60) {
+      setMinute((prev) => {
+        if(prev < 60) return prev + 1
+        return 0
+      })
+    }
+  }, [second])
+
+  useEffect(() => {
+    if (minute == 60) {
+      setHour((prev) => prev + 1)
+    }
+  }, [minute])
+
+  useEffect(() => {
+    setRecordingTimer({
+      hour: formatTimer(hour), 
+      minutes: formatTimer(minute), 
+      seconds: formatTimer(second)
+    })
+  },[second, minute, hour])
+
+  useEffect(() => {
+    if (state.recordingStatus == "recording") {
+      setIsRunning(true)
+    } else if (state.recordingStatus == 'paused') {
+      setIsRunning(false)
+    } else if (state.recordingStatus == "inactive") {
+      setIsRunning(false)
+      setSecond(0)
+      setMinute(0)
+      setHour(0)
+    }
+  },[state.recordingStatus])
+
   useEffect(() => {
     return () => {
       stopRecording();
@@ -108,52 +152,6 @@ const useScreenRecording = () => {
       audioContextRef.current = null;
     };
   }, [/*state.recordedVideoUrl*/]);
-
-  useEffect(() => {
-    let countInterval: NodeJS.Timeout | null = null;
-
-    if (state.recordingStatus == "recording") {
-      countInterval = setInterval(() => {
-        if (second < COUNT_LIMIT) {
-          second++;
-        } 
-        
-        if (second === COUNT_LIMIT) {
-          minute++;
-          second = 0;
-        }
-
-        if(minute === COUNT_LIMIT) {
-          hour++;
-          minute = 0;
-        }
-
-        // console.log(second, minute, hour);
-        
-        setRecordingTimer({
-          hour: formatTimer(hour), 
-          minutes: formatTimer(minute), 
-          seconds: formatTimer(second)
-        })
-      }, 1000);
-    } else if (state.recordingStatus == "paused") {
-      clearInterval(countInterval!);
-    } else if (state.recordingStatus == "inactive" && state.recordedBlob) {
-      clearInterval(countInterval!);
-      
-      second = 0;
-      minute = 0;
-      hour = 0;
-
-      setRecordingTimer({
-        hour: '', 
-        minutes: '00', 
-        seconds: '00'
-      })
-    }
-
-    return () => clearInterval(countInterval!)
-  },[state.recordingStatus, second, minute, hour])
 
   const onRecordingStop = () => {
     const { blob, url } = createRecordingBlob(chunksRef.current);
@@ -261,9 +259,6 @@ const useScreenRecording = () => {
               camera: 'no'
             }))
           }
-          // const processor = await getCanvasProcessor(displayStream);
-
-          // canvasProcessorRef.current = processor;
 
           const videoProcessor = await getVideoProcessor(displayStream);
 
@@ -369,25 +364,20 @@ const useScreenRecording = () => {
   };
 
   const stopRecording = () => {
-    try {
-      cleanupRecording(
-        mediaRecorderRef.current,
-        streamRef.current,
-        streamRef.current?._originalStreams,
-        videoProcessorRef.current?.end as VoidAction
-        // canvasProcessorRef.current?.end!
-      );
-      // videoProcessorRef.current?.end();
-      streamRef.current = null;
-      canvasProcessorRef.current = null;
-      setState((prev) => ({ 
-        ...prev, 
-        isRecording: false, 
-        recordingStatus: 'inactive' 
-      }));
-    } catch (error) {
-      throw error;
-    }
+    cleanupRecording(
+      mediaRecorderRef.current,
+      streamRef.current,
+      streamRef.current?._originalStreams,
+      videoProcessorRef.current?.end as VoidAction
+    );
+    
+    streamRef.current = null;
+    canvasProcessorRef.current = null;
+    setState((prev) => ({ 
+      ...prev, 
+      isRecording: false, 
+      recordingStatus: 'inactive' 
+    }));
   };
 
   const resetRecording = () => {
@@ -408,13 +398,13 @@ const useScreenRecording = () => {
 
     if(state.recordingStatus === "recording") {
       mediaRecorderRef.current.pause();
-      // if(canvasProcessorRef.current) canvasProcessorRef.current?.pause();
+    
       if(videoProcessorRef.current) videoProcessorRef.current?.pause();
       
       setState(prev => ({...prev, recordingStatus: 'paused'}))
     } else if (state.recordingStatus === 'paused') {
       mediaRecorderRef.current.resume();
-      // if(canvasProcessorRef.current) canvasProcessorRef.current?.resume();
+      
       if(videoProcessorRef.current) videoProcessorRef.current?.resume();
 
       setState(prev => ({...prev, recordingStatus: 'recording'}))
@@ -422,33 +412,35 @@ const useScreenRecording = () => {
   }
 
   const onTakeScreenShot = (): Promise<ImagesArrayType | null> => {
-    return new Promise (async(resolve, reject) => {
+    return new Promise ((resolve, reject) => {
       try {
-        // if(!canvasProcessorRef.current) return;
-        if(!videoProcessorRef.current) return;
+       
+        const processImage = async() => {
+          if(!videoProcessorRef.current) return;
+    
+          const imageFile = await videoProcessorRef.current.takeScreenShot();
+      
+          const url = await fileToBase64(imageFile);
+      
+          const name = generateScreenShotName();
   
-        const imageFile = await videoProcessorRef.current.takeScreenShot();
-    
-        // const imageFile = await canvasProcessorRef.current?.takeScreenShot();
-    
-        const url = await fileToBase64(imageFile);
-    
-        const name = generateScreenShotName();
-
-        const newShot = {
-          url, 
-          name, 
-          type: imageFile.type,
-          selected: false
+          const newShot = {
+            url, 
+            name, 
+            type: imageFile.type,
+            selected: false
+          }
+  
+          changeImageFS(newShot);
+  
+          setTimeout(() => changeImageFSActions({flash: true}), 500);
+          setTimeout(() => changeImageFSActions(null), 700);
+          setTimeout(() => changeImageFS(null), 1500);
+      
+          resolve (newShot)
         }
 
-        changeImageFS(newShot);
-
-        setTimeout(() => changeImageFSActions({flash: true}), 500);
-        setTimeout(() => changeImageFSActions(null), 700);
-        setTimeout(() => changeImageFS(null), 1500);
-    
-        resolve (newShot)
+        processImage()
       } catch (error) {
         reject(error);
       }

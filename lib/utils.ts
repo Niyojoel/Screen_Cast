@@ -6,7 +6,8 @@ import {
   DEFAULT_VIDEO_CONFIG, 
   DEFAULT_RECORDING_CONFIG, 
   DEFAULT_EMBED_CAMERA_CONFIG, 
-  DEFAULT_MIC_SETTINGS 
+  DEFAULT_MIC_SETTINGS, 
+  LOCAL_STORAGE_SCREENSHOT_TAG
 } from "@/constants";
 import { 
   BrowserDialogOptionsType, 
@@ -22,6 +23,7 @@ import {
   MediaStreams, 
   PermissionsType, 
   RecordingHandlers, 
+  TranscriptEntry, 
   VideoConfig, 
   VideoDisplay, 
   VideoSettingsType 
@@ -466,17 +468,20 @@ const getVideoDisplay = async (src: MediaStream | File): Promise<VideoDisplay>  
   if(src instanceof MediaStream) {
     video.srcObject = src;
     await video.play();
-    const {width: w, height: h} = getTrackSetting(src);
-    width = w, 
-    height = h
+    const dimensn = getTrackSetting(src);
+    width = dimensn.width; 
+    height = dimensn.height
   }else {
     video.src = URL.createObjectURL(src);
     video.crossOrigin ="anonymous";
-    // await video.play();
-    video.onloadedmetadata = () => {
-      width = video.videoWidth
-      height = video.videoHeight
-    }
+    await new Promise<void>((resolve) => {
+      video.onloadedmetadata = () => {
+        resolve()
+      }
+    })
+
+    width = video.videoWidth
+    height = video.videoHeight
   }
 
   return {video, width, height};
@@ -486,11 +491,14 @@ const getCanvasDisplay = async ({video, width, height}: VideoDisplay,
 predefined_canvas?: HTMLCanvasElement
 ): Promise<CanvasDisplay> => {
   const canvas = predefined_canvas || document.createElement('canvas');
-  const ctx = canvas.getContext('2d'); 
+  const ctx = canvas.getContext('2d', {
+    alpha: false,
+    willReadFrequently: false
+  }); 
 
-  if(!predefined_canvas && width && height) {
-    canvas.width = width || 3840;
-    canvas.height = height || 2160;
+  if(!predefined_canvas) {
+    canvas.width = width || video.videoWidth || 1920;
+    canvas.height = height || video.videoHeight || 1080;
   }
 
   if(!ctx) throw new Error ('Could not get canvas context');
@@ -1027,4 +1035,30 @@ export const inputChange = <T extends inputChangeArgs> (
     }
 
   })
+}
+
+export function getLSShots () : Array<ImagesArrayType> | null {
+  const savedShotsUnParsed = localStorage.getItem(LOCAL_STORAGE_SCREENSHOT_TAG)
+
+  if(savedShotsUnParsed == null || savedShotsUnParsed == undefined) {
+    return null
+  }
+
+  return JSON.parse(savedShotsUnParsed)
+}
+
+export function saveLSShots(shots: ImagesArrayType[]) {
+  localStorage.setItem(LOCAL_STORAGE_SCREENSHOT_TAG, JSON.stringify(shots))
+}
+
+export function deleteShotFromLS (id: string) {
+  const lsSavedShots = getLSShots()
+
+  if(lsSavedShots !== null) {
+    const foundShot = lsSavedShots.find(shot => shot.name == id)
+
+    if(foundShot?.name) {
+      saveLSShots(lsSavedShots.filter((shot) => shot.name !== id))
+    }
+  }
 }

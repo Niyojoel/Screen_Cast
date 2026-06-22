@@ -6,16 +6,11 @@ import {
   ModalContentType, 
   BeforeModalActionType, 
   OngoingModalActionType, 
-  RecordAction, 
-  PostAction, 
-  UploadAction, 
   ModalOpenType,
   ModalType,
   OpenModalArgs,
   ActionResponseType,
-  ThumbnailAction,
   ParentContentType,
-  DeleteAction,
   OnOpenArgs,
   ImagesArrayType,
 } from "@/index";
@@ -41,6 +36,10 @@ export type VoidActionParams<T, K> = (arg1: T, arg2: K) => void;
 
 export type VoidActionParamsOptional<T, K> = (arg1: T, arg2?: K) => void;
 
+export type VoidActionParamsOptionals<T, K, U> = (arg1: T, arg2?: K, args3?: U) => void;
+
+export type ActionParamOptional<T, K> = (arg1?: T) => K;
+
 export type ActionNoParams<U> = () => U;
 
 export type ActionParam<T, U> = (args: T) => U;
@@ -56,10 +55,11 @@ type ModalContextType = {
   cancelExit: VoidAction;
   exitModal: VoidAction;
   resetModal: VoidAction;
+  onOpen: VoidActionParam<OnOpenArgs>;
   actionError: string;
   logActionError: VoidActionParam<string>;
   syncModalContent: VoidActionParams<ModalType, ModalContentType>;
-  exitModalContent: ActionParam<VoidAction, ModalContentType>;
+  exitModalContent: ActionParamOptional<VoidAction, ModalContentType>;
   redirectedContent: ActionNoParams<ModalContentType>;
   modalContentParent: ParentContentType | null;
   changeContentParent: VoidActionParam<ParentContentType>;
@@ -101,7 +101,7 @@ export type ImageFSActionsType = {
   flash?: boolean;
   onClose?: VoidAction;
   onChecked?: VoidActionParam<string>;
-  onSave?: VoidActionParam<string>;
+  onSave?: ActionParam<string, string>;
   onDelete?: VoidActionParam<string>;
   imagesEnd?: boolean; 
   onNext?: VoidAction;
@@ -168,14 +168,14 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
       response: null
     }));
     setActionType(null)
-  },[modalAction])
+  },[getAction])
 
   const ongoingState = useCallback((action: Action) => modalAction[action]?.state === 'ongoing',[]); 
 
   //check for ongoing redirect to quit on modal close
   const ongoingRedirectFallback = useCallback(() => {
     if (ongoingState('redirect') || ongoingState('to_profile'))  router.push('/')
-  },[ongoingState]);
+  },[ongoingState, router]);
 
   //to be looked over for amendment
   const closeModal = useCallback(()=> {
@@ -185,7 +185,6 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
       isOpen: false,
     }));
   }, [modalOpen, modalAction])
-
 
   const resetModal = useCallback(()=> {
     setModalContent({body: null, buttons: null});
@@ -197,30 +196,33 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
     setModalOpen({
       isOpen: false,
       type: null,
-      closeIcon: <X size={22}/>
     });
   }, [modalContentParent, resetAction, ongoingRedirectFallback, exit])
 
-  const cancelExit = () => {
+  const cancelExit = useCallback(() => {
     console.log(exit)
     setExit(false);
-  }
+  },[exit])
 
+  //Checks user action state to determine if to give warning or to just exit 
   const exitModal = useCallback(() => {
+    //on close or home btn click if user is in a state where they have already started creation process this gives an about to exit warning 
     let giveWarning: boolean = false;
 
-    const recordWarning = (modalContentParent === "record" && modalAction.name !== "check");
+    const recordExitWarning = (modalContentParent === "record" && modalAction.name !== "check");
 
-    const generateWarning = (modalContentParent === 'thumbnail' && modalAction?.generate?.state !== ('before' || 'ongoing'))
+    const generateExitWarning = (modalContentParent === 'thumbnail' && modalAction?.generate?.state == 'after')
 
-    if(recordWarning || generateWarning) {giveWarning = true};
+    if(recordExitWarning || generateExitWarning) {giveWarning = true};
 
     if(giveWarning && !exit) {
+      //shows warning content
       setExit(true);
       return;
     }
+    //If the action state has no commenced any creation just exit without warning
     resetModal();
-  },[modalAction, modalContentParent, resetModal])
+  },[modalAction, modalContentParent, resetModal, exit])
 
   const onOpen = useCallback((modal?: OnOpenArgs) => {
     setModalOpen(prev => {
@@ -232,42 +234,6 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
     });
   },[])
 
-  const openModal = useCallback(({
-    action, 
-    type, 
-    parent, 
-    closeIcon,
-    addedCondition
-  } : OpenModalArgs) => {
-
-    const matchedParent_Action = parent ? modalContentParent === parent : modalAction.name === action;
-
-    const isModalType = modalOpen.type === type
-
-    const withCondition = addedCondition ? addedCondition : true
-
-    console.log({modalContentParent, modalAction, modalOpen})
-
-    if(isModalType && matchedParent_Action && withCondition) {
-      console.log('opening modal')
-      onOpen();
-    } else {
-      console.log('resetting modal')
-
-      setModalContentParent(parent || null);
-
-      if(typeof action === 'function' ) {
-        action();
-      } else if (action === 'download' || action === 'edit') {
-        ongoingAction(action)
-      } else beforeAction(action);     
-
-      const content = closeIcon ? {type, closeIcon} : {type}
-      setTimeout(() => onOpen(content), 100);
-
-    }
-  },[modalOpen, modalContentParent, modalAction])
-
   const logActionError = (log: string) => {
     setActionError(log);
   }
@@ -275,21 +241,6 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
   const changeContentParent = useCallback((parent: ParentContentType) => {
     setModalContentParent(_ => parent)
   },[])
-
-  const assignTypeToName = (
-    type: ModalType, 
-    name: Action
-  ) => {
-    if(type === 'record') {
-      return name as RecordAction;
-    }else if (type === 'upload') {
-      if(name !== 'edit') return name as ThumbnailAction;  
-      return name as UploadAction;
-    }else {
-      if(name !== 'download') return name as DeleteAction
-      return name as PostAction
-    };
-  }
 
   const changeAction = useCallback((action_: ChangeActionArgs) => {
     const {state} = action_;
@@ -309,7 +260,6 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
 
     const action = {
       name,
-      // assignTypeToName(modalOpen.type!, name as Action),
       state,
       response: response_ ? response_ : null
     }
@@ -319,7 +269,7 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
       ? getAction(action as BeforeModalActionType) 
       : getAction(action as OngoingModalActionType)
     })
-  }, [modalAction, modalOpen, assignTypeToName, getAction, actionType])
+  }, [modalAction, getAction, actionType])
 
   //for controlling action response in after state
   const changeResponse = useCallback((response: ActionResponseType, name?: Action, type?: ActionType) => {
@@ -378,6 +328,42 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
   //for initializing an ongoing type action
   const ongoingAction = useCallback((name: Action) => initializeAction('ongoing', name),[initializeAction]);
 
+  const openModal = useCallback(({
+    action, 
+    type, 
+    parent, 
+    closeIcon,
+    addedCondition
+  } : OpenModalArgs) => {
+
+    const matchedParent_Action = parent ? modalContentParent === parent : modalAction.name === action;
+
+    const isModalType = modalOpen.type === type
+
+    const withCondition = addedCondition ? addedCondition : true
+
+    console.log({modalContentParent, modalAction, modalOpen})
+
+    if(isModalType && matchedParent_Action && withCondition) {
+      console.log('opening modal')
+      onOpen();
+    } else {
+      console.log('resetting modal')
+
+      setModalContentParent(parent || null);
+
+      if(typeof action === 'function' ) {
+        action();
+      } else if (action === 'download' || action === 'edit') {
+        ongoingAction(action)
+      } else beforeAction(action);     
+
+      const content = closeIcon ? {type, closeIcon} : {type}
+      setTimeout(() => onOpen(content), 100);
+
+    }
+  },[modalOpen, modalContentParent, modalAction, beforeAction, onOpen, ongoingAction])
+
   const syncModalContent = useCallback((
     modalType: ModalType, 
     content: ModalContentType
@@ -387,7 +373,7 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
     }
   }, [modalOpen.type])
 
-  //generic modal content
+  //returns the warning text on exit button click including the exit action on exit confirmation
   const exitModalContent = useCallback((resetFn?: VoidAction): ModalContentType => {
     let modalReset = resetModal;
 
@@ -398,9 +384,9 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
       }
     }
     return exitContent(modalReset, cancelExit)}
-  ,[resetModal, cancelExit, exitContent])
+  ,[resetModal, cancelExit])
 
-  const redirectedContent = useCallback((): ModalContentType => redirectedContent_(resetModal),[resetModal, redirectedContent_])
+  const redirectedContent = useCallback((): ModalContentType => redirectedContent_(resetModal),[resetModal])
 
   useEffect(()=> console.log({modalOpen, modalAction}), [modalOpen, modalAction])
 
@@ -418,6 +404,7 @@ const ModalProvider = ({children} : {children: React.ReactNode}) => {
     changeContentParent,
     closeModal,
     cancelExit,
+    onOpen,
     exitModal,
     resetModal,
     openModal,

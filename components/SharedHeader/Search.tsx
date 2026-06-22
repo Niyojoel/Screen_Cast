@@ -1,7 +1,7 @@
 "use client"
 
 import { updateURLParams } from "@/lib/utils"
-import { Img } from "../ActionButton"
+import { Img } from "../"
 import { ChangeEvent, useEffect, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 

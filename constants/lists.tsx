@@ -22,6 +22,17 @@ import { DropdownOptionsType } from ".."
 import { JSX } from "react"
 import { NoNameModalActionType, VoidAction} from "@/lib/hooks/useModalContext"
 import { getActionStateButtons, getModalButton } from "@/lib/modalContentUtil"
+import { Img } from "@/components"
+
+export const SOCIAL_ICONS = {
+  googleIcon: (
+  <Img
+    src="/assets/icons/google.svg"
+    alt="google_icon"
+    size={22}
+  />
+) 
+}
 
 export const cursorDisplayOptions: DropdownOptionsType[] = [
     {
@@ -108,11 +119,14 @@ export const cameraMode: DropdownOptionsType[] = [
     {label: 'back', icon: <SwitchCameraIcon size={20}/>}
 ]
 
+export const LoaderIcon =({size, color}: {size?: number, color?: string}) => (<LoaderCircle size={size || 24} stroke={color || "#ff4393"} className="animate-spin"/>
+)
+
 export const MODAL_ICONS = {
     alert: <AlertTriangle size={18} stroke="#ff4393"/>,
     checked: <CheckCircleIcon size={30} fill='#ff4393' stroke="#ffffff"/>,
     failed: <XCircle size={18} stroke="red"/>,
-    loader: <LoaderCircle size={24} stroke="#ff4393" className="animate-spin"/>,
+    loader: LoaderIcon,
     close: <X size={18}/>,
     info: <InfoIcon size={18} stroke='#ff4393'/>
 }
@@ -173,7 +187,7 @@ export const recordRedirectButtons = (
     action,
     [
       getModalButton('Save Recording', onSaveRecording),
-      uploadButton(onGoToUpload, 'Retry')
+      uploadButton(onGoToUpload, 'Retry Upload')
     ]
   )
 }

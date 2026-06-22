@@ -5,13 +5,15 @@ import {Toaster} from 'react-hot-toast'
 
 export default function Layout({
   children,
-}: {children: React.ReactNode}) {
+  modal
+}: {children: React.ReactNode, modal: React.ReactNode}) {
 
   return (
     <div>
       <Navbar/>
       <Toaster/>
       {children}
+      {modal}
       <Modal/>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   Logo
 } from '.';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 const Modal = () => {
     
@@ -26,10 +27,7 @@ const Modal = () => {
       <FullView/>
       <div className="modal-overlay" onClick={closeModal}/>
       <section className='modal-content'>
-        <div className="dialog-box">
-          <div className="header-constraint">
-            <div className='header-bg'/>
-          </div>
+        <div className={`glass-panel dialog-box`}>
           <figure className='dialog-header'>
               <Logo inactive />
               <button className='modal-home-btn' onClick={exitModal}>
@@ -41,16 +39,19 @@ const Modal = () => {
                 {modalContent?.body}
             </section>
             {modalContent?.buttons && modalContent?.buttons.length > 0 && (<div className="dialog-btns">
-              {modalContent?.buttons.map(btn => (
-                <ActionButton
-                  key={btn.text}
-                  action={btn.action}
-                  className= {btn.className}
-                  text = {btn.text}
-                >
-                  {btn?.icon && btn.icon}
+              {modalContent?.buttons.map(btn => {     
+                return (
+                  <ActionButton
+                    key={btn.text}
+                    action={btn.action}
+                    className= {btn.className}
+                  >
+                    {btn?.icon && btn.icon}
+                    {btn.text}
+                    {btn.text.toLowerCase().match("/upload/") && <Link href="/upload"/>}
                 </ActionButton>
-              )
+                )
+              }
               )}
             </div>)}
           </article>

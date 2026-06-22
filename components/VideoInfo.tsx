@@ -1,17 +1,14 @@
-"use client"
 import { 
   cn, 
   parseTranscript 
 } from '@/lib/utils';
-import React, { 
-  memo, 
-  useState 
-} from 'react'
 import EmptyState from './EmptyState';
-import { infos } from '@/constants';
-import { VideoInfoProps } from '..';
+import { infos, videoTranscript } from '@/constants';
+import { TranscriptEntry, VideoInfoProps } from '..';
+import Tabs from './Tabs';
+import { TabsType } from '@/app/(root)/profile/[id]/page';
 
-const VideoInfo = memo(({
+const VideoInfo = ({
   transcript,
   createdAt,
   description,
@@ -20,27 +17,7 @@ const VideoInfo = memo(({
   title
 }: VideoInfoProps) => {
 
-  const [info, setInfo] = useState('transcript');
   const parsedTranscript = parseTranscript(transcript || "");
-
-  const renderTranscript = () => (
-    <ul className='transcript'>
-      {parsedTranscript.length > 0 ? (
-        parsedTranscript.map((item, index) => (
-          <li key={index}>
-            <h2>[{item.time}]</h2>
-            <p>{item.text}</p>
-          </li>
-        ))
-      ) : (
-        <EmptyState 
-          icon='/assets/icons/copy.svg'
-          title="No transcript available"
-          description="This video doesn't include any transcribed content!" 
-        />
-      )}
-    </ul>
-  )
 
   const metaDatas = [
     {
@@ -65,36 +42,57 @@ const VideoInfo = memo(({
     },
   ];
 
-  const renderMetadata = () => (
-    <div className="metadata">
-      {metaDatas.map(({label, value}, index) => (
-        <article key={index}>
-          <h2>{label}</h2>
-          <p className={cn({'text-pink-100 truncate': label === "Video url"})}>
-            {value}
-          </p>
-        </article>
-      ))}
-    </div>
-  );
+  const tabs: Array<TabsType> = infos.map((info) => {
+    return {
+      tab: info,
+      render: info == "transcript" ? <Transcript parsedTranscript={parsedTranscript}/> : <Metadata metaDatas={metaDatas}/>
+    }
+  })
 
   return (
-    <section className='video-info'>
-      <nav>
-        {infos.map((item)=> (
-          <button 
-            key={item}
-            className={cn({"text-pink-100 border-b-2 border-pink-100": info === item})}
-            onClick={()=> setInfo(item)}
-            >
-              {item}
-          </button>
-        ))}
-      </nav>
-      {info === "transcript" ? renderTranscript() : renderMetadata()}
-
-    </section>
+    <Tabs
+      tabs={tabs}
+      className={"video-info"}
+    />
   )
-})
+}
+
+const Transcript = ({parsedTranscript: parsed}: {parsedTranscript: Array<TranscriptEntry>}) => {
+
+  const parsedTranscript = parsed || videoTranscript;
+  
+  return (
+    <ul className='transcript'>
+      {parsedTranscript.length > 0 ? (
+        parsedTranscript.map((item, index) => (
+          <li key={index}>
+            <h2>[{item.time}]</h2>
+            <p>{item.text}</p>
+          </li>
+        ))
+      ) : (
+        <EmptyState 
+          icon='/assets/icons/copy.svg'
+          title="No transcript available"
+          description="This video doesn't include any transcribed content!" 
+        />
+      )}
+    </ul>
+  )
+}
+
+const Metadata = ({metaDatas}: {metaDatas: Array<{
+    label: string; value: string}>}) => (
+  <div className="metadata">
+    {metaDatas.map(({label, value}, index) => (
+      <article key={index}>
+        <h2>{label}</h2>
+        <p className={cn({'text-pink-100 truncate': label === "Video url"})}>
+          {value}
+        </p>
+      </article>
+    ))}
+  </div>
+);
 
 export default VideoInfo;

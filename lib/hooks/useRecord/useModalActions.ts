@@ -1,5 +1,6 @@
 import { 
   useCallback, 
+  useEffect, 
   useRef, 
   useState 
 } from "react";
@@ -25,7 +26,6 @@ const useModalActions = () => {
     successfulAction,
     failedAction,
     beforeAction,
-    ongoingAction,
     changeState,
   } = useModalContext()
 
@@ -42,7 +42,7 @@ const useModalActions = () => {
   },[])
 
   //recording buttons ------------
-   //Device check function
+  //Device check function
   const helpFailedCheck = (device: DeviceType, checkResult: DeviceStatus ) => {
     const capitalizedDevice = device.replace(device.charAt(0), device.charAt(0).toUpperCase())
     if(checkResult === "no-permission"){
@@ -58,7 +58,7 @@ const useModalActions = () => {
   ): Promise<DeviceStatus> => {
     if(condition) {
       const checkResult = await checkDevice(device);
-      if(checkResult === 'no-permission' || 'no-support') {
+      if(checkResult == 'no-permission' || checkResult == 'no-support') {
         helpFailedCheck(device, checkResult);
       }
       return checkResult;
@@ -110,8 +110,8 @@ const useModalActions = () => {
     try {
       await startRecording();
     }catch(error) {
-      const message = error instanceof Error ? error.message : error;
-      setFailedCheck(message as string);
+      console.log(error)
+      setFailedCheck("looks like you cancelled");
     }
   },[])
 
@@ -182,15 +182,15 @@ const useModalActions = () => {
     changeState('ongoing', 'redirect');
 
     setTimeout(() => {
-      if(modalAction?.redirect?.state === 'ongoing') failedAction('redirect')
+      if(modalAction?.redirect?.state === 'ongoing') {
+        failedAction('redirect')
+      }
       return;
     }, 10000);
 
   },[])
 
   const changeVideoPlaying = (state: boolean) => setVideoPlaying(state)
-
-  //------------------------------
 
   return {
     videoRef,

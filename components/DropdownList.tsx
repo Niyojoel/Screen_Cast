@@ -11,7 +11,7 @@ import {
     ChevronUp, 
 } from "lucide-react";
 
-const DropdownList = memo(({
+const DropdownList = ({
     options,
     activeOption,
     onSelectAction,
@@ -87,7 +87,7 @@ const DropdownList = memo(({
         </ul>
     </div>
   )
-});
+};
 
 const OptionsTrigger = ({
     activeOption,
@@ -130,4 +130,4 @@ const OptionsTrigger = ({
     </div>
 )};
 
-export default DropdownList;
+export default memo(DropdownList);

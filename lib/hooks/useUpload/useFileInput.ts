@@ -18,7 +18,7 @@ export const useFileInput = (maxSize: number) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const previewBoxRef = useRef<HTMLDivElement>(null);
 
-    //for only thumbnail input functionality
+  //for only thumbnail input functionality
   const [previousThumbnails, setPreviousThumbnails] = useState<ImagesArrayType[]>([])
 
   const fileChange = useCallback(async (selectedFile: File) => {
@@ -51,6 +51,7 @@ export const useFileInput = (maxSize: number) => {
           const videoDuration = await getVideoDuration(objectUrl);
           setDuration(videoDuration);
         })();
+
       }
 
       setFileChanged(true);
@@ -58,16 +59,19 @@ export const useFileInput = (maxSize: number) => {
       console.log(error);
       throw error;
     }
-  },[file, previousThumbnails, duration, previewUrl])
+  },[previousThumbnails, previewUrl, maxSize])
 
   const onFileChange = useCallback(async (file_?: File, e?: ChangeEvent<HTMLInputElement>) => {
-    try {
-      let file = file_
-      if(e) file === e.target.files?.[0];
+    // try {
+      let file = file_;
+
+      if(e) {
+        file = e.target.files?.[0]
+      };
       if(file) fileChange(file);
-    } catch (error) {
-      throw error;
-    }
+    // } catch (error) {
+      // throw error;
+    // }
   },[fileChange]);
   
   const onResetFile = useCallback(() => {
@@ -76,7 +80,7 @@ export const useFileInput = (maxSize: number) => {
     setPreviewUrl(null);
     setDuration(null);
     if (inputRef.current) inputRef.current.value = "";
-  },[previewUrl, file, duration, inputRef]);
+  },[previewUrl, inputRef]);
 
   const logFileError = (log: string) => {
     setFileError(log)

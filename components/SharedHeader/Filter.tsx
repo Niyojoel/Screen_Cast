@@ -2,10 +2,10 @@
 
 import { DropdownOptionsType } from "@/index"
 import { usePathname, useSearchParams } from "next/navigation"
-import { useRouter } from "next/router"
+import { useRouter } from "next/navigation"
 import DropdownList from "../DropdownList"
 import { filterOptions } from '@/constants';
-import { Img } from "../ActionButton"
+import { Img } from "../"
 import { useCallback, useEffect, useState } from "react"
 import { updateURLParams } from "@/lib/utils"
 

@@ -1,15 +1,16 @@
-"use server";
+"use server"
 
 import { db } from "@/drizzle/db";
 import { videos, user } from "@/drizzle/schema";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, or, SQL, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import {apiFetch, doesTitleOrTagMatch, getEnv, getOrderByClause, withErrorHandling} from "@/lib/utils";
 import { BUNNY } from "@/constants";
 import aj, { fixedWindow, request } from "../arcjet";
 import { uuid } from "drizzle-orm/pg-core";
+import { SearchParamsObj, Visibility } from "@/index";
 
 // Constants with full names
 const VIDEO_STREAM_BASE_URL = BUNNY.STREAM_BASE_URL;
@@ -123,12 +124,43 @@ export const saveVideoDetails = withErrorHandling(
   }
 );
 
-export const getAllVideos = withErrorHandling(async (
-  searchQuery: string = '',
-  sortFilter?: string,
-  pageNumber: number = 1,
-  pageSize: number = 8,
+const getCountAndPagination = async (
+  whereCondition: SQL<unknown> | undefined, 
+  pageSize: number, 
+  sortFilter: string | undefined, 
+  pageNumber: number
 ) => {
+  // Count total for pagination
+  const [{ totalCount }] = await db
+      .select({ totalCount: sql<number>`count(*)` })
+      .from(videos)
+      .where(whereCondition);
+  const totalVideos = Number(totalCount || 0);
+  const totalPages = Math.ceil(totalVideos / pageSize);
+
+  // Fetch paginated, sorted results
+  const videoRecords = await buildVideoWithUserQuery()
+    .where(whereCondition)
+    .orderBy(
+      sortFilter
+        ? getOrderByClause(sortFilter)
+        : sql`${videos.createdAt} DESC`
+    )
+    .limit(pageSize)
+    .offset((pageNumber - 1) * pageSize);
+
+  return {totalVideos, totalPages, videoRecords}
+}
+
+export const getAllVideos = withErrorHandling(async (
+  query: SearchParamsObj
+) => {
+  const { 
+    filter: sortFilter, 
+    search: searchQuery = '',
+    pageSize = 8,
+    pageNumber = 1
+  } = query
   const session = await auth.api.getSession({ headers: await headers() })
 
   let currentUserId;
@@ -147,35 +179,18 @@ export const getAllVideos = withErrorHandling(async (
     eq(videos.visibility, 'public'),
   );
 
-
-  const whereCondition = searchQuery.trim()
+  const whereCondition = searchQuery?.trim()
       ? and(
           canSeeTheVideos,
           doesTitleOrTagMatch(videos, searchQuery),
       )
       : canSeeTheVideos
 
-    // Count total for pagination
-    const [{ totalCount }] = await db
-      .select({ totalCount: sql<number>`count(*)` })
-      .from(videos)
-      .where(whereCondition);
-    const totalVideos = Number(totalCount || 0);
-    const totalPages = Math.ceil(totalVideos / pageSize);
-
-    // Fetch paginated, sorted results
-    const videoRecords = await buildVideoWithUserQuery()
-      .where(whereCondition)
-      .orderBy(
-        sortFilter
-          ? getOrderByClause(sortFilter)
-          : sql`${videos.createdAt} DESC`
-      )
-      .limit(pageSize)
-      .offset((pageNumber - 1) * pageSize);
+  const {totalVideos, totalPages, videoRecords} = await getCountAndPagination(whereCondition, pageSize, sortFilter, pageNumber)
 
     return {
       videos: videoRecords,
+      count: totalVideos,
       pagination: {
         currentPage: pageNumber,
         totalPages,
@@ -212,16 +227,12 @@ export const incrementVideoViews = withErrorHandling(
   }
 );
 
-export const getAllVideosByUser = withErrorHandling(
-  async (
-    userIdParameter: string,
-    searchQuery: string = "",
-    sortFilter?: string
-  ) => {
+export const getUser = withErrorHandling(
+  async(userIdParams: string) => {
     const currentUserId = (
       await auth.api.getSession({ headers: await headers() })
     )?.user.id;
-    const isOwner = userIdParameter === currentUserId;
+    if (userIdParams !== currentUserId) throw new Error("User authentication failed");
 
     const [userInfo] = await db
       .select({
@@ -231,23 +242,45 @@ export const getAllVideosByUser = withErrorHandling(
         email: user.email,
       })
       .from(user)
-      .where(eq(user.id, userIdParameter));
-    if (!userInfo) throw new Error("User not found");
+      .where(eq(user.id, userIdParams));
 
-        /* eslint-disable @typescript-eslint/no-explicit-any */
+    if (!userInfo) throw new Error("User not found");
+    return userInfo
+  }
+)
+
+export const getAllVideosByUser = withErrorHandling(
+  async (userIdParameter: string, query: SearchParamsObj) => {
+  const { 
+    filter: sortFilter, 
+    search: searchQuery = '',
+    pageSize = 8,
+    pageNumber = 1
+  } = query
+    const currentUserId = (
+      await auth.api.getSession({ headers: await headers() })
+    )?.user.id;
+    const isOwner = userIdParameter === currentUserId;
+
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const conditions = [
       eq(videos.userId, userIdParameter),
       !isOwner && eq(videos.visibility, "public"),
-      searchQuery.trim() && ilike(videos.title, `%${searchQuery}%`),
+      searchQuery?.trim() && ilike(videos.title, `%${searchQuery}%`),
     ].filter(Boolean) as any[];
+  
+    const {totalVideos, totalPages, videoRecords} = await getCountAndPagination(and(...conditions), pageSize, sortFilter, pageNumber)
 
-    const userVideos = await buildVideoWithUserQuery()
-      .where(and(...conditions))
-      .orderBy(
-        sortFilter ? getOrderByClause(sortFilter) : desc(videos.createdAt)
-      );
-
-    return { user: userInfo, videos: userVideos, count: userVideos.length };
+    return {
+      videos: videoRecords,
+      count: totalVideos,
+      pagination: {
+        currentPage: pageNumber,
+        totalPages,
+        totalVideos,
+        pageSize,
+      },
+    };
   }
 );
 

@@ -1,14 +1,14 @@
-"use client";
 
 import Image from 'next/image'
-import { memo } from 'react'
 import { EmptyStateProps } from '..';
+import { memo } from 'react';
 
-const EmptyState = memo(({icon, title, description}: EmptyStateProps) => {
+const EmptyState = ({icon, icon_svg, title, description}: EmptyStateProps) => {
   return (
-    <section className='empty-state'>
+    <section className={`glass-panel empty-state`}>
         <figure className="">
-            <Image src={icon} alt="empty-icon" width={46} height={46}/>
+            {icon ? (<Image src={icon} alt="empty-icon" width={46} height={46}/>) : (icon_svg)
+            }
         </figure>
         <article>
             <h1>{title}</h1>
@@ -16,6 +16,6 @@ const EmptyState = memo(({icon, title, description}: EmptyStateProps) => {
         </article>
     </section>
   )
-});
+};
 
-export default EmptyState
+export default memo(EmptyState)

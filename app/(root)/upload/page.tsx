@@ -3,7 +3,8 @@
 import {
   Alert, 
   FileInput, 
-  FormField, 
+  FormField,
+  SubmitBtn, 
 } from "@/components"
 import { 
   visibilities 
@@ -19,7 +20,7 @@ import {
   useGenerateActions
 } from "@/lib/hooks/useUpload";
 
-const page = () => {
+const Page = () => {
   const router = useRouter();
   
   const {
@@ -77,9 +78,9 @@ const page = () => {
     console.log(modalAction)
     
     if(redirected) {
-      content = redirectedContent(redirected)
+      content = redirectedContent()
     } else if(exit) {
-      content = exitModalContent(exit, resetCaptureTime)
+      content = exitModalContent(resetCaptureTime)
     } else if(modalOpen.type === 'upload') {
       content = uploadContent(
         modalAction, 
@@ -176,12 +177,10 @@ const page = () => {
           value={formData.visibility}
           onChange={visibilityInputChange}
         />
-        <button type="submit" disabled={isSubmitting} className="submit-button">
-          {isSubmitting ? <LoaderPinwheel/> : "Upload Video"}
-        </button>
+        <SubmitBtn isSubmitting={isSubmitting} btnText="Upload Video"/>
       </form>
     </main>
   )
 }
 
-export default page
+export default Page

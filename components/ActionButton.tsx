@@ -1,63 +1,69 @@
 "use client"
 
-import Image from "next/image"
-import { memo } from "react"
-import { 
-  ActionButtonProps, 
-  ImgProps 
-} from "..";
-import { cn } from "@/lib/utils";
+import { LoaderIcon } from '@/constants/lists'
+import { cn } from '@/lib/utils'
+import React, {ComponentProps, MouseEvent, ReactNode, useTransition } from 'react'
+import toast from 'react-hot-toast'
 
-const ActionButton = memo(({
-  src, 
-  alt,
-  children, 
-  text,
-  size, 
-  action,
-  disable,
-  noImgClass = false,
-  className="",
-  imgClassName="" 
-}: ActionButtonProps) => {
-  
+type ActionResponse = {error: boolean, message?: string} 
+
+interface ActionButtonProps extends ComponentProps<"button"> {
+  action?: () => Promise<ActionResponse> | Promise<void> | void,
+  children: ReactNode,
+  showLoading?: boolean,
+}
+
+const ActionButton = ({
+  action, 
+  onClick,
+  children,
+  showLoading=true,
+  disabled,
+  className,
+  ...props
+  }: ActionButtonProps) => {
+
+    const [isPending, startTransition] = useTransition()
+
+    const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+      if(onClick) {
+        onClick(event)
+      }
+
+      if(action) {
+        startTransition(async () => {
+          try {
+            const data = await action();
+
+            if( data ) {
+              if (data.error) {
+                toast(data.message ?? "Error")
+              } else if (data.message) {
+                toast(data.message)
+              }
+            }
+
+          } catch(error) {
+            console.error(error)
+          }
+        })
+      }
+    }
+
   return (
     <button 
-      className={cn("cursor-pointer", className)} 
-      onClick={action}
-      disabled={disable}
+      onClick={handleClick}
+      disabled={disabled || isPending}
+      className={cn("cursor-pointer", className)}
+      {...props}
     >
-        {(src && alt) && (
-        <Img
-          src={src} 
-          alt={alt} 
-          size={size} 
-          className={imgClassName}
-        />
-        )}
-        {text && text}
-        {children && children}
+      {action ? 
+        (isPending ? (showLoading ? (<LoaderIcon/>) : (children))
+          : (children)) : 
+        (children)
+      }
     </button>
   )
-});
+}
 
-export default ActionButton;
-
-
-export const Img = memo(({
-  src, 
-  alt, 
-  size = 16, 
-  className,
-  noClass = false
-}: ImgProps) => (
-    
-  <Image
-    src={src}
-    alt={alt as string}
-    width={size} 
-    height={size} 
-    style={{color: '#888'}}
-    className={cn(!noClass ? `rounded-full` : "", className)}
-  />
-));
+export default ActionButton

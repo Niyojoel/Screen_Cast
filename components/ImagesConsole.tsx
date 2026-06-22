@@ -3,9 +3,7 @@ import {ImagesConsoleProps} from '..'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { 
-  Check, 
   CircleCheckBig, 
-  Save, 
   X 
 } from 'lucide-react'
 
@@ -17,12 +15,13 @@ const ImagesConsole =  ({
   buttonSize,
   onClick,
   onRemove,
-}: ImagesConsoleProps) => {
+  replaceClass
+}: ImagesConsoleProps & {replaceClass?: boolean}) => {
 
-  let active = imagesArr?.length > 0
+  const active = imagesArr?.length > 0
 
   return (
-    active && <ul className={cn("images-console", className)}>
+    active && <ul className={cn(replaceClass ? className : `images-console ${className}`)}>
         {imagesArr?.map((file, index) => {
           const {url, name} = file; 
 
@@ -46,7 +45,7 @@ const ImagesConsole =  ({
                 </button>
               </span>}
               {selected && <CircleCheckBig size={18} stroke='white' fill='#ff4393' strokeWidth={3} className='absolute top-1 right-1 z-[5] shadow-md'/>}
-              <Image src={url as string} alt="image" fill/>
+              <Image src={url as string} alt="image" width={160} height={100}/>
             </div>
           )})
         }

@@ -7,7 +7,7 @@ import { LoaderPinwheelIcon } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
 import { VideoPlayerProps } from '..';
 
-const VideoPlayer = memo(({id, videoId, videoUrl, className}: VideoPlayerProps & {videoUrl: string}) => {
+const VideoPlayer = ({id, videoId, videoUrl, className}: VideoPlayerProps & {videoUrl: string}) => {
 
   const [state, setState] = useState(initialVideoState);
   const iFrameRef = useRef<HTMLIFrameElement>(null);
@@ -72,6 +72,6 @@ const VideoPlayer = memo(({id, videoId, videoUrl, className}: VideoPlayerProps &
       )}
     </div>
   )
-});
+};
 
-export default VideoPlayer
+export default memo(VideoPlayer)

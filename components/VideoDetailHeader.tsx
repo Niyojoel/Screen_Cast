@@ -2,10 +2,10 @@
 
 import { useRouter } from "next/navigation"
 import {
-  ActionButton, 
   CopyBtn, 
   Img, 
-  DropdownList
+  DropdownList,
+  ActionButton
 } from "."
 import { 
   cn, 
@@ -13,10 +13,8 @@ import {
 } from "@/lib/utils"
 import {Dot} from "lucide-react"
 import { useEffect } from "react"
-import { authClient } from "@/lib/authClient"
 import toast from "react-hot-toast"
 import { 
-  dummySession, 
   visibilities 
 } from "@/constants"
 import { 
@@ -28,19 +26,21 @@ import {
   useModalContent, 
   useVideoActions 
 } from "@/lib/hooks/useVideo"
+import {UserType} from "@/index"
 
 const VideoDetailHeader = ({
-    id,
-    title,
-    createdAt,
-    userImg,
-    username,
-    videoId,
-    videoUrl,
-    ownerId,
-    visibility,
-    thumbnailUrl
-}: VideoDetailHeaderProps & {videoUrl?: string}) => {
+  id,
+  title,
+  createdAt,
+  userImg,
+  username,
+  videoId,
+  videoUrl,
+  ownerId,
+  currentUser,
+  visibility,
+  thumbnailUrl
+}: VideoDetailHeaderProps & {videoUrl?: string, currentUser: UserType}) => {
   const router = useRouter()
 
   const {
@@ -63,15 +63,7 @@ const VideoDetailHeader = ({
     isUpdating,
   } = useVideoActions()
 
-  // const { data: session } = authClient.useSession();
-  const session = dummySession;
-  const user = session.user;
-  const userId = session?.user?.id;
-
-  let isOwner = false;
-  if(userId){
-    isOwner = userId === ownerId;
-  }
+  const isOwner = currentUser.id === ownerId;
 
   const redirectToProfile = () => router.push(`/profile/${ownerId}`)
   
@@ -79,7 +71,7 @@ const VideoDetailHeader = ({
     let content: ModalContentType | null = null;
     
     if(exit) {
-      content = exitModalContent(exit)
+      content = exitModalContent()
     } else if (modalOpen.type === 'video') {
       content = videoContent(
         modalAction,
@@ -106,12 +98,15 @@ const VideoDetailHeader = ({
         <h1>{title}</h1>
         <figure>
           <ActionButton 
-            src={userImg ?? "/assets/images/dummy.jpg"}
-            size={24} 
-            alt={username ?? "user"}
             className="cursor-pointer"
             action={redirectToProfile}
+            showLoading={false}
           >
+            <Img
+              src={userImg ?? "/assets/images/dummy.jpg"}
+              size={24} 
+              alt={username ?? "user"}
+            />
             <h2>{username ?? "Guest"}</h2>
           </ActionButton>
           <figcaption>
@@ -122,7 +117,7 @@ const VideoDetailHeader = ({
       </aside>
       <aside className="cta">
         <CopyBtn id={id} size={22} className='relative hover:bg-gray-20 p-2'/>
-        {user && visibility.toLowerCase() === "public" && (
+        {currentUser && visibility.toLowerCase() === "public" && (
           <button
             className={cn("round-btn", "hover:bg-gray-20 p-2")}
             onClick = {() => videoUrl && onDownload(videoUrl, toast)}

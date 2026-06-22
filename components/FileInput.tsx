@@ -12,7 +12,7 @@ import {
   base64ToFile, 
   cn 
 } from '@/lib/utils';
-import { Img } from './ActionButton';
+import { Img } from './';
 import {ImagesConsole} from '.';
 import { 
   FileInputProps, 
@@ -22,11 +22,10 @@ import {
 import {
   EditIcon, 
   ImagePlus, 
-  ImagePlusIcon
 } from 'lucide-react';
 
 
-const FileInput = memo(({
+const FileInput =({
   id,
   label,
   type,
@@ -47,12 +46,14 @@ const FileInput = memo(({
   const [isDraggedOver, setIsDraggedOver] = useState(false);
 
   //File change
-  const catchChangeError = (changeFn: void)=> {
+  const catchChangeError = (file: File)=> {
     try {
-      changeFn;
+      onChange(file);
     } catch (error) {
       console.log(error);
-      error instanceof Error && logError(error.message);
+      if (error instanceof Error) {
+        logError(error.message)
+      };
     }
   }
 
@@ -66,7 +67,7 @@ const FileInput = memo(({
   const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target?.files?.[0];
     if(!file) return;
-    catchChangeError(onChange(file));
+    catchChangeError(file);
   }
 
   const onFileDrop = (e: DragEvent<HTMLElement>) => {
@@ -80,16 +81,18 @@ const FileInput = memo(({
 
       if(!file.type.startsWith(`${type}/`)) return logError(`Incompatible file type`);
 
-      catchChangeError(onChange(file))
+      catchChangeError(file)
     } catch (error) {
       console.log(error);
-      error instanceof Error && logError(error.message);
+      if(error instanceof Error)  {
+        logError(error.message);
+      }
     }
   }
 
-  let uploadTriggerClass = previewUrl ? "no-show" : "show";
+  const uploadTriggerClass = previewUrl ? "no-show" : "show";
 
-  let changeFile = (isDraggedOver || fileChangeError);
+  const changeFile = (isDraggedOver || fileChangeError);
 
   const openModal = {
     generate: () => onOpenModal && onOpenModal('generate', 'thumbnail'),
@@ -139,7 +142,7 @@ const FileInput = memo(({
   return (
     <section className='file-input'>
       <label>{label}
-        <span>{label === "Thumbnail" && `(You can upload, ${previousThumbnails?.length! > 0 ? "choose from previous" : ""} or generate one from video)`}
+        <span>{label === "Thumbnail" && `(You can upload, ${previousThumbnails && previousThumbnails.length > 0 ? "choose from previous" : ""} or generate one from video)`}
         </span>
       </label>
  
@@ -149,7 +152,7 @@ const FileInput = memo(({
           <ThumbnailSuggestions
             uploadTrigger={uploadTrigger({
               text: "Upload or Drop", 
-              className: {"flex-1": previousThumbnails?.length! < 1}
+              className: previousThumbnails && {"flex-1": previousThumbnails.length < 1}
             })}
             uploadTriggerClass={uploadTriggerClass}
             previousThumbnails={previousThumbnails!}
@@ -212,7 +215,7 @@ const FileInput = memo(({
       </div>
     </section>
   )
-});
+};
 
 const ThumbnailSuggestions = ({
   uploadTrigger, 
@@ -222,7 +225,7 @@ const ThumbnailSuggestions = ({
   removeThumbnail
 }: ThumbnailSuggestionsProps) => {
 
-  let active = previousThumbnails?.length > 0
+  const active = previousThumbnails?.length > 0
 
   const onUsePreviousThumbnail = async(filename: string) => {
     const selectedThumbnail = previousThumbnails.find(tn => tn.name === filename) 
@@ -249,5 +252,5 @@ const ThumbnailSuggestions = ({
   )
 }
 
-export default FileInput
+export default  memo(FileInput)
 

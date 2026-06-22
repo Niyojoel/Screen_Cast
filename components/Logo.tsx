@@ -1,10 +1,10 @@
-import { Img } from './ActionButton'
+import { Img } from './'
 import Link from 'next/link'
 
-const Logo = ({inactive = false}: {inactive?: boolean}) => {
+const Logo = ({inactive = false, className}: {inactive?: boolean, className?: string}) => {
   
   return (
-    <span className='logo'>
+    <span className={`logo ${className}`}>
         <Link href={inactive ? "#" : "/"}>
           <Img
             src="/assets/icons/logo.svg"

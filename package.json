@@ -6,11 +6,16 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:push": "drizzle-kit push",
     "lint": "next lint"
   },
   "dependencies": {
     "@arcjet/inspect": "^1.0.0-beta.6",
     "@arcjet/next": "^1.0.0-beta.6",
+    "@hookform/resolvers": "^5.1.1",
     "@neondatabase/serverless": "^1.0.2",
     "better-auth": "^1.4.5",
     "clsx": "^2.1.1",
@@ -22,7 +27,9 @@
     "react": "^19.0.0",
     "react-hot-toast": "^2.6.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.2.0"
+    "react-hook-form": "^7.61.1",
+    "tailwind-merge": "^3.2.0",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

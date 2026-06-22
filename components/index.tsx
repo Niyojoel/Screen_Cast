@@ -11,13 +11,16 @@ export {default as VideoPlayer} from "./VideoPlayer";
 export {default as VideoInfo} from "./VideoInfo";
 export {default as VideoDetailHeader} from "./VideoDetailHeader";
 export {default as ActionButton} from "./ActionButton";
-export {Img} from "./ActionButton";
+export {default as Img} from "./Img";
 export {default as Pagination} from "./Pagination";
 export {default as RecordStream} from "./RecordStream";
 export {default as Modal} from "./Modal";
 export {default as Logo} from "./Logo";
 export {default as Alert} from "./Alert";
 export {default as FullView} from "./FullView";
+export {default as Tabs} from "./Tabs";
+export {default as SubmitBtn} from "./SubmitBtn";
+export {default as LogoutBtn} from "../app/(auth)/auth/components/sign-out";
 export {
     default as ModalBody,
     FailedActionModalBody, 

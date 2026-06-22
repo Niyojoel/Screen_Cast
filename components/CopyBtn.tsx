@@ -3,35 +3,44 @@
 import React, {
   useState, 
   MouseEvent, 
-  SyntheticEvent, 
-  memo 
+  memo, 
+  useEffect
 } from 'react'
-import { Img } from './ActionButton';
 import { cn } from '@/lib/utils';
 import { CopyBtnProps } from '..';
+import {ActionButton, Img} from './';
 
-const CopyBtn = memo(({
+const CopyBtn = ({
   id, 
   size = 18, 
   className
 }: CopyBtnProps) => {
   const [copied, setCopied] = useState(false);
 
-  const onCopy = (e: MouseEvent | SyntheticEvent) => {
+  
+  const onCopy = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     e.preventDefault();
-    if(typeof window !== undefined || null) {
-      navigator.clipboard.writeText(`${window.location.origin}/videos/${id}`);
-      
-      setCopied(true);
+    
+    if(typeof window !== 'undefined' && navigator?.clipboard) {
+      const videoUrl = `${window.location.origin}/videos/${id}`
+
+      navigator.clipboard.writeText(videoUrl)
+      .then(() => {setCopied(true)})
+      .catch((err) => {console.error("failed to copy text: ", err)});
+      ;
     }
 
+  }
+  
+  useEffect(() => {
+    if (!copied) return
     const copiedTimeOut = setTimeout(()=>setCopied(false), 2000)
     return ()=> clearTimeout(copiedTimeOut);
-  }
-   
+  },[copied])
+
   return (
-    <button 
+    <ActionButton
       className={cn("round-btn", className)} 
       disabled={copied} 
       onClick={onCopy}
@@ -41,8 +50,8 @@ const CopyBtn = memo(({
         alt="copy" 
         size={size}
       />
-    </button>
+    </ActionButton>
   )
-});
+};
 
-export default CopyBtn;
+export default memo(CopyBtn);

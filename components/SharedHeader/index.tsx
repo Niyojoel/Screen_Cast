@@ -1,68 +1,17 @@
-"use client"
-
-import { dummySession } from '@/constants';
 import { Img, RecordStream } from '..'
-import { authClient } from '@/lib/authClient'
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import toast from 'react-hot-toast';
-import { SharedHeaderProps } from '../..';
-import { useModalContext } from '@/lib/hooks/useModalContext';
 import Search from './Search';
 import Filter from './Filter';
+import Link from 'next/link';
+import { SharedHeaderProps } from '@/index';
+import { getUser } from '@/lib/actions/getByIfOnline';
 
-const SharedHeader = ({
+const SharedHeader = async ({
   subHeader, 
   title, 
   userImg
 }: SharedHeaderProps) => {
 
-  const {
-    modalAction, 
-    successfulAction, 
-    resetModal, 
-    syncModalContent, 
-    redirectedContent
-  } = useModalContext()
-
-  const router = useRouter();
-
-  //const {data: session} = authClient?.useSession();
-
-  const session = dummySession;
-
-  const {user} = dummySession;
-
-  const onGoToUpload = () => {
-    if(user) {
-      router.push('/upload')
-    }else {
-      router.push("/sign-in");
-      toast('You need to sign in to access Upload page')
-    }
-  }
-
-  useEffect(() => {
-    if(modalAction?.to_profile) {
-        successfulAction('to_profile');
-        setTimeout(() => resetModal, 2000)
-    }
-    
-    const redirected = modalAction?.redirect?.state === 'after' && modalAction?.redirect?.response === 'successful'
-        
-    if(redirected) {
-        const content = redirectedContent();
-        if(content) syncModalContent('record', content);
-    }
-  },[
-      modalAction?.to_profile, 
-      modalAction?.redirect?.response, 
-      modalAction?.redirect?.state, 
-      redirectedContent, 
-      resetModal, 
-      successfulAction, 
-      syncModalContent
-    ]) 
+  const user = await getUser()
 
   return (
     <header className='header'>
@@ -70,9 +19,9 @@ const SharedHeader = ({
             <div className='details'>
                 {userImg && (
                     <Img
-                        src={userImg} 
-                        alt="user_image" 
-                        size={66}
+                      src={userImg} 
+                      alt="user_image"
+                      size={66}
                     />
                 )}
                 <article>
@@ -81,15 +30,15 @@ const SharedHeader = ({
                 </article>
             </div>
             <aside>
-                <button onClick={onGoToUpload}>
+                <Link href={user ? "/upload" : "/auth"}>
                     <Img
                         src="/assets/icons/upload.svg"
                         alt="upload"
                         noClass
                     />
                     <span>Upload a video</span>
-                </button>
-                <RecordStream/>
+                </Link>
+                <RecordStream currentUser={user}/>
             </aside>
         </section>
         <section className='search-filter'>

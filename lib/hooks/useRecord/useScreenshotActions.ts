@@ -1,7 +1,7 @@
 import { ImagesArrayType } from "@/index";
 import { useEffect, useState } from "react";
 import { ImageFSActionsType, useModalContext } from "../useModalContext";
-
+import { deleteShotFromLS, getLSShots, saveLSShots } from "@/lib/utils";
 
 const useScreenshotActions = () => {
 
@@ -13,7 +13,13 @@ const useScreenshotActions = () => {
   const [screenShots, setScreenShots] = useState<ImagesArrayType[]>([])
   const [index, setIndex] = useState<number | null>(null)
 
-  const onScreenShotClick = (id: string, checkable?: string) => {
+  const populateScreenShots = (shots: Array<ImagesArrayType>) => {
+    setScreenShots(shots)
+  }
+
+  const onScreenShotClick = (id: string, canSave: boolean = true, checkable?: string) => {
+
+    console.log(screenShots)
 
     const clickedShot = screenShots.find(shot => shot.name === id); 
 
@@ -23,9 +29,9 @@ const useScreenshotActions = () => {
 
     setIndex(clickedIndex);
     
-    let FSActions: ImageFSActionsType = {
+    const FSActions: ImageFSActionsType = {
       onClose: onImageFSClose,
-      onSave: onScreenShotSave,
+      onSave: canSave ? onScreenShotSave : undefined,
       onDelete: onScreenShotRemove,
       onNext: screenShots.length > 1 ? onNextImage : undefined,
       onPrevious: screenShots.length > 1 ? onPreviousImage : undefined,
@@ -61,6 +67,9 @@ const useScreenshotActions = () => {
     setScreenShots(shots => {
       return shots.filter(shot => shot.name !== id)
     });
+
+    deleteShotFromLS(id)
+
     if(screenShots.length > 0) {
       setIndex(prev => {
         if(prev! >= screenShots.length - 1) {
@@ -70,11 +79,24 @@ const useScreenshotActions = () => {
       return;
     } else setTimeout(() => onImageFSClose(), 1000);
   }
-    //work-in-progress
-  const onScreenShotSave = (id: string) => {
-    const shotToSave = screenShots.find(shot => shot.name === id);
-    
-    //add selected shot into a database for screenshot collection in profile;
+
+  //work-in-progress
+  const onScreenShotSave = (id: string): string => {
+    const shotToSave: ImagesArrayType = screenShots.find(shot => shot.name === id)!;
+
+    const lsSavedShots = getLSShots()
+
+    if(lsSavedShots == null) {
+      saveLSShots([shotToSave]) 
+      return "Saved";
+    }
+
+    if (lsSavedShots.includes(shotToSave)) return "Exist"
+
+    lsSavedShots.push(shotToSave)
+
+    saveLSShots(lsSavedShots)
+    return "Saved"
   }
 
   const onScreenShotSelect = (id: string) => {
@@ -101,26 +123,15 @@ const useScreenshotActions = () => {
   useEffect(() => {
     const currentShot = screenShots[index!];
     changeImageFS(currentShot);
-
-    // if(index) {
-    //   if(index >= screenShots.length - 1 || index === 0)  {
-    //     changeImageFSActions({ 
-    //       onClose: onImageFSClose,
-    //       onSave: onScreenShotSave,
-    //       onDelete: onScreenShotRemove,
-    //       onNext: screenShots.length > 1 ? onNextImage : undefined,
-    //       onPrevious: screenShots.length > 1 ? onPreviousImage : undefined,
-    //       imagesEnd: true
-    //     })
-    //   }
-    // } 
   },[screenShots, index])
   
   return {
     screenShots,
+    populateScreenShots,
     resetScreenShots,
     changeScreenShots,
     onScreenShotClick,
+    onImageFSClose,
   }
 }
 

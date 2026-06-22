@@ -1,19 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import aj, { createMiddleware, detectBot, shield } from "./lib/arcjet";
+import {getUser} from "@/lib/actions/getByIfOnline"
+import { getEnv } from "./lib/utils";
+import arcjet, { createMiddleware, detectBot, shield } from "@arcjet/next";
 
 export async function middleware(request: NextRequest) {
+  
   // const session = await auth.api.getSession({
   //   headers: await headers(),
   // });
 
-  // if (!session && request.nextUrl.pathname !== "/" && !(request.nextUrl.pathname.startsWith('/video'))) {
-  //   return NextResponse.redirect(new URL("/sign-in", request.url));
+  const user = getUser()
+
+  // if (!user && request.nextUrl.pathname !== "/" && !(request.nextUrl.pathname.startsWith('/video'))) {
+  //   return NextResponse.redirect(new URL("/auth", request.url));
   // }
 
   // return NextResponse.next();
 }
+const aj = arcjet({
+  key: getEnv("ARCJET_API_KEY"),
+  rules: [],
+});
 
 const validate = aj
   .withRule(
@@ -30,8 +39,8 @@ const validate = aj
 
 export default createMiddleware(validate);
 
-// export const config = {
-//   matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sign-in|video|assets$).*)"],
-// };
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sign-in|video|assets$).*)"],
+};
 
-// // ⨯ [TypeError: Body is unusable: Body has already been read]
+// ⨯ [TypeError: Body is unusable: Body has already been read]

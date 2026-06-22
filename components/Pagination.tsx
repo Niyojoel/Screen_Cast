@@ -9,7 +9,7 @@ import {
   generatePagination, 
   updateURLParams 
 } from '@/lib/utils';
-import { Img } from './ActionButton';
+import { Img } from './';
 
 type PaginationProps = {
   currentPage?: number;
@@ -45,6 +45,7 @@ const Pagination = ({
     if(pageNumber < 1 || pageNumber > totalPages) return
     router.push(createPageUrl(pageNumber))
   }
+  
   return (
     <section className='pagination'>
       <button

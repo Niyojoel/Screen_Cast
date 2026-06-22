@@ -9,7 +9,7 @@ import {
 } from "@/components";
 import { SuccessfulLoadBody } from "./sub-components";
 
-const LoadBody = memo(({
+const LoadBody = ({
     action,
     saveAction,
     onSaveRecording,
@@ -54,6 +54,8 @@ const LoadBody = memo(({
             />
         </>
     )
-})
+}
 
-export default LoadBody;
+
+
+export default memo(LoadBody);

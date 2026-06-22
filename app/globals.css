@@ -78,12 +78,20 @@
   select::-ms-expand {
     display: none;
   }
-  button {
+  button, a {
     @apply cursor-pointer;
   }
   h1 {
     @apply -tracking-[2px];
   }
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 1);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05)
 }
 
 @layer components {
@@ -100,7 +108,7 @@
   }
 
   .overlay {
-    @apply bg-radial-100 w-full h-full relative top-0 -z-10;
+    @apply bg-radial-100 w-full h-full absolute top-0 -z-10;
   }
 
   .page {
@@ -116,82 +124,90 @@
   }
 
   /* sign in page */
-  .sign-in {
-    @apply w-full min-h-screen flex flex-col-reverse lg:flex-row justify-between overflow-hidden max-lg:gap-10;
+  .auth {
+    @apply w-full relative flex flex-col-reverse lg:flex-row justify-between overflow-hidden max-lg:gap-10;
+  }
 
-    .testimonial {
-      @apply bg-light-100 lg:w-1/2 flex flex-col justify-between lg:h-screen w-full py-10 px-6 lg:pl-10 gap-6;
+  .submit-button {
+    @apply bg-pink-100 text-white px-4 py-2.5 rounded-4xl cursor-pointer text-base text-center flex justify-center items-center font-semibold hover:bg-pink-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed outline-0 border-0;
+  }
 
-      a {
-        @apply flex items-center gap-2.5;
-      }
+  .btn-white {
+    @apply bg-white border-[1px] flex items-center gap-2.5 text-dark-100 border-gray-25 hover:text-pink-100 hover:border-pink-100 h-9.5 overflow-hidden rounded-4xl justify-center text-nowrap px-4 py-2.5 disabled:cursor-not-allowed;
+  }
 
-      h1 {
-        @apply text-xl font-black text-blue-100 font-satoshi -tracking-[0.5px];
-      }
+  .testimonial {
+    @apply bg-light-100 lg:w-1/2 flex flex-col justify-between lg:h-screen w-full py-10 px-6 lg:pl-10 gap-6;
 
-      .description {
-        @apply flex items-center justify-center;
+    a {
+      @apply flex items-center gap-2.5;
+    }
 
-        section {
-          @apply flex flex-col items-center justify-center gap-8 px-6 sm:px-8 w-full max-w-2xl;
+    h1 {
+      @apply lg:text-xl text-lg font-black text-blue-100 font-satoshi -tracking-[0.5px];
+    }
 
-          figure {
-            @apply flex items-center gap-1 justify-center;
-          }
+    .description {
+      @apply flex items-center justify-center;
 
-          p {
-            @apply text-3xl font-semibold text-dark-100 text-center -tracking-[2px];
-          }
+      section {
+        @apply flex flex-col items-center justify-center gap-8 px-6 sm:px-8 w-full max-w-2xl;
 
-          article {
-            @apply flex flex-col gap-2.5 items-center;
+        figure {
+          @apply flex items-center gap-1 justify-center;
+        }
 
-            div {
-              @apply flex flex-col items-center gap-1;
+        p {
+          @apply text-3xl font-semibold text-dark-100 text-center -tracking-[2px];
+        }
 
-              h2 {
-                @apply text-base font-bold text-dark-100;
-              }
+        article {
+          @apply flex flex-col gap-2.5 items-center;
 
-              p {
-                @apply text-gray-100 font-normal text-sm -tracking-[0.5px];
-              }
+          div {
+            @apply flex flex-col items-center gap-1;
+
+            h2 {
+              @apply text-base font-bold text-dark-100;
+            }
+
+            p {
+              @apply text-gray-100 font-normal text-sm -tracking-[0.5px];
             }
           }
         }
       }
-
-      p {
-        @apply text-sm font-medium text-gray-100;
-      }
     }
 
-    .google-sign-in {
-      @apply flex items-center justify-center lg:w-1/2 w-full lg:h-screen px-10 py-10;
+    p {
+      @apply text-sm font-medium text-pink-500;
+    }
+  }
 
-      section {
-        @apply rounded-20 bg-white shadow-10 max-w-xl w-full flex flex-col px-5 py-7.5 gap-8;
+  .google-sign-in {
+    @apply flex items-center justify-center lg:w-1/2 w-full lg:h-screen px-10 py-10;
 
-        a {
-          @apply flex items-center gap-2.5 justify-center;
+    section {
+      @apply rounded-20 bg-white shadow-10 max-w-xl w-full flex flex-col px-5 py-5 gap-8;
 
-          h1 {
-            @apply text-28 font-black text-blue-100 font-satoshi;
-          }
+      a {
+        @apply flex items-center gap-2.5 justify-center;
+
+        h1 {
+          @apply text-28 font-black text-blue-100 font-satoshi;
         }
+      }
 
-        p {
-          @apply text-3xl font-bold text-dark-100 text-center -tracking-[2px];
+      p {
+        @apply text-[25px] font-medium text-gray-800 text-center -tracking-[2px];
 
-          span {
-            @apply text-pink-100;
-          }
+        span {
+          @apply text-pink-100;
         }
+      }
 
-        button {
-          @apply w-full flex justify-center items-center gap-2.5 bg-white border border-gray-25 rounded-4xl py-4 text-base text-dark-100 font-semibold cursor-pointer -tracking-[0.8px];
-        }
+      button {
+        @apply w-full flex justify-center items-center gap-2.5 bg-white border border-gray-25 rounded-4xl py-4 text-base text-dark-100 font-semibold cursor-pointer -tracking-[0.8px];
       }
     }
   }
@@ -294,10 +310,10 @@
 
   /* empty state */
   .empty-state {
-    @apply flex flex-col items-center px-4 py-10 gap-6 rounded-2xl border border-gray-20 shadow-10 w-full;
+    @apply flex flex-col items-center px-4 py-10 gap-6 rounded-2xl border border-gray-20 shadow-10 max-w-64;
 
     figure {
-      @apply bg-pink-10 rounded-[20px] flex items-center justify-center size-20;
+      @apply bg-pink-10 rounded-[20px] flex items-center justify-center size-16;
     }
 
     article {
@@ -327,11 +343,17 @@
     @apply absolute object-contain;
   }
 
+  .screenshots_grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 2px;
+  }
+
   .images-console {
     @apply w-fit relative flex flex-row items-center gap-3;
 
     .image-class {
-      @apply relative h-full rounded-xl bg-gray-50 w-[170px] hover:scale-[101%] cursor-pointer transition-all overflow-hidden;
+      @apply w-full relative h-full rounded-xl bg-gray-50 w-[170px] hover:scale-[101%] cursor-pointer transition-all overflow-hidden;
 
       .btns {
         @apply absolute top-2 z-[5] right-2 h-fit w-fit flex items-center gap-2;
@@ -475,6 +497,10 @@
       figure {
         @apply flex items-center gap-3;
       }
+
+      .sign-in_btn {
+        @apply py-2 px-5 flex items-center gap-2.5 text-sm font-semibold hover:border-pink-100 text-dark-100 border border-gray-25 rounded-4xl;
+      }
     }
   }
 
@@ -510,63 +536,55 @@
     .modal-content {
       @apply h-full w-full flex items-center justify-center;
     }
+  }
+  
+  .dialog {
+    @apply relative bg-white border-white/40 rounded-20 flex flex-col gap-2.5 shadow-lg p-6 sm:w-[370px] w-[90%] max-w-[370px] z-20;
 
-    .dialog-box {
-      @apply relative bg-white rounded-20 flex flex-col gap-2.5 shadow-lg p-6 sm:w-[370px] w-[90%] max-w-[370px] z-20;
+    .dialog-header {
+      @apply flex justify-between items-center;
 
-      .header-constraint {
-        @apply absolute inset-0 bg-transparent select-none rounded-20 -z-10 overflow-hidden;
+      .home-btn {
+        @apply p-2 rounded-full border-0 hover:bg-gray-20 transition-colors duration-200 ease-in-out;
+      }
+    }
 
-        .header-bg {
-          @apply absolute top-10 left-56 transform rotate-45 w-full h-24 bg-pink-50;
+    .dialog-content {
+      @apply min-h-60 flex flex-col gap-1.5 transition duration-300 ease-in-out;
+
+      section {
+        @apply w-full flex-1 rounded-18 flex justify-center items-center;
+
+        .content-body {
+          @apply w-full flex flex-col gap-3 justify-center;
+
+          .header {
+            @apply w-full flex items-center gap-2 text-center;
+          }
         }
       }
 
-      .dialog-header {
-        @apply flex justify-between items-center;
+      .dialog-btns {
+        @apply w-full flex items-center gap-2;
 
-        .modal-home-btn {
-          @apply p-2 rounded-full border-0 hover:bg-gray-20 transition-colors duration-200 ease-in-out;
+        button {
+          @apply w-full rounded-4xl font-normal;
         }
-      }
 
-      .dialog-content {
-        @apply min-h-60 flex flex-col gap-1.5 transition duration-300 ease-in-out;
+        .btn-theme {
+          @apply bg-pink-100 text-white font-normal h-9.5 overflow-hidden rounded-4xl flex items-center justify-center gap-2;
 
-        section {
-          @apply w-full flex-1 rounded-18 flex justify-center items-center;
-
-          .content-body {
-            @apply w-full flex flex-col gap-3 justify-center;
-
-            .header {
-              @apply w-full flex items-center gap-2 text-center;
-            }
+          img {
+            @apply brightness-0 invert;
           }
         }
 
-        .dialog-btns {
-          @apply w-full flex items-center gap-2;
+        .btn-destructive {
+          @apply hover:bg-red-500 bg-white border-[1px] border-red-500 text-red-500 hover:text-white h-9.5 overflow-hidden rounded-4xl flex items-center justify-center gap-2;
+        }
 
-          button {
-            @apply w-full rounded-4xl font-normal;
-          }
-
-          .btn-theme {
-            @apply bg-pink-100 text-white font-normal h-9.5 overflow-hidden rounded-4xl flex items-center justify-center gap-2;
-
-            img {
-              @apply brightness-0 invert;
-            }
-          }
-
-          .btn-destructive {
-            @apply hover:bg-red-500 bg-white border-[1px] border-red-500 text-red-500 hover:text-white h-9.5 overflow-hidden rounded-4xl flex items-center justify-center gap-2;
-          }
-
-          .btn-white {
-            @apply bg-white border-[1px] border-pink-100 text-pink-100 hover:bg-pink-100 hover:text-white gap-0 h-9.5 overflow-hidden rounded-4xl flex items-center justify-center text-nowrap;
-          }
+        .btn-white {
+          @apply bg-white border-[1px] border-pink-100 text-pink-100 hover:bg-pink-100 hover:text-white gap-0 h-9.5 overflow-hidden rounded-4xl flex items-center justify-center text-nowrap;
         }
       }
     }
@@ -646,7 +664,7 @@
           }
 
           h1 {
-            @apply text-3xl font-bold text-dark-100 capitalize;
+            @apply text-[26px] font-bold text-gray-800 capitalize;
           }
         }
       }
@@ -654,8 +672,8 @@
       aside {
         @apply flex flex-wrap items-center gap-2 md:gap-4;
 
-        button {
-          @apply py-2 px-5 flex items-center gap-2.5 text-sm font-semibold text-dark-100 border border-gray-25 rounded-4xl;
+        a {
+          @apply py-2 px-5 flex items-center gap-2.5 text-sm font-semibold hover:border-pink-100 text-dark-100 border border-gray-25 rounded-4xl;
 
           span {
             @apply truncate;
@@ -665,13 +683,13 @@
     }
 
     .search-filter {
-      @apply flex flex-row items-center flex-wrap gap-5 justify-between;
+      @apply flex flex-row items-center hover:bg-["#eee"] flex-wrap gap-5 justify-between;
 
       .search {
-        @apply relative md:max-w-[500px] md:w-full w-[335px];
+        @apply relative md:max-w-[500px] md:w-full hover:bg-["#eee"] w-[335px];
 
         input {
-          @apply border border-gray-20 py-2 pl-8 pr-5 text-dark-100 text-sm font-normal placeholder:text-gray-100 w-full rounded-[18px] overflow-hidden focus:outline-pink-100;
+          @apply border border-gray-20 py-2 pl-8 pr-5 text-dark-100 text-sm font-normal placeholder:text-gray-100 w-full rounded-[18px] overflow-hidden    focus:outline-pink-100;
         }
 
         img {
@@ -801,7 +819,23 @@
       @apply flex gap-6 items-center border-b border-gray-20;
 
       button {
-        @apply capitalize text-sm font-semibold text-gray-100 pb-4 hover:text-pink-100 transition-all duration-300;
+        @apply relative capitalize text-sm font-semibold text-gray-100 hover:text-pink-100;
+
+        hr {
+          @apply w-full transition-all duration-300 text-transparent bottom-0 mt-3.5
+        }
+      }
+    }
+  }
+
+  .tab_nav {
+    @apply flex gap-6 items-center border-b border-gray-20;
+
+    button {
+      @apply relative capitalize text-sm font-semibold text-gray-100 hover:text-pink-100;
+
+      hr {
+        @apply w-full transition-all duration-300 text-transparent bottom-0 mt-3.5
       }
     }
   }

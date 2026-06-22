@@ -1,10 +1,12 @@
 import {v4 as uuid} from "uuid" 
 import { 
-  DropdownOptionsType, 
-  UserWithVideos, 
+  DropdownOptionsType,  
+  TranscriptEntry,  
   VideoCardProps, 
   VideoConfig, 
-  VideoWithUserResult 
+  VideosWithPagination, 
+  VideoWithUserResult, 
+  Visibility
 } from "..";
 
 export const MAX_VIDEO_SIZE = 500 * 1024 * 1024;
@@ -19,6 +21,9 @@ export const BUNNY = {
 };
 
 export const emojis = ["😂", "😍", "👍"];
+
+export const LOCAL_STORAGE_SCREENSHOT_TAG = "recordingScreenshots"
+
 
 export const filterOptions = [
   {
@@ -143,39 +148,59 @@ export const dummyVideoCardProps: Array<VideoCardProps> = [
   },
 ]
 
+export type DummyUserType = {
+  id: string;
+  name: string;
+  image: string;
+  email: string;
+};
 
-export const dummySession = {
-  user:{
-    id: "6523jilmkjy48jbsn",
-    name: "Jose Ayomide Folarin",
-    image: "/assets/images/dummy.jpg",
-    email: "company@co.email.com"
+export const dummyUser = {
+  id: "6523jilmkjy48jbsn",
+  name: "Jose Ayomide Folarin",
+  image: "/assets/images/dummy.jpg",
+  email: "company@co.email.com"
+}
+
+export const dummyVideo: VideoWithUserResult = {
+  video: {
+    id: "tyw4j35ugj",
+    videoId: "6725hbkbbn",
+    title: "Trial Video for Content Management",
+    description: 'First video to be shown for offline video page testing and user interface adjustment',
+    thumbnailUrl: "/assets/thumbnails/img1.jpg",
+    videoUrl: '/assets/trial_video.mp4',
+    userId: dummyUser.id,
+    views: dummyVideoCardProps[0].views,
+    tags: "trial#first#ui/ux",
+    visibility: "public",
+    duration: 131,
+    createdAt: new Date(Date.now()),
+    updatedAt: new Date(Date.now())
   },
+  user: dummyUser,
 }
 
-export const dummyVideo: UserWithVideos = {
-  videos: [
-    {
-      id: "tyw4j35ugj",
-      videoId: "6725hbkbbn",
-      title: "Trial Video for Content Management",
-      description: 'First video to be shown for offline video page testing and user interface adjustment',
-      thumbnailUrl: "/assets/thumbnails/img1.jpg",
-      videoUrl: '/assets/trial_video.mp4',
-      userId: dummySession.user.id,
-      views: dummyVideoCardProps[0].views,
-      tags: ["trial", "first", "ui/ux"],
-      visibility: "public",
-      duration: 131,
-      createdAt: new Date(Date.now()),
-      updatedAt: new Date(Date.now())
-    }
-  ],
-  user: dummySession.user,
-  count: 1
-}
+export const videoTranscript: Array<TranscriptEntry> = [
+  {
+    time: "21: 30",
+    text: "identifiers in any context that begin with a single leading underscore (e.g. _secret)"
+  },
+  {
+    time: "01: 45",
+    text: "are intended to suggest that they are only for “internal” use to a class or module, and not part of a public interface"
+  },
+  {
+    time: "09: 15",
+    text: "identifiers in any context that begin with a single leading underscore (e.g. _secret)"
+  },
+  {
+    time: "22: 00",
+    text: "are intended to suggest that they are only for “internal” use to a class or module, and not part of a public interface"
+  },
+]
 
-export const dummyVideos: VideoWithUserResult[]  = [
+const dummyVideos: Array<VideoWithUserResult>  = [
   {video: {
     id: uuid(),
     videoId: uuid(),
@@ -183,15 +208,15 @@ export const dummyVideos: VideoWithUserResult[]  = [
     description: 'First video to be shown for offline video page testing and user interface adjustment',
     thumbnailUrl: "/assets/thumbnails/img11.jpg",
     videoUrl: '/assets/trial_video.mp4',
-    userId: dummySession.user.id,
+    userId: dummyUser.id,
     views: dummyVideoCardProps[0].views,
-    tags: ["trial", "first", "ui/ux"],
+    tags: "trial#first#ui/ux",
     duration: 131,
     visibility: "public",
     createdAt: new Date(Date.now()),
     updatedAt: new Date(Date.now())
   },
-  user: dummySession.user
+  user: dummyUser
   },
   {video: {
     id: uuid(),
@@ -200,15 +225,15 @@ export const dummyVideos: VideoWithUserResult[]  = [
     description: 'First video to be shown for offline video page testing and user interface adjustment',
     thumbnailUrl: "/assets/thumbnails/img12.jpg",
     videoUrl: '/assets/trial_video.mp4',
-    userId: dummySession.user.id,
+    userId: dummyUser.id,
     views: dummyVideoCardProps[0].views,
-    tags: ["trial", "first", "ui/ux"],
+    tags: "trial#first#ui/ux",
     duration: 131,
     visibility: "public",
     createdAt: new Date(Date.now()),
     updatedAt: new Date(Date.now())
   },
-  user: dummySession.user
+  user: dummyUser
   },
   {video: {
     id: uuid(),
@@ -217,15 +242,15 @@ export const dummyVideos: VideoWithUserResult[]  = [
     description: 'First video to be shown for offline video page testing and user interface adjustment',
     thumbnailUrl: "/assets/thumbnails/img9.jpg",
     videoUrl: '/assets/trial_video.mp4',
-    userId: dummySession.user.id,
+    userId: dummyUser.id,
     views: dummyVideoCardProps[0].views,
-    tags: ["trial", "first", "ui/ux"],
+    tags: "trial#first#ui/ux",
     duration: 131,
     visibility: "public",
     createdAt: new Date(Date.now()),
     updatedAt: new Date(Date.now())
   },
-  user: dummySession.user
+  user: dummyUser
   },
   {video: {
     id: uuid(),
@@ -234,15 +259,15 @@ export const dummyVideos: VideoWithUserResult[]  = [
     description: 'First video to be shown for offline video page testing and user interface adjustment',
     thumbnailUrl: "/assets/thumbnails/img5.jpg",
     videoUrl: '/assets/trial_video.mp4',
-    userId: dummySession.user.id,
+    userId: dummyUser.id,
     views: dummyVideoCardProps[0].views,
-    tags: ["trial", "first", "ui/ux"],
+    tags: "trial#first#ui/ux",
     duration: 131,
     visibility: "public",
     createdAt: new Date(Date.now()),
     updatedAt: new Date(Date.now())
   },
-  user: dummySession.user
+  user: dummyUser
   },
   {video: {
     id: uuid(),
@@ -251,15 +276,15 @@ export const dummyVideos: VideoWithUserResult[]  = [
     description: 'First video to be shown for offline video page testing and user interface adjustment',
     thumbnailUrl: "/assets/thumbnails/img6.jpg",
     videoUrl: '/assets/trial_video.mp4',
-    userId: dummySession.user.id,
+    userId: dummyUser.id,
     views: dummyVideoCardProps[0].views,
-    tags: ["trial", "first", "ui/ux"],
+    tags: "trial#first#ui/ux",
     duration: 131,
     visibility: "public",
     createdAt: new Date(Date.now()),
     updatedAt: new Date(Date.now())
   },
-  user: dummySession.user
+  user: dummyUser
   },
   {video: {
     id: uuid(),
@@ -268,15 +293,15 @@ export const dummyVideos: VideoWithUserResult[]  = [
     description: 'First video to be shown for offline video page testing and user interface adjustment',
     thumbnailUrl: "/assets/thumbnails/img7.jpg",
     videoUrl: '/assets/trial_video.mp4',
-    userId: dummySession.user.id,
+    userId: dummyUser.id,
     views: dummyVideoCardProps[0].views,
-    tags: ["trial", "first", "ui/ux"],
+    tags: "trial#first#ui/ux",
     duration: 131,
     visibility: "public",
     createdAt: new Date(Date.now()),
     updatedAt: new Date(Date.now())
   },
-  user: dummySession.user
+  user: dummyUser
   },
   {video: {
     id: uuid(),
@@ -285,15 +310,15 @@ export const dummyVideos: VideoWithUserResult[]  = [
     description: 'First video to be shown for offline video page testing and user interface adjustment',
     thumbnailUrl: "/assets/thumbnails/img8.jpg",
     videoUrl: '/assets/trial_video.mp4',
-    userId: dummySession.user.id,
+    userId: dummyUser.id,
     views: dummyVideoCardProps[0].views,
-    tags: ["trial", "first", "ui/ux"],
+    tags: "trial#first#ui/ux",
     duration: 131,
     visibility: "public",
     createdAt: new Date(Date.now()),
     updatedAt: new Date(Date.now())
   },
-  user: dummySession.user
+  user: dummyUser
   },
   {video: {
     id: uuid(),
@@ -302,15 +327,15 @@ export const dummyVideos: VideoWithUserResult[]  = [
     description: 'First video to be shown for offline video page testing and user interface adjustment',
     thumbnailUrl: "/assets/thumbnails/img3.jpg",
     videoUrl: '/assets/trial_video.mp4',
-    userId: dummySession.user.id,
+    userId: dummyUser.id,
     views: dummyVideoCardProps[0].views,
-    tags: ["trial", "first", "ui/ux"],
+    tags: "trial#first#ui/ux",
     duration: 131,
     visibility: "public",
     createdAt: new Date(Date.now()),
     updatedAt: new Date(Date.now())
   },
-  user: dummySession.user
+  user: dummyUser
   },
   {video: {
     id: uuid(),
@@ -319,15 +344,15 @@ export const dummyVideos: VideoWithUserResult[]  = [
     description: 'First video to be shown for offline video page testing and user interface adjustment',
     thumbnailUrl: "/assets/thumbnails/img2.jpg",
     videoUrl: '/assets/trial_video.mp4',
-    userId: dummySession.user.id,
+    userId: dummyUser.id,
     views: dummyVideoCardProps[0].views,
-    tags: ["trial", "first", "ui/ux"],
+    tags: "trial#first#ui/ux",
     duration: 131,
     visibility: "public",
     createdAt: new Date(Date.now()),
     updatedAt: new Date(Date.now())
   },
-  user: dummySession.user
+  user: dummyUser
   },
   {video: {
     id: uuid(),
@@ -336,14 +361,27 @@ export const dummyVideos: VideoWithUserResult[]  = [
     description: 'First video to be shown for offline video page testing and user interface adjustment',
     thumbnailUrl: "/assets/thumbnails/img1.jpg",
     videoUrl: '/assets/trial_video.mp4',
-    userId: dummySession.user.id,
+    userId: dummyUser.id,
     views: dummyVideoCardProps[0].views,
-    tags: ["trial", "first", "ui/ux"],
+    tags: "trial#first#ui/ux",
     duration: 131,
     visibility: "public",
     createdAt: new Date(Date.now()),
     updatedAt: new Date(Date.now())
   },
-  user: dummySession.user
+  user: dummyUser
   },
 ]
+
+const dummyPagination = {
+  currentPage: 1,
+  totalPages: 1,
+  totalItems: dummyVideos.length,
+  pageSize: 10
+}
+
+export const dummyVideosWithPagination: VideosWithPagination = {
+  videos: dummyVideos,
+  count: dummyVideos.length,
+  pagination: dummyPagination
+}

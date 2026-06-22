@@ -1,29 +1,23 @@
 'use client'
 
-import { 
-  ICONS, 
-  dummySession 
-} from '@/constants'
+import { ICONS } from '@/constants'
 import { useRouter } from 'next/navigation'
 import React, {
-  useCallback, 
   useEffect, 
 } from 'react'
-import { authClient } from '@/lib/authClient'
 import { HomeIcon } from 'lucide-react'
-import { ModalContentType } from '..'
-import toast from 'react-hot-toast';
+import { ModalContentType, UserType } from '..'
 import { useModalContext } from '@/lib/hooks/useModalContext'
 import useRecordContent from '@/lib/hooks/useRecord/useModalContent'
 import { 
   useScreenshotActions, 
   useScreenRecording, 
   useSettings,
-  useSaveRecordActions
+  useSaveRecordActions,
 } from '@/lib/hooks/useRecord'
-import ActionButton from './ActionButton'
+import {ActionButton, Img} from './'
 
-const RecordStream = () => {
+const RecordStream = ({currentUser}: {currentUser: UserType}) => {
 
   const { recordContent } = useRecordContent()
 
@@ -70,14 +64,11 @@ const RecordStream = () => {
 
   const router = useRouter();
 
-  const session = dummySession;
-
   //using useCallback causes a loss of last modal action state on opening  
-  const onGoToRecording = /*useCallback(*/() => {
-    if(!session?.user) {
-      router.push('/sign-in')
-      toast('You need to sign in to access recording features');
-      return;
+  const onGoToRecording = () => {
+    if(currentUser == null) {
+      router.push("/auth/sign-in")
+      return
     }
 
     openModal({
@@ -86,7 +77,7 @@ const RecordStream = () => {
       parent: 'record',
       closeIcon: <HomeIcon size={22}/>
     })
-  }/*,[session, router])*/
+  }
 
   //recording modal content
   useEffect(() => {
@@ -120,9 +111,7 @@ const RecordStream = () => {
         onScreenShotClick,
       )
 
-      if(modalAction?.redirect?.state === 'ongoing') {
-        router.push('/upload')
-      }
+      if(modalAction?.redirect?.state === 'ongoing') {router.push('/upload')}
     }
 
     if(content) syncModalContent('record', content);
@@ -148,14 +137,17 @@ const RecordStream = () => {
     <div className="record">
       <ActionButton
         className='primary-btn'
-        action={() => onGoToRecording()}
-        src={ICONS.record}
-        alt="record"
-        size={16}
+        showLoading={false}
+        action={onGoToRecording}
       >
-        <span className='text-white font-semibold'>
-          Record a video
-        </span>
+          <Img
+            src={ICONS.record}
+            alt="record"
+            size={16}
+          />
+          <span className='text-white font-semibold'>
+            Record a video
+          </span>
       </ActionButton>
     </div>
   )
